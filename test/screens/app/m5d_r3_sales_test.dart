@@ -76,6 +76,7 @@ void main() {
     final sections = tester.widgetList<kit.Section>(find.byType(kit.Section));
     expect(sections.map((s) => s.title).toList(), [
       'Dự án của bạn',
+      'Dự án theo khu vực',
       'Truy cập nhanh',
       'Bảng tin mới',
     ]);

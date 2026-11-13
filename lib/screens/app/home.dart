@@ -17,6 +17,7 @@ import '../../ui/project_browser.dart';
 import '../../ui/project_card.dart';
 import '../../ui/project_compare.dart';
 import '../../ui/project_compare_kit.dart';
+import '../../ui/project_region_section.dart';
 import 'menu_tab.dart' show menuIcon;
 import 'projects_tab.dart' show TabProject;
 
@@ -25,6 +26,14 @@ final tabSurveyProvider = sessionQuery((ref) {
   return ref.watch(meApiProvider).getSurveyDue();
 });
 const _hotFilters = PublicFilters(hot: '1', sort: 'hot', perPage: 8);
+
+final _regionProvider = NotifierProvider<_Region, String?>(_Region.new);
+
+class _Region extends Notifier<String?> {
+  @override
+  String? build() => null;
+  void select(String region) => state = region;
+}
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -52,6 +61,8 @@ class _HomeState extends ConsumerState<HomeScreen> {
     final rows = showPublic
         ? hot?.value?.data ?? <PublicProject>[]
         : projects?.value?.map(TabProject.new).toList() ?? <PublicProject>[];
+    final allocated = showPublic ? <PublicProject>[] : rows;
+    final region = ref.watch(_regionProvider) ?? firstProjectRegion(allocated);
     void open(PublicProject p) => context.push(
       showPublic
           ? '/cong-khai/${Uri.encodeComponent(p.code)}'
@@ -181,6 +192,20 @@ class _HomeState extends ConsumerState<HomeScreen> {
                                 'Chưa có dự án nào.',
                               ),
                             ),
+                    ),
+                    ProjectRegionSection(
+                      projects: allocated,
+                      region: region,
+                      onRegionChanged: (value) =>
+                          ref.read(_regionProvider.notifier).select(value),
+                      onOpen: open,
+                      cardWidth: cardWidth,
+                      loading:
+                          projects != null &&
+                          projects.isLoading &&
+                          !projects.hasValue,
+                      showCounts: true,
+                      inset: 0,
                     ),
                     if (survey.value == true) const _SurveyCard(),
                     Section(

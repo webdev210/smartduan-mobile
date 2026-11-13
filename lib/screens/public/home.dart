@@ -18,10 +18,10 @@ import '../../ui/developer_chip.dart';
 import '../../ui/format.dart';
 import '../../ui/kit.dart' hide Row;
 import '../../ui/project_browser.dart';
-import '../../ui/project_card.dart';
+import '../../ui/project_card.dart' show ProjectMedia;
+import '../../ui/project_region_section.dart';
 import '../../ui/project_compare.dart';
 import '../../ui/project_compare_kit.dart';
-import '../../ui/regions.dart';
 import '../../ui/theme.dart' as c;
 
 typedef _HomeState = ({String q, String region, bool menu, int slide});
@@ -97,10 +97,6 @@ class PublicHome extends ConsumerWidget {
     final all = projects.value ?? <PublicProject>[];
     final slides = heroProjects(hot.value?.data ?? <PublicProject>[], all);
     final featured = featuredProjects(all);
-    final byRegion = all
-        .where((p) => inRegion(p.province, state.region))
-        .take(6)
-        .toList();
     final provinces = provinceCounts(all, provinceAliases(places.value ?? []));
     final byType = [
       for (final l in footer.value ?? <FooterLink>[])
@@ -305,9 +301,10 @@ class PublicHome extends ConsumerWidget {
                                         children: const [],
                                       ),
                                     ),
-                                    _Rail(
+                                    ProjectRail(
                                       items: featured,
-                                      cardW: cardW,
+                                      cardWidth: cardW,
+                                      onOpen: (p) => _openProject(context, p),
                                       loading:
                                           projects.isLoading &&
                                           !projects.hasValue,
@@ -315,35 +312,15 @@ class PublicHome extends ConsumerWidget {
                                     ),
                                   ],
                                 ),
-                                Column(
-                                  spacing: 12,
-                                  children: [
-                                    _pad(
-                                      Section(
-                                        title: 'Dự án theo khu vực',
-                                        child: Segmented(
-                                          value: state.region,
-                                          onChange: control.region,
-                                          options: [
-                                            for (final r in regions)
-                                              (
-                                                key: r.key,
-                                                label: r.label,
-                                                count: null,
-                                              ),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                    _Rail(
-                                      items: byRegion,
-                                      cardW: cardW,
-                                      loading:
-                                          projects.isLoading &&
-                                          !projects.hasValue,
-                                      empty: 'Chưa có dự án tại khu vực này.',
-                                    ),
-                                  ],
+                                ProjectRegionSection(
+                                  projects: all,
+                                  region: state.region,
+                                  onRegionChanged: control.region,
+                                  onOpen: (p) => _openProject(context, p),
+                                  cardWidth: cardW,
+                                  loading:
+                                      projects.isLoading && !projects.hasValue,
+                                  limit: 6,
                                 ),
                                 _PostBand(
                                   title: 'Tin mới',
@@ -858,56 +835,6 @@ class _HeroSlidesState extends State<_HeroSlides> {
             ],
           ),
       ],
-    );
-  }
-}
-
-class _Rail extends StatelessWidget {
-  const _Rail({
-    required this.items,
-    required this.cardW,
-    required this.loading,
-    required this.empty,
-  });
-  final List<PublicProject> items;
-  final double cardW;
-  final bool loading;
-  final String empty;
-  @override
-  Widget build(BuildContext context) {
-    if (loading) {
-      return SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-        child: ProjectRailRow(
-          cardWidth: cardW,
-          children: [
-            SizedBox(
-              width: cardW,
-              child: ProjectCardSkeleton(width: cardW),
-            ),
-            ProjectCardSkeleton(width: cardW),
-          ],
-        ),
-      );
-    }
-    if (items.isEmpty) {
-      return _pad(Muted(empty));
-    }
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-      child: ProjectRailRow(
-        cardWidth: cardW,
-        children: [
-          for (final p in items)
-            ProjectCard(
-              width: cardW,
-              p: p,
-              onPress: () => _openProject(context, p),
-            ),
-        ],
-      ),
     );
   }
 }

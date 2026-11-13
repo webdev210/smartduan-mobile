@@ -226,7 +226,7 @@ void main() {
   }
 
   testWidgets(
-    'Home restores RN section order, cards, tiles and allocated count',
+    'Home keeps requested section order, cards, tiles and allocated count',
     (t) async {
       final env = HEnv();
       await mount(t, env.container, const Scaffold(body: HomeScreen()));
@@ -235,6 +235,7 @@ void main() {
           .toList();
       expect(sections.map((s) => s.title), [
         'Dự án của bạn',
+        'Dự án theo khu vực',
         'Truy cập nhanh',
         'Bảng tin mới',
       ]);
