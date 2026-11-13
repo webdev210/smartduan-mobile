@@ -5,8 +5,13 @@ import 'theme.dart' as c;
 
 /// Compact project definitions; cells grow with their content.
 class ProjectFacts extends StatelessWidget {
-  const ProjectFacts({super.key, required this.entries});
+  const ProjectFacts({
+    super.key,
+    required this.entries,
+    this.valueWidgets = const {},
+  });
   final List<(String, String)> entries;
+  final Map<String, Widget> valueWidgets;
 
   @override
   Widget build(BuildContext context) => LayoutBuilder(
@@ -40,14 +45,15 @@ class ProjectFacts extends StatelessWidget {
                                 fontSize: 13,
                               ),
                             ),
-                            Text(
-                              value,
-                              style: const TextStyle(
-                                color: c.text,
-                                fontSize: 15,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
+                            valueWidgets[label] ??
+                                Text(
+                                  value,
+                                  style: const TextStyle(
+                                    color: c.text,
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
                           ],
                         ),
                       ),

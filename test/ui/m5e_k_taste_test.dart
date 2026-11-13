@@ -120,12 +120,18 @@ void main() {
         ),
       );
       await mount(tester, section(600));
-      expect(tester.getSize(find.byType(kit.Button)).width, lessThan(200));
+      expect(tester.getSize(find.byType(kit.Pressable)).width, lessThan(200));
       expect(
         tester.getTopLeft(find.text('Xem tất cả')).dy,
         lessThan(tester.getBottomLeft(find.text('Dự án nổi bật')).dy),
       );
-      await mount(tester, section(220));
+      await mount(
+        tester,
+        MediaQuery(
+          data: const MediaQueryData(textScaler: TextScaler.linear(2)),
+          child: section(220),
+        ),
+      );
       expect(
         tester.getTopLeft(find.text('Xem tất cả')).dy,
         greaterThanOrEqualTo(

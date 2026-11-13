@@ -360,37 +360,52 @@ class _ProjectBrowserState extends ConsumerState<ProjectBrowser> {
                   ],
                 ),
               if (list.isNotEmpty)
-                Row(
-                  children: [
-                    Expanded(
-                      child: Semantics(
-                        liveRegion: true,
-                        child: Text(
-                          '${rows.length} dự án',
-                          style: const TextStyle(fontWeight: FontWeight.w700),
+                LayoutBuilder(
+                  builder: (context, constraints) => Row(
+                    children: [
+                      Expanded(
+                        child: Semantics(
+                          liveRegion: true,
+                          child: Text(
+                            '${rows.length} dự án',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(fontWeight: FontWeight.w700),
+                          ),
                         ),
                       ),
-                    ),
-                    Flexible(
-                      child: Button(
-                        title: sortLabel,
-                        kind: 'link',
-                        size: 'sm',
-                        icon: Ionicons.swapVertical,
-                        accessibilityLabel: 'Sắp xếp: $sortLabel',
-                        onPress: () => control.sheet(true),
+                      ConstrainedBox(
+                        constraints: BoxConstraints(
+                          maxWidth: constraints.maxWidth - 48,
+                        ),
+                        child: DefaultTextStyle.merge(
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          child: Button(
+                            title: sortLabel,
+                            kind: 'link',
+                            size: 'sm',
+                            icon: Ionicons.swapVertical,
+                            accessibilityLabel: 'Sắp xếp: $sortLabel',
+                            onPress: () => control.sheet(true),
+                          ),
+                        ),
                       ),
-                    ),
-                    IconButton(
-                      icon: compact
-                          ? Ionicons.albumsOutline
-                          : Ionicons.listOutline,
-                      label: compact
-                          ? 'Xem dạng thẻ lớn'
-                          : 'Xem dạng danh sách gọn',
-                      onPress: control.compact,
-                    ),
-                  ],
+                      Transform.translate(
+                        // Align the 44dp circle inside its 48dp hit area.
+                        offset: const Offset(2, 0),
+                        child: IconButton(
+                          icon: compact
+                              ? Ionicons.albumsOutline
+                              : Ionicons.listOutline,
+                          label: compact
+                              ? 'Xem dạng thẻ lớn'
+                              : 'Xem dạng danh sách gọn',
+                          onPress: control.compact,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
             ],
           ),

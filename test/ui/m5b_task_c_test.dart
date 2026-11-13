@@ -79,7 +79,8 @@ void main() {
       await tester.tap(find.byType(AppNetworkImage));
       await tester.pumpAndSettle();
       expect(find.byType(InteractiveViewer), findsOneWidget);
-      expect(find.text('Xem ảnh'), findsOneWidget);
+      expect(find.text('1 / 1'), findsOneWidget);
+      expect(find.byTooltip('Đóng'), findsOneWidget);
     },
   );
 

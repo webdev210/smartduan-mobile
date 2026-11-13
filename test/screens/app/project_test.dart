@@ -129,7 +129,10 @@ void main() {
         find.byIcon(Ionicons.tvOutline),
         share ? findsOneWidget : findsNothing,
       );
-      expect(find.text('Chia sẻ'), share ? findsOneWidget : findsNothing);
+      expect(
+        find.byTooltip('Chia sẻ dự án'),
+        share ? findsOneWidget : findsNothing,
+      );
       await reveal(tester, find.text('Tư vấn dự án'));
       expect(find.byIcon(Ionicons.chatbubblesOutline), findsOneWidget);
       expect(

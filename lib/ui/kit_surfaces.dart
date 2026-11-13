@@ -119,30 +119,71 @@ class Section extends StatelessWidget {
             return width;
           }
 
-          final button = Button(
-            title: action!.label,
-            kind: 'link',
-            size: 'sm',
-            icon: Ionicons.chevronForward,
+          final button = Pressable(
+            label: action!.label,
             onPress: action!.onPress,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: 48),
+              child: Center(
+                heightFactor: 1,
+                child: m.Row(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.baseline,
+                  textBaseline: TextBaseline.alphabetic,
+                  spacing: 4,
+                  children: [
+                    Flexible(
+                      child: Text(
+                        action!.label,
+                        softWrap:
+                            MediaQuery.textScalerOf(context).scale(1) >= 1.5,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: c.link,
+                        ),
+                      ),
+                    ),
+                    const Icon(
+                      Ionicons.chevronForward,
+                      size: 16,
+                      color: c.link,
+                    ),
+                  ],
+                ),
+              ),
+            ),
           );
           final needed =
               measure(title, 19, FontWeight.w700) +
-              measure(action!.label, 15, FontWeight.w600) +
-              48;
-          return needed > constraints.maxWidth
-              ? Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [heading, button],
-                )
-              : m.Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  spacing: 12,
-                  children: [
-                    Expanded(child: heading),
-                    button,
-                  ],
-                );
+              measure(action!.label, 12, FontWeight.w600) +
+              28;
+          final stacked =
+              MediaQuery.textScalerOf(context).scale(1) >= 1.5 &&
+              needed > constraints.maxWidth;
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (eyebrow != null) Eyebrow(eyebrow!),
+              stacked
+                  ? Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        H2(title),
+                        Align(alignment: Alignment.centerRight, child: button),
+                      ],
+                    )
+                  : m.Row(
+                      crossAxisAlignment: CrossAxisAlignment.baseline,
+                      textBaseline: TextBaseline.alphabetic,
+                      spacing: 4,
+                      children: [
+                        Expanded(child: H2(title)),
+                        button,
+                      ],
+                    ),
+            ],
+          );
         },
       ),
       if (child != null) child! else ...children!,

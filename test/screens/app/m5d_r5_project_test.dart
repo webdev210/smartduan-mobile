@@ -87,6 +87,9 @@ Future<GoRouter> mount(
         '/bang-hang/:id',
         '/du-an/:id',
         '/chia-se/:id',
+        '/ro-hang',
+        '/chu-dau-tu/:slug',
+        '/kham-pha',
         '/dang-nhap',
       ])
         GoRoute(
@@ -153,7 +156,7 @@ void main() {
           );
           final actions = find.byKey(const ValueKey('project-actions'));
           final before = tester.getTopLeft(actions);
-          for (final label in ['Bảng hàng', 'Chia sẻ', 'Liên hệ']) {
+          for (final label in ['Bảng hàng']) {
             final text = find.descendant(
               of: actions,
               matching: find.text(label),
@@ -320,7 +323,17 @@ void main() {
       final env = HEnv();
       env.http.respond = (r) => populated(r.path);
       await mount(tester, env.container, const ProjectScreen(id: 'p'));
-      await tester.tap(find.text('Liên hệ'));
+      await tester.scrollUntilVisible(
+        find.text('Gọi / SMS / sao chép'),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await Scrollable.ensureVisible(
+        tester.element(find.text('Gọi / SMS / sao chép')),
+        alignment: .5,
+      );
+      await tester.pump();
+      await tester.tap(find.text('Gọi / SMS / sao chép'));
       await tester.pumpAndSettle();
       await scrollToEnd(tester, sheet: true);
       expect(
@@ -353,7 +366,17 @@ void main() {
           const ProjectScreen(id: 'p'),
           settle: state != 'loading',
         );
-        await tester.tap(find.text('Liên hệ'));
+        await tester.scrollUntilVisible(
+          find.text('Gọi / SMS / sao chép'),
+          200,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await Scrollable.ensureVisible(
+          tester.element(find.text('Gọi / SMS / sao chép')),
+          alignment: .5,
+        );
+        await tester.pump();
+        await tester.tap(find.text('Gọi / SMS / sao chép'));
         if (state == 'loading') {
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 300));
@@ -414,7 +437,7 @@ void main() {
         role.isEmpty ? findsNothing : findsOneWidget,
       );
       expect(
-        find.descendant(of: fixed, matching: find.text('Chia sẻ')),
+        find.byTooltip('Chia sẻ dự án'),
         role == 'agent' ? findsOneWidget : findsNothing,
       );
       if (role.isNotEmpty) {
@@ -523,7 +546,17 @@ void main() {
     final env = HEnv();
     env.http.respond = (r) => populated(r.path);
     await mount(tester, env.container, const ProjectScreen(id: 'p'));
-    await tester.tap(find.text('Liên hệ'));
+    await tester.scrollUntilVisible(
+      find.text('Gọi / SMS / sao chép'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await Scrollable.ensureVisible(
+      tester.element(find.text('Gọi / SMS / sao chép')),
+      alignment: .5,
+    );
+    await tester.pump();
+    await tester.tap(find.text('Gọi / SMS / sao chép'));
     await tester.pumpAndSettle();
     for (final label in ['Gọi', 'Nhắn SMS']) {
       await tester.ensureVisible(find.text(label));
@@ -562,7 +595,17 @@ void main() {
       ),
     );
     await mount(tester, env.container, const ProjectScreen(id: 'p'));
-    await tester.tap(find.text('Liên hệ'));
+    await tester.scrollUntilVisible(
+      find.text('Gọi / SMS / sao chép'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await Scrollable.ensureVisible(
+      tester.element(find.text('Gọi / SMS / sao chép')),
+      alignment: .5,
+    );
+    await tester.pump();
+    await tester.tap(find.text('Gọi / SMS / sao chép'));
     await tester.pumpAndSettle();
     await tester.ensureVisible(find.text('Sao chép'));
     await tester.tap(find.text('Sao chép'));

@@ -2,11 +2,13 @@ import 'dart:collection';
 
 import 'package:flutter/foundation.dart'
     show debugDefaultTargetPlatformOverride;
+import 'package:flutter/rendering.dart' show RenderParagraph;
 import 'package:material_ui/material_ui.dart' hide SearchBar;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:smartduan/api/models.dart';
 import 'package:smartduan/ui/kit.dart' show SearchBar, Sheet, FilterGroup;
+import 'package:smartduan/ui/kit.dart' as kit;
 import 'package:smartduan/ui/project_browser.dart';
 import 'package:smartduan/ui/project_card.dart';
 import 'package:smartduan/ui/project_filter.dart';
@@ -65,9 +67,15 @@ Future<void> pumpBrowser(
   ProjectFilter initial = emptyProjectFilter,
   VoidCallback? retry,
   ValueChanged<PublicProject>? open,
+  double scale = 1,
 }) => tester.pumpWidget(
   ProviderScope(
     child: MaterialApp(
+      builder: (context, child) => MediaQuery(
+        data: MediaQuery.of(context)
+            .copyWith(textScaler: TextScaler.linear(scale)),
+        child: child!,
+      ),
       home: Scaffold(
         body: ProjectBrowser(
           projects: projects ?? browserProjects,
@@ -85,6 +93,69 @@ Future<void> pumpBrowser(
 );
 
 void main() {
+  for (final width in [320.0, 375.0, 414.0]) {
+    for (final scale in [1.0, 1.3, 2.0]) {
+      for (final sort in ['default', 'price_asc']) {
+        testWidgets('toolbar stays flush right at $width / $scale / $sort', (
+          tester,
+        ) async {
+          tester.view.physicalSize = Size(width, 1200);
+          tester.view.devicePixelRatio = 1;
+          addTearDown(tester.view.reset);
+          await pumpBrowser(
+            tester,
+            scale: scale,
+            initial: ProjectFilter(sort: sort),
+          );
+          await tester.pumpAndSettle();
+          final contentRight = tester
+              .getRect(find.byType(ProjectCard).first)
+              .right;
+          final sortButton = find.byWidgetPredicate(
+            (w) =>
+                w is kit.Button &&
+                w.accessibilityLabel?.startsWith('Sắp xếp:') == true,
+          );
+          if (width == 414 && scale == 1 && sort == 'default') {
+            expect(
+              tester.getSize(find.text('2 dự án')).width,
+              greaterThan(tester.getSize(sortButton).width),
+            );
+          }
+          if (width == 320 && scale == 2 && sort == 'price_asc') {
+            final text = tester.renderObject<RenderParagraph>(
+              find.descendant(
+                of: sortButton,
+                matching: find.text('Giá thấp → cao'),
+              ),
+            );
+            expect(text.maxLines, 1);
+            expect(text.overflow, TextOverflow.ellipsis);
+            expect(text.didExceedMaxLines, isTrue);
+          }
+          for (final label in ['Xem dạng danh sách gọn', 'Xem dạng thẻ lớn']) {
+            final toggle = find.byWidgetPredicate(
+              (w) => w is kit.IconButton && w.label == label,
+            );
+            final circle = find.descendant(
+              of: toggle,
+              matching: find.byWidgetPredicate(
+                (w) =>
+                    w is Container &&
+                    w.decoration is BoxDecoration &&
+                    (w.decoration! as BoxDecoration).shape == BoxShape.circle,
+              ),
+            );
+            expect(tester.getRect(circle).right, closeTo(contentRight, 1));
+            expect(tester.getSize(toggle).width, greaterThanOrEqualTo(48));
+            expect(tester.takeException(), isNull);
+            await tester.tap(toggle);
+            await tester.pumpAndSettle();
+          }
+        });
+      }
+    }
+  }
   testWidgets(
     'RN: sheet follows name location developer type price status sort',
     (tester) async {

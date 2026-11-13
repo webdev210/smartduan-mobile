@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:smartduan/ui/project_card.dart';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/services.dart';
@@ -839,13 +841,10 @@ void main() {
           })
         : original(r);
     await e.mount(t, const Scaffold(body: HomeScreen()));
-    expect(
-      find.widgetWithText(kit.ListItem, hProject['name']!),
-      findsOneWidget,
-    );
+    expect(find.widgetWithText(ProjectCard, hProject['name']!), findsOneWidget);
     expect(
       find.widgetWithText(
-        kit.ListItem,
+        ProjectCard,
         'Tên dự án rất dài xuống hai dòng cùng địa chỉ và chủ đầu tư',
       ),
       findsOneWidget,
@@ -874,10 +873,7 @@ void main() {
     );
     t.view.physicalSize = const Size(320, 900);
     await t.pumpAndSettle();
-    expect(
-      find.widgetWithText(kit.ListItem, hProject['name']!),
-      findsOneWidget,
-    );
+    expect(find.widgetWithText(ProjectCard, hProject['name']!), findsOneWidget);
     expect(t.takeException(), isNull);
   });
 

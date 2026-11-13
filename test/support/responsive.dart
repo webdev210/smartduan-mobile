@@ -6,6 +6,12 @@ import 'package:flutter_test/flutter_test.dart';
 const responsiveDevices = <(String, Size, EdgeInsets)>[
   ('iPhone SE 1st 320x568', Size(320, 568), EdgeInsets.only(top: 20)),
   ('Android small 360x640', Size(360, 640), EdgeInsets.only(top: 24)),
+  ('iPhone 375x812', Size(375, 812), EdgeInsets.only(top: 44, bottom: 34)),
+  (
+    'Owner iPhone 414x896',
+    Size(414, 896),
+    EdgeInsets.only(top: 44, bottom: 34),
+  ),
   (
     'Android tall 360x800',
     Size(360, 800),

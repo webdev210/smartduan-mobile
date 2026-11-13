@@ -1,3 +1,5 @@
+import 'gallery_viewer.dart';
+
 import 'package:ionicons/ionicons.dart';
 
 import 'network_image.dart';
@@ -14,12 +16,17 @@ class PostBody extends StatelessWidget {
   const PostBody({super.key, required this.html});
   final String? html;
   @override
-  Widget build(BuildContext context) => Column(
-    crossAxisAlignment: CrossAxisAlignment.stretch,
-    spacing: 14,
-    children: [for (final block in parsePostHtml(html)) _block(context, block)],
-  );
-  Widget _block(BuildContext context, PostBlock b) {
+  Widget build(BuildContext context) {
+    final blocks = parsePostHtml(html);
+    final images = blocks.where((b) => b['type'] == 'img').toList();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      spacing: 14,
+      children: [for (final block in blocks) _block(context, block, images)],
+    );
+  }
+
+  Widget _block(BuildContext context, PostBlock b, List<PostBlock> images) {
     final type = b['type'];
     return switch (type) {
       'hr' => const Divider(),
@@ -31,27 +38,13 @@ class PostBody extends StatelessWidget {
             borderRadius: BorderRadius.circular(12),
             child: Pressable(
               label: 'Xem ảnh',
-              onPress: () => Navigator.of(context).push<void>(
-                MaterialPageRoute(
-                  builder: (_) => Scaffold(
-                    appBar: AppBar(title: const Text('Xem ảnh')),
-                    body: Center(
-                      child: InteractiveViewer(
-                        maxScale: 5,
-                        child: AppNetworkImage(
-                          b['src'] as String,
-                          fit: BoxFit.contain,
-                          semanticLabel:
-                              (b['alt'] ?? b['caption'] ?? 'Ảnh minh hoạ')
-                                  as String,
-                          errorBuilder: (_, _, _) =>
-                              const Icon(Ionicons.imageOutline),
-                        ),
-                      ),
-                    ),
+              onPress: () => openGallery(context, [
+                for (final image in images)
+                  (
+                    url: image['src'] as String,
+                    caption: image['caption'] as String?,
                   ),
-                ),
-              ),
+              ], initialIndex: images.indexOf(b)),
               child: AppNetworkImage(
                 b['src'] as String,
                 fit: BoxFit.contain,

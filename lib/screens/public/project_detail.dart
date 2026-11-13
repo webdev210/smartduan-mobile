@@ -1,3 +1,5 @@
+import '../../ui/gallery_viewer.dart';
+
 import 'package:ionicons/ionicons.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -401,7 +403,21 @@ class _Detail extends ConsumerWidget {
                       button: true,
                       label: f.name,
                       child: kit.Pressable(
-                        onPress: () => openInApp(context, f.url!, f.name),
+                        onPress: () => isFileUrl(f.url!)
+                            ? openInApp(context, f.url!, f.name)
+                            : openGallery(
+                                context,
+                                [
+                                  for (final plan in plans.where(
+                                    (p) => !isFileUrl(p.url!),
+                                  ))
+                                    (url: plan.url!, caption: plan.name),
+                                ],
+                                initialIndex: plans
+                                    .where((p) => !isFileUrl(p.url!))
+                                    .toList()
+                                    .indexOf(f),
+                              ),
                         child: Column(
                           spacing: 6,
                           children: [
@@ -760,10 +776,18 @@ class _GalleryState extends State<_Gallery> {
   Widget build(BuildContext context) => ClipRRect(
     borderRadius: BorderRadius.circular(16),
     child: widget.images.isEmpty
-        ? ProjectMedia(
-            name: widget.name,
-            uri: widget.cover,
-            status: widget.status,
+        ? kit.Pressable(
+            label: 'Xem ảnh dự án',
+            onPress: mediaUrl(widget.cover) == null
+                ? null
+                : () => openGallery(context, [
+                    (url: widget.cover!, caption: null),
+                  ]),
+            child: ProjectMedia(
+              name: widget.name,
+              uri: widget.cover,
+              status: widget.status,
+            ),
           )
         : AspectRatio(
             aspectRatio: 4 / 3,
@@ -774,12 +798,19 @@ class _GalleryState extends State<_Gallery> {
                   itemCount: widget.images.length,
                   itemBuilder: (context, i) {
                     final m = widget.images[i];
-                    return AppNetworkImage(
-                      mediaUrl(m.url)!,
-                      fit: BoxFit.cover,
-                      semanticLabel: m.caption ?? widget.name,
-                      errorBuilder: (_, _, _) =>
-                          ProjectMedia(name: widget.name),
+                    return kit.Pressable(
+                      label: 'Xem ảnh ${i + 1}',
+                      onPress: () => openGallery(context, [
+                        for (final image in widget.images)
+                          (url: image.url, caption: image.caption),
+                      ], initialIndex: i),
+                      child: AppNetworkImage(
+                        mediaUrl(m.url)!,
+                        fit: BoxFit.cover,
+                        semanticLabel: m.caption ?? widget.name,
+                        errorBuilder: (_, _, _) =>
+                            ProjectMedia(name: widget.name),
+                      ),
                     );
                   },
                 ),

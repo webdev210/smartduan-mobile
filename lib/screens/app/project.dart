@@ -1,3 +1,8 @@
+import '../../api/public.dart';
+import '../../ui/catalog.dart';
+import '../../ui/developer_chip.dart';
+import '../../ui/gallery_viewer.dart';
+
 import 'package:ionicons/ionicons.dart';
 
 import '../../ui/network_image.dart';
@@ -103,7 +108,23 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
       );
     }
     return Scaffold(
-      appBar: AppBar(title: Text(query.value?.name ?? 'Dự án')),
+      appBar: AppBar(
+        title: Text(query.value?.name ?? 'Dự án'),
+        actions: [
+          if (p != null && screens['shareLinks']!(session.roles))
+            IconButton(
+              tooltip: 'Chia sẻ dự án',
+              constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+              icon: const Icon(Ionicons.shareOutline),
+              onPressed: () => context.push(
+                Uri(
+                  path: '/chia-se/${Uri.encodeComponent(p.id)}',
+                  queryParameters: {'name': p.name},
+                ).toString(),
+              ),
+            ),
+        ],
+      ),
       bottomNavigationBar:
           p == null || MediaQuery.viewInsetsOf(context).bottom > 0
           ? null
@@ -116,76 +137,59 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
                   child: Padding(
                     key: const ValueKey('project-actions'),
                     padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
-                    // ponytail: kit.Button truncates large text, use its
-                    // Pressable until the shared control supports wrapping.
-                    child: Row(
-                      spacing: 8,
-                      children: [
-                        for (final (title, onPress, primary)
-                            in <(String, VoidCallback, bool)>[
-                              if (screens['salesFloor']!(session.roles))
-                                (
-                                  'Bảng hàng',
-                                  () => context.push(
-                                    Uri(
-                                      path:
-                                          '/bang-hang/${Uri.encodeComponent(p.id)}',
-                                      queryParameters: {'name': p.name},
-                                    ).toString(),
-                                  ),
-                                  true,
-                                ),
-                              if (screens['shareLinks']!(session.roles))
-                                (
-                                  'Chia sẻ',
-                                  () => context.push(
-                                    Uri(
-                                      path:
-                                          '/chia-se/${Uri.encodeComponent(p.id)}',
-                                      queryParameters: {'name': p.name},
-                                    ).toString(),
-                                  ),
-                                  false,
-                                ),
-                              if (!_hiddenWhenDenied(contacts?.error))
-                                (
-                                  'Liên hệ',
-                                  () => setState(() => showContacts = true),
-                                  false,
-                                ),
-                            ])
-                          Expanded(
-                            child: kit.Pressable(
-                              label: title,
-                              onPress: onPress,
-                              child: Container(
-                                constraints: const BoxConstraints(
-                                  minHeight: 52,
-                                ),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 12,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: primary ? c.primary : c.card,
-                                  borderRadius: BorderRadius.circular(14),
-                                ),
-                                child: Center(
-                                  heightFactor: 1,
-                                  child: Text(
-                                    title,
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.w600,
-                                      color: primary ? c.card : c.brand,
-                                    ),
-                                  ),
-                                ),
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        final stack =
+                            constraints.maxWidth < 350 ||
+                            MediaQuery.textScalerOf(context).scale(1) >= 1.5;
+                        final buttons = <Widget>[
+                          if (screens['salesFloor']!(session.roles))
+                            _ProjectAction(
+                              title: 'Bảng hàng',
+                              primary: true,
+                              onPress: () => context.push(
+                                Uri(
+                                  path:
+                                      '/bang-hang/${Uri.encodeComponent(p.id)}',
+                                  queryParameters: {'name': p.name},
+                                ).toString(),
                               ),
                             ),
-                          ),
-                      ],
+                          if (p.basketEmbedUrl case final url?
+                              when url.isNotEmpty)
+                            _ProjectAction(
+                              title: 'Mở rổ hàng ngoài',
+                              icon: Ionicons.basketOutline,
+                              onPress: () => context.push(
+                                Uri(
+                                  path: '/ro-hang',
+                                  queryParameters: {
+                                    'project': p.id,
+                                    'url': url,
+                                  },
+                                ).toString(),
+                              ),
+                            ),
+                        ];
+                        return stack
+                            ? Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                mainAxisSize: MainAxisSize.min,
+                                spacing: 8,
+                                children: buttons,
+                              )
+                            : IntrinsicHeight(
+                                child: Row(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  spacing: 8,
+                                  children: [
+                                    for (final button in buttons)
+                                      Expanded(child: button),
+                                  ],
+                                ),
+                              );
+                      },
                     ),
                   ),
                 ),
@@ -394,6 +398,7 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
         ],
       ),
       ProjectFacts(
+        valueWidgets: {'Chủ đầu tư': _ProjectDeveloper(project: p)},
         entries: [
           ('Chủ đầu tư', p.developerName ?? '—'),
           (
@@ -440,17 +445,14 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
               : _Strip(
                   items: [
                     for (final m in images)
-                      (url: m.url, name: m.caption ?? p.name),
+                      (
+                        url: m.url,
+                        name: m.caption ?? p.name,
+                        caption: m.caption,
+                      ),
                   ],
                   width: 260,
                 ),
-        ),
-      if (p.basketEmbedUrl case final url? when url.isNotEmpty)
-        kit.Button(
-          icon: Ionicons.basketOutline,
-          title: 'Mở rổ hàng ngoài',
-          kind: 'secondary',
-          onPress: () => push('/ro-hang', {'project': p.id, 'url': url}),
         ),
       if (screens['salesFloor']!(roles) || screens['shareLinks']!(roles))
         kit.Card(
@@ -465,7 +467,7 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
                   onPress: () => push('/top-can/${p.id}', {'name': p.name}),
                 ),
               if (screens['shareLinks']!(roles)) ...[
-                const kit.Divider(),
+                if (screens['salesFloor']!(roles)) const kit.Divider(),
                 kit.ListItem(
                   icon: Ionicons.tvOutline,
                   title: 'Trình chiếu cho khách',
@@ -498,7 +500,10 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
       if (!searching && plans.isNotEmpty)
         card('Mặt bằng', [
           _Strip(
-            items: [for (final f in plans) (url: f.url!, name: f.name)],
+            items: [
+              for (final f in plans)
+                (url: f.url!, name: f.name, caption: f.name),
+            ],
             width: 220,
             caption: true,
           ),
@@ -561,17 +566,22 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
             }),
           ),
         ),
-      if (contacts.hasError && !_hiddenWhenDenied(contacts.error))
+      if (!_hiddenWhenDenied(contacts.error))
         card('Đầu mối dự án', [
-          const kit.Muted('Chưa tải được đầu mối dự án. Bấm thử lại để tải.'),
-          kit.ErrorBox(
-            error: contacts.error,
-            onRetry: () => ref.invalidate(projectContactsProvider(p.id)),
+          kit.Button(
+            kind: 'link',
+            title: 'Gọi / SMS / sao chép',
+            onPress: () => setState(() => showContacts = true),
           ),
-        ]),
-      if (people.isEmpty && contacts.isLoading) loadingSection('Đầu mối dự án'),
-      if (people.isNotEmpty)
-        card('Đầu mối dự án', [
+          if (contacts.hasError) ...[
+            const kit.Muted('Chưa tải được đầu mối dự án. Bấm thử lại để tải.'),
+            kit.ErrorBox(
+              error: contacts.error,
+              onRetry: () => ref.invalidate(projectContactsProvider(p.id)),
+            ),
+          ],
+          if (people.isEmpty && contacts.isLoading)
+            kit.Skeleton(height: MediaQuery.textScalerOf(context).scale(60)),
           for (final c in people)
             kit.Row(
               padding: EdgeInsets.zero,
@@ -763,6 +773,102 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
   }
 }
 
+class _ProjectDeveloper extends ConsumerWidget {
+  const _ProjectDeveloper({required this.project});
+  final Project project;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final developers = project.developerId == null
+        ? null
+        : ref.watch(listPublicDevelopersProvider);
+    final developer = developers?.asData?.value
+        .where((d) => d.id == project.developerId)
+        .firstOrNull;
+    final name = project.developerName ?? '—';
+    return kit.Pressable(
+      label: 'Chủ đầu tư $name, xem các dự án khác',
+      onPress: project.developerId == null
+          ? null
+          : () => openDeveloper(
+              context,
+              id: project.developerId!,
+              name: name,
+              slug: developer?.slug,
+            ),
+      child: Row(
+        spacing: 8,
+        children: [
+          SizedBox(
+            width: 40,
+            height: 40,
+            child: developer == null
+                ? null
+                : switch (mediaUrl(developer.logoUrl)) {
+                    final logo? => AppNetworkImage(
+                      logo,
+                      width: 40,
+                      height: 40,
+                      fit: BoxFit.contain,
+                      semanticLabel: 'Logo $name',
+                      errorBuilder: (_, _, _) =>
+                          const Icon(Ionicons.businessOutline),
+                    ),
+                    null => const Icon(Ionicons.businessOutline),
+                  },
+          ),
+          Expanded(child: kit.Body(name)),
+        ],
+      ),
+    );
+  }
+}
+
+class _ProjectAction extends StatelessWidget {
+  const _ProjectAction({
+    required this.title,
+    required this.onPress,
+    this.primary = false,
+    this.icon,
+  });
+  final String title;
+  final VoidCallback onPress;
+  final bool primary;
+  final IconData? icon;
+
+  @override
+  Widget build(BuildContext context) => kit.Pressable(
+    label: title,
+    onPress: onPress,
+    child: Container(
+      constraints: const BoxConstraints(minHeight: 52),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      decoration: BoxDecoration(
+        color: primary ? c.primary : c.brandSoft,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        spacing: 6,
+        children: [
+          if (icon != null) Icon(icon, size: 20, color: c.brand),
+          Flexible(
+            child: Text(
+              title,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: primary ? c.card : c.brand,
+              ),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
 class _PolicyBlock extends StatelessWidget {
   const _PolicyBlock({
     required this.policy,
@@ -802,7 +908,7 @@ class _Strip extends StatelessWidget {
     required this.width,
     this.caption = false,
   });
-  final List<({String url, String name})> items;
+  final List<({String url, String name, String? caption})> items;
   final double width;
   final bool caption;
   @override
@@ -820,7 +926,21 @@ class _Strip extends StatelessWidget {
           button: true,
           label: x.name,
           child: kit.Pressable(
-            onPress: () => openInApp(context, x.url, x.name),
+            onPress: () => isFileUrl(x.url)
+                ? openInApp(context, x.url, x.name)
+                : openGallery(
+                    context,
+                    [
+                      for (final item in items.where(
+                        (item) => !isFileUrl(item.url),
+                      ))
+                        (url: item.url, caption: item.caption),
+                    ],
+                    initialIndex: items
+                        .where((item) => !isFileUrl(item.url))
+                        .toList()
+                        .indexOf(x),
+                  ),
             child: SizedBox(
               width: width,
               child: Column(

@@ -144,10 +144,10 @@ void main() {
         ),
       ),
     );
-    expect(t.getBottomRight(find.byType(Button)).dx, 370);
+    expect(t.getBottomRight(find.byType(Pressable)).dx, 370);
     expect(
       t.getTopLeft(find.byIcon(Ionicons.chevronForward)).dx,
-      lessThan(t.getTopLeft(find.text('Xem tất cả')).dx),
+      greaterThan(t.getTopLeft(find.text('Xem tất cả')).dx),
     );
     expect(
       t

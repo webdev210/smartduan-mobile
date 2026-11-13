@@ -1,3 +1,5 @@
+import '../../ui/gallery_viewer.dart';
+
 import 'package:ionicons/ionicons.dart';
 
 import '../../ui/network_image.dart';
@@ -252,13 +254,20 @@ class _UnitScreenState extends ConsumerState<UnitScreen> {
                   ? images?.value?.data ?? const []
                   : images?.value?.data.take(1).toList() ?? const [],
               keyOf: (image) => image.id,
-              renderItem: (img) => AppNetworkImage(
-                img.url,
-                height: 220,
-                fit: BoxFit.contain,
-                errorBuilder: (_, _, _) => const SizedBox(
+              renderItem: (img) => kit.Pressable(
+                label: 'Xem ảnh căn hộ',
+                onPress: () => openGallery(context, [
+                  for (final image in images!.value!.data)
+                    (url: image.url, caption: null),
+                ], initialIndex: images.value!.data.indexOf(img)),
+                child: AppNetworkImage(
+                  img.url,
                   height: 220,
-                  child: Icon(Ionicons.imageOutline),
+                  fit: BoxFit.contain,
+                  errorBuilder: (_, _, _) => const SizedBox(
+                    height: 220,
+                    child: Icon(Ionicons.imageOutline),
+                  ),
                 ),
               ),
               onRefresh: () =>
