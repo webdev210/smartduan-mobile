@@ -235,6 +235,7 @@ void main() {
       expect(http.seen.where((r) => r.path == '/auth/ws-token'), hasLength(1));
       final label = everywhere ? 'Đăng xuất trên mọi thiết bị' : 'Đăng xuất';
       await tester.ensureVisible(find.text(label));
+      await tester.pumpAndSettle();
       await tester.tap(find.text(label));
       await tester.pumpAndSettle();
       expect(env.session.everywhere, everywhere);
@@ -405,23 +406,28 @@ void main() {
           .queryParameters,
       containsPair('sort', 'price_list'),
     );
-    await tester.tap(find.bySemanticsLabel(RegExp('^Bộ lọc')));
+    await tester.tap(find.text('Lưu bộ lọc này'));
     await tester.pumpAndSettle();
     final name = find.descendant(
-      of: find.byType(Field),
+      of: find.byWidgetPredicate(
+        (w) => w is Field && w.label == 'Lưu bộ lọc đang dùng',
+      ),
       matching: find.byType(TextField),
     );
     await tester.ensureVisible(name);
     await tester.enterText(name, ' Mới ');
     await tester.pumpAndSettle();
-    await tester.ensureVisible(find.text('Lưu bộ lọc'));
-    await tester.tap(find.text('Lưu bộ lọc'));
+    await tester.ensureVisible(find.widgetWithText(Button, 'Lưu bộ lọc'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(Button, 'Lưu bộ lọc'));
     await tester.pumpAndSettle();
     final post = http.seen.where((r) => r.method == 'POST').single;
     expect(post.data, {
       'name': 'Mới',
       'params': {'q': 'P1', 'sort': 'price_list', 'dir': 'desc'},
     });
+    await tester.tap(find.text('Lưu bộ lọc này'));
+    await tester.pumpAndSettle();
     await tester.ensureVisible(find.text('Xoá'));
     await tester.tap(find.text('Xoá'));
     await tester.pumpAndSettle();
@@ -596,17 +602,20 @@ void main() {
       (r) => r.method == 'POST' ? const Reply(403) : emptyReply(r.path),
     );
     await mount(tester, const SearchUnitsScreen(), http);
-    await tester.tap(find.bySemanticsLabel('Bộ lọc'));
+    await tester.tap(find.text('Lưu bộ lọc này'));
     await tester.pumpAndSettle();
     final name = find.descendant(
-      of: find.byType(Field),
+      of: find.byWidgetPredicate(
+        (w) => w is Field && w.label == 'Lưu bộ lọc đang dùng',
+      ),
       matching: find.byType(TextField),
     );
     await tester.ensureVisible(name);
     await tester.enterText(name, 'Giữ tên');
     await tester.pumpAndSettle();
-    await tester.ensureVisible(find.text('Lưu bộ lọc'));
-    await tester.tap(find.text('Lưu bộ lọc'));
+    await tester.ensureVisible(find.widgetWithText(Button, 'Lưu bộ lọc'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(Button, 'Lưu bộ lọc'));
     await tester.pumpAndSettle();
     expect(find.text('Giữ tên'), findsOneWidget);
     expect(find.byType(Notice), findsOneWidget);
@@ -654,11 +663,14 @@ void main() {
     });
     await mount(tester, const HomeScreen(), http, roles: []);
     await tester.ensureVisible(find.text('5'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('5'));
     await tester.ensureVisible(find.text('Có'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Có'));
     await tester.pumpAndSettle();
     await tester.ensureVisible(find.text('Gửi'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Gửi'));
     await tester.pumpAndSettle();
     expect(http.seen.where((r) => r.method == 'POST').single.data, {

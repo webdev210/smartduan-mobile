@@ -1,4 +1,4 @@
-import 'package:material_ui/material_ui.dart' hide Card, Chip;
+import 'package:material_ui/material_ui.dart' hide Card, Chip, SearchBar;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../api/errors.dart';
@@ -7,6 +7,7 @@ import '../../auth/roles.dart';
 import '../../auth/session.dart';
 import '../../ui/format.dart';
 import '../../ui/kit.dart' hide Row;
+import '../../ui/search.dart';
 
 class BecomeSalesScreen extends ConsumerWidget {
   const BecomeSalesScreen({super.key});
@@ -14,7 +15,15 @@ class BecomeSalesScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final roles = ref.watch(sessionProvider).roles;
     return Scaffold(
-      appBar: AppBar(title: const Text('Đăng ký làm sale')),
+      appBar: AppBar(
+        title: Text(
+          isPartner(roles)
+              ? 'Đại lý F2'
+              : hasNoRole(roles)
+              ? 'Đăng ký làm sale'
+              : 'Xin xác nhận F2',
+        ),
+      ),
       body: Screen(
         children: [
           isPartner(roles)
@@ -40,7 +49,11 @@ class _BecomeFreeState extends ConsumerState<_BecomeFree> {
   bool busy = false, success = false;
   Object? failure;
   Future<void> submit() async {
-    if (busy || success) return;
+    if (busy ||
+        success ||
+        ref.read(sessionProvider).me?['phone_verified_at'] == null) {
+      return;
+    }
     setState(() {
       busy = true;
       failure = null;
@@ -122,7 +135,7 @@ class _BecomeFreeState extends ConsumerState<_BecomeFree> {
         Button(
           title: 'Đăng ký làm sale',
           loading: busy,
-          disabled: success,
+          disabled: success || me?['phone_verified_at'] == null,
           onPress: submit,
         ),
       ],
@@ -140,6 +153,14 @@ class _RequestF2State extends ConsumerState<_RequestF2> {
   String? picked;
   late String fullName, address;
   String company = '';
+  late String initialName, initialAddress;
+  bool leaving = false, discarded = false;
+  bool get dirty =>
+      !discarded &&
+      (picked != null ||
+          fullName != initialName ||
+          address != initialAddress ||
+          company.isNotEmpty);
   bool busy = false;
   Object? failure;
   @override
@@ -148,6 +169,103 @@ class _RequestF2State extends ConsumerState<_RequestF2> {
     final me = ref.read(sessionProvider).me;
     fullName = me?['full_name'] as String? ?? '';
     address = me?['address'] as String? ?? '';
+    initialName = fullName;
+    initialAddress = address;
+  }
+
+  Future<void> leave() async {
+    if (leaving || busy) return;
+    leaving = true;
+    final discard = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        scrollable: true,
+        title: const Text('Bỏ thay đổi chưa lưu?'),
+        content: const Text('Thông tin đăng ký F2 của bạn chưa được gửi.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Ở lại'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Bỏ thay đổi'),
+          ),
+        ],
+      ),
+    );
+    leaving = false;
+    if (discard == true && mounted) {
+      setState(() => discarded = true);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && Navigator.of(context).canPop()) {
+          Navigator.of(context).pop();
+        }
+      });
+    }
+  }
+
+  Future<void> pickManager(List<ManagerOption> managers) async {
+    var query = '';
+    final id = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      sheetAnimationStyle: MediaQuery.disableAnimationsOf(context)
+          ? AnimationStyle.noAnimation
+          : null,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, update) {
+          final rows = smartFilter(
+            managers,
+            query,
+            (m) => [m.fullName, m.salesUnit?.name],
+          );
+          return Padding(
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.viewInsetsOf(ctx).bottom,
+            ),
+            child: SizedBox(
+              height: MediaQuery.sizeOf(ctx).height * .7,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: SearchBar(
+                      value: query,
+                      placeholder: 'Tìm quản lý, đại lý…',
+                      onChangeText: (value) => update(() => query = value),
+                    ),
+                  ),
+                  Expanded(
+                    child: rows.isEmpty
+                        ? const Padding(
+                            padding: EdgeInsets.all(16),
+                            child: Muted('Không tìm thấy quản lý phù hợp.'),
+                          )
+                        : ListView.builder(
+                            itemCount: rows.length,
+                            itemBuilder: (_, i) => ListItem(
+                              title: rows[i].fullName,
+                              subtitle: rows[i].salesUnit?.name,
+                              onPress: () => Navigator.pop(ctx, rows[i].id),
+                            ),
+                          ),
+                  ),
+                  Button(
+                    kind: 'secondary',
+                    title: 'Đóng',
+                    onPress: () => Navigator.pop(ctx),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+    if (mounted && id != null) setState(() => picked = id);
   }
 
   String? get managerId =>
@@ -192,76 +310,94 @@ class _RequestF2State extends ConsumerState<_RequestF2> {
           const Muted(
             'Khi được duyệt, app sẽ yêu cầu đăng nhập lại để dùng quyền F2.',
           ),
+          Button(
+            title: 'Kiểm tra trạng thái',
+            loading: busy,
+            onPress: () async {
+              setState(() => busy = true);
+              try {
+                await ref.read(sessionProvider.notifier).refreshMe();
+              } finally {
+                if (mounted) setState(() => busy = false);
+              }
+            },
+          ),
         ],
       );
     }
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      spacing: 16,
-      children: [
-        const H2('Bước 2: Xin xác nhận F2'),
-        if (me?['f2_rejected_reason'] case final String reason
-            when reason.isNotEmpty)
-          Notice(tone: 'warn', text: 'Yêu cầu trước bị từ chối: $reason'),
-        const Muted('Chọn quản lý đại lý'),
-        if (managers.isLoading) const Loading(),
-        if (managers.hasError)
-          ErrorBox(
-            error: managers.error,
-            onRetry: () => ref.invalidate(fetchManagersProvider),
+    return PopScope(
+      canPop: !dirty && !busy,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop && dirty) leave();
+      },
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        spacing: 16,
+        children: [
+          const H2('Bước 2: Xin xác nhận F2'),
+          if (me?['f2_rejected_reason'] case final String reason
+              when reason.isNotEmpty)
+            Notice(tone: 'warn', text: 'Yêu cầu trước bị từ chối: $reason'),
+          const Muted('Chọn quản lý đại lý'),
+          if (managers.isLoading) const Loading(),
+          if (managers.hasError)
+            ErrorBox(
+              error: managers.error,
+              onRetry: () => ref.invalidate(fetchManagersProvider),
+            ),
+          if (managers.hasValue && managers.value!.isEmpty)
+            const Notice(
+              text: 'Chưa có quản lý đại lý để chọn. Liên hệ quản lý để được hướng dẫn đăng ký F2.',
+            ),
+          for (final m in managers.value ?? <ManagerOption>[])
+            if (m.id == managerId)
+              Body('${m.fullName} · ${m.salesUnit?.name ?? ''}'),
+          Button(
+            kind: 'secondary',
+            title: managerId == null ? 'Chọn quản lý' : 'Đổi quản lý',
+            disabled: managers.value?.isNotEmpty != true,
+            onPress: () => pickManager(managers.value ?? []),
           ),
-        if (managers.hasValue && managers.value!.isEmpty)
-          const Notice(
-            text: 'Chưa có quản lý đại lý để chọn. Liên hệ quản lý để được hướng dẫn đăng ký F2.',
+          if (fieldError(failure, 'manager_id') case final String text)
+            Notice(tone: 'error', text: 'Quản lý: $text'),
+          Field(
+            label: 'Họ tên',
+            textInputAction: TextInputAction.next,
+            value: fullName,
+            onChangeText: (v) => setState(() => fullName = v),
+            maxLength: 120,
+            error: fieldError(failure, 'full_name'),
           ),
-        Chips(
-          children: [
-            for (final m in managers.value ?? <ManagerOption>[])
-              Chip(
-                label: '${m.fullName} · ${m.salesUnit?.name ?? ''}',
-                active: managerId == m.id,
-                onPress: () => setState(() => picked = m.id),
-              ),
-          ],
-        ),
-        if (fieldError(failure, 'manager_id') case final String text)
-          Notice(tone: 'error', text: 'Quản lý: $text'),
-        Field(
-          label: 'Họ tên',
-          textInputAction: TextInputAction.next,
-          value: fullName,
-          onChangeText: (v) => setState(() => fullName = v),
-          maxLength: 120,
-          error: fieldError(failure, 'full_name'),
-        ),
-        Field(
-          label: 'Địa chỉ liên hệ',
-          textInputAction: TextInputAction.next,
-          value: address,
-          onChangeText: (v) => setState(() => address = v),
-          maxLength: 255,
-          error: fieldError(failure, 'address'),
-        ),
-        Field(
-          label: 'Công ty (tuỳ chọn)',
-          textInputAction: TextInputAction.done,
-          onSubmit: (_) => submit(),
-          value: company,
-          onChangeText: (v) => setState(() => company = v),
-          maxLength: 255,
-          error: fieldError(failure, 'f2_company'),
-        ),
-        if (failure != null) Notice(tone: 'error', text: errorMessage(failure)),
-        Button(
-          title: 'Gửi yêu cầu F2',
-          loading: busy,
-          disabled:
-              managerId == null ||
-              fullName.trim().isEmpty ||
-              address.trim().isEmpty,
-          onPress: submit,
-        ),
-      ],
+          Field(
+            label: 'Địa chỉ liên hệ',
+            textInputAction: TextInputAction.next,
+            value: address,
+            onChangeText: (v) => setState(() => address = v),
+            maxLength: 255,
+            error: fieldError(failure, 'address'),
+          ),
+          Field(
+            label: 'Công ty (tuỳ chọn)',
+            textInputAction: TextInputAction.done,
+            onSubmit: (_) => submit(),
+            value: company,
+            onChangeText: (v) => setState(() => company = v),
+            maxLength: 255,
+            error: fieldError(failure, 'f2_company'),
+          ),
+          if (failure != null)
+            Notice(tone: 'error', text: errorMessage(failure)),
+          Button(
+            title: 'Gửi yêu cầu F2',
+            loading: busy,
+            disabled:
+                managerId == null ||
+                fullName.trim().isEmpty ||
+                address.trim().isEmpty,
+            onPress: submit,
+          ),
+        ],
+      ),
     );
   }
 }

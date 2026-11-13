@@ -91,11 +91,7 @@ class _MenuTabState extends ConsumerState<MenuTab> {
                     color: c.brand,
                   ),
                 ),
-                Muted(
-                  label,
-                  style: const TextStyle(fontSize: 12),
-                  numberOfLines: 1,
-                ),
+                Muted(label, style: const TextStyle(fontSize: 12)),
               ],
             ),
           ),
@@ -133,8 +129,6 @@ class _MenuTabState extends ConsumerState<MenuTab> {
                             children: [
                               Text(
                                 name,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
                                 style: const TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.w700,
@@ -247,15 +241,8 @@ class _MenuTabState extends ConsumerState<MenuTab> {
                         padding: EdgeInsets.zero,
                         children: [for (final item in group.items) entry(item)],
                       )
-                    : TileGrid(
-                        children: [
-                          for (final item in group.items)
-                            Tile(
-                              icon: menuIcon(item.icon),
-                              label: item.label,
-                              onPress: () => context.push(item.href),
-                            ),
-                        ],
+                    : Column(
+                        children: [for (final item in group.items) entry(item)],
                       ),
               ),
           Button(

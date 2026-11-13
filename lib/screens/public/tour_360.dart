@@ -15,81 +15,98 @@ class Tour360Screen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final embed = tourEmbedUrl(url);
-    return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.light,
-      child: Scaffold(
-        backgroundColor: Colors.black,
-        body: ViewerSafeArea(
-          child: Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 10, 8),
-                child: Row(
-                  spacing: 12,
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'TOUR 360°',
-                            style: TextStyle(color: Colors.grey, fontSize: 12),
-                          ),
-                          Text(
-                            name,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Semantics(
-                      label: 'Đóng tour 360°',
-                      button: true,
-                      excludeSemantics: true,
-                      child: TextButton.icon(
-                        onPressed: () =>
-                            context.canPop() ? context.pop() : context.go('/'),
-                        icon: const Icon(Ionicons.close),
-                        label: const Text('Đóng'),
-                        style: TextButton.styleFrom(
-                          minimumSize: const Size(48, 48),
-                          backgroundColor: Colors.white,
-                          foregroundColor: Colors.black,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Expanded(
-                child: embed != null
-                    ? TourFrame(url: embed, title: 'Tour 360° $name')
-                    : Center(
+    return PopScope(
+      canPop: false,
+      child: AnnotatedRegion<SystemUiOverlayStyle>(
+        value: SystemUiOverlayStyle.light,
+        child: Scaffold(
+          backgroundColor: Colors.black,
+          body: ViewerSafeArea(
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 10, 8),
+                  child: Row(
+                    spacing: 12,
+                    children: [
+                      Expanded(
                         child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          spacing: 16,
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             const Text(
-                              'Tour 360° này không xem được trong app.',
-                              style: TextStyle(color: Colors.white),
-                            ),
-                            if (isHttp(url))
-                              Button(
-                                title: 'Mở trang tour',
-                                onPress: () =>
-                                    openInApp(context, url!, 'Tour 360° $name'),
+                              'Tour 360°',
+                              style: TextStyle(
+                                color: Colors.grey,
+                                fontSize: 12,
                               ),
+                            ),
+                            Tooltip(
+                              message: name,
+                              child: Text(
+                                name,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
                           ],
                         ),
                       ),
-              ),
-            ],
+                      Semantics(
+                        label: 'Đóng tour 360°',
+                        button: true,
+                        excludeSemantics: true,
+                        child: Tooltip(
+                          message: 'Đóng tour 360°',
+                          child: TextButton.icon(
+                            onPressed: () => context.canPop()
+                                ? context.pop()
+                                : context.go('/'),
+                            icon: const Icon(Ionicons.close),
+                            label: const Text('Đóng'),
+                            style: TextButton.styleFrom(
+                              minimumSize: const Size(48, 48),
+                              backgroundColor: Colors.white,
+                              foregroundColor: Colors.black,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: embed != null
+                      ? TourFrame(url: embed, title: 'Tour 360° $name')
+                      : SingleChildScrollView(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            spacing: 16,
+                            children: [
+                              const Text(
+                                'Tour 360° này không xem được trong app.',
+                                style: TextStyle(color: Colors.white),
+                              ),
+                              if (isHttp(url))
+                                Button(
+                                  title: 'Mở trang tour',
+                                  onPress: () => openInApp(
+                                    context,
+                                    url!,
+                                    'Tour 360° $name',
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

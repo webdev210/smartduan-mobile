@@ -1,6 +1,6 @@
 part of 'kit.dart';
 
-class Button extends StatelessWidget {
+class Button extends StatefulWidget {
   const Button({
     super.key,
     required this.title,
@@ -21,7 +21,25 @@ class Button extends StatelessWidget {
   final String? accessibilityLabel;
 
   @override
+  State<Button> createState() => _ButtonState();
+}
+
+class _ButtonState extends State<Button> {
+  bool pressed = false;
+
+  @override
   Widget build(BuildContext context) {
+    final Button(
+      :title,
+      :kind,
+      :size,
+      :onPress,
+      :onLongPress,
+      :disabled,
+      :loading,
+      :icon,
+      :accessibilityLabel,
+    ) = widget;
     final off = disabled || loading;
     final (fg, background, stroke) = switch (kind) {
       'soft' || 'secondary' => (brand, brandSoft, Colors.transparent),
@@ -30,7 +48,7 @@ class Button extends StatelessWidget {
       _ => (card, primary, Colors.transparent),
     };
     final small = size == 'sm';
-    final radius = small ? 12.0 : 16.0;
+    final radius = small ? 12.0 : 14.0;
     final button = Pressable(
       label: loading
           ? '${accessibilityLabel ?? title}, đang xử lý'
@@ -38,12 +56,12 @@ class Button extends StatelessWidget {
       disabled: off,
       onPress: onPress,
       onLongPress: onLongPress,
-      pressedOpacity: 0.88,
-      pressedScale: kind == 'link' ? 1 : 0.98,
+      pressedOpacity: 1,
+      onHighlightChanged: (value) => setState(() => pressed = value),
       child: Opacity(
         opacity: off ? 0.45 : 1,
         child: Container(
-          constraints: BoxConstraints(minHeight: small ? 44 : 52),
+          constraints: BoxConstraints(minHeight: small ? 48 : 52),
           padding: EdgeInsets.symmetric(
             horizontal: kind == 'link'
                 ? 4
@@ -53,11 +71,9 @@ class Button extends StatelessWidget {
             vertical: 8,
           ),
           decoration: BoxDecoration(
-            color: background,
-            gradient: kind == 'primary' ? brandGradient : null,
+            color: pressed && kind == 'primary' ? primaryPressed : background,
             border: kind == 'link' ? null : Border.all(color: stroke),
             borderRadius: BorderRadius.circular(radius),
-            boxShadow: kind == 'primary' && !off ? brandShadow : null,
           ),
           child: Center(
             heightFactor: 1,
@@ -75,8 +91,6 @@ class Button extends StatelessWidget {
                       Flexible(
                         child: Text(
                           title,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             color: fg,
                             fontWeight: kind == 'primary'
@@ -448,7 +462,6 @@ class _SearchBarState extends State<SearchBar> {
             color: card,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: focused ? primary : line),
-            boxShadow: cardShadow,
           ),
           child: m.Row(
             spacing: 10,
@@ -527,16 +540,12 @@ class _SearchBarState extends State<SearchBar> {
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
                         color: widget.filterCount != 0 ? primary : card,
-                        gradient: widget.filterCount != 0
-                            ? brandGradient
-                            : null,
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
                           color: widget.filterCount != 0
                               ? Colors.transparent
                               : line,
                         ),
-                        boxShadow: cardShadow,
                       ),
                       child: Icon(
                         Ionicons.optionsOutline,
@@ -620,8 +629,6 @@ class Chip extends StatelessWidget {
                       Flexible(
                         child: Text(
                           label,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             color: fg,
                             fontSize: 14,
@@ -705,15 +712,6 @@ class Segmented<T extends String> extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: active ? card : Colors.transparent,
                     borderRadius: BorderRadius.circular(10),
-                    boxShadow: active
-                        ? const [
-                            BoxShadow(
-                              color: Color.fromRGBO(19, 19, 19, 0.12),
-                              offset: Offset(0, 1),
-                              blurRadius: 4,
-                            ),
-                          ]
-                        : null,
                   ),
                   child: Material(
                     color: Colors.transparent,

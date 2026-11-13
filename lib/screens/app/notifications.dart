@@ -124,12 +124,14 @@ class _NotificationsState extends ConsumerState<NotificationsScreen> {
         ),
         renderItem: (n) {
           final unread = n.readAt == null || n.readAt!.isEmpty;
+          final route = notificationRoute(n.href);
           return Card(
-            onPress: () {
-              if (unread) mark([n.id]);
-              final route = notificationRoute(n.href);
-              if (route != null) context.push(route);
-            },
+            onPress: route == null && !unread
+                ? null
+                : () {
+                    if (unread) mark([n.id]);
+                    if (route != null) context.push(route);
+                  },
             accessibilityLabel: '${unread ? 'Chưa đọc. ' : ''}${n.title}',
             style: BoxDecoration(color: unread ? c.brandSoft : c.card),
             child: Row(
@@ -156,10 +158,11 @@ class _NotificationsState extends ConsumerState<NotificationsScreen> {
                         ),
                       ),
                       Muted(fmtDate(n.insertedAt, true)),
+                      if (route == null) const Muted('Chỉ thông báo'),
                     ],
                   ),
                 ),
-                if (n.href != null)
+                if (route != null)
                   const Icon(Ionicons.chevronForward, size: 18),
               ],
             ),

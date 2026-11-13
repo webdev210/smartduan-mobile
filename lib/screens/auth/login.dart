@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart' hide Card;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -9,8 +10,9 @@ import '../../auth/messages.dart';
 import '../../auth/session.dart';
 import '../../config.dart';
 import '../../ui/kit.dart'
-    show Screen, Muted, Card, Field, Notice, Button, ButtonGroup;
+    show Screen, Muted, Field, Notice, Button, ButtonGroup;
 import '../../ui/otp_step.dart';
+import '../../ui/in_app.dart';
 import '../../ui/theme.dart' as c;
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -24,6 +26,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   String _email = '', _password = '';
   bool _busy = false;
   String? _error;
+  String? _pendingPhone;
+  bool _pending = false;
   ({String email, String notice})? _otp;
   ({String state, String text})? _diag;
 
@@ -33,6 +37,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     setState(() {
       _busy = true;
       _error = null;
+      _pendingPhone = null;
+      _pending = false;
     });
     try {
       final result = await ref.read(authApiProvider).login(email, _password);
@@ -43,6 +49,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     } catch (error) {
       if (!mounted) return;
       setState(() {
+        if (error case ApiError(:final status, :final code)
+            when status == 202 || code == 'device_pending') {
+          _pending = true;
+          if (error.body case {'contact': {'phone': final String phone}}
+              when RegExp(r'^\+?[0-9][0-9 ()\-]{3,24}$')
+                  .hasMatch(phone.trim())) {
+            _pendingPhone = phone.trim();
+          }
+        }
         switch (loginOutcome(error)) {
           case LoginOtp(email: final serverEmail, :final message):
             _otp = (email: serverEmail ?? email, notice: message);
@@ -134,7 +149,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         if (ended != null) Notice(tone: 'warn', text: ended),
         if (widget.notice?.isNotEmpty == true)
           Notice(tone: 'success', text: widget.notice!),
-        Card(
+        Padding(
           padding: const EdgeInsets.all(20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -161,9 +176,31 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 textInputAction: TextInputAction.go,
                 onSubmit: (_) => _submit(),
               ),
-              if (_error != null) Notice(tone: 'error', text: _error!),
+              if (_error != null)
+                Notice(tone: _pending ? 'warn' : 'error', text: _error!),
+              if (_pendingPhone case final phone?) ...[
+                Button(
+                  title: 'Gọi người duyệt',
+                  kind: 'secondary',
+                  onPress: () => openInApp(context, 'tel:$phone'),
+                ),
+                Button(
+                  title: 'Sao chép',
+                  kind: 'link',
+                  onPress: () async {
+                    await Clipboard.setData(ClipboardData(text: phone));
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Đã sao chép số người duyệt'),
+                        ),
+                      );
+                    }
+                  },
+                ),
+              ],
               Button(
-                title: 'Đăng nhập',
+                title: _pending ? 'Đăng nhập lại sau duyệt' : 'Đăng nhập',
                 onPress: _submit,
                 loading: _busy,
                 disabled: _email.isEmpty || _password.isEmpty,
@@ -186,13 +223,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             ],
           ),
         ),
-        Card(
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             spacing: 6,
             children: [
-              Row(
+              Wrap(
                 spacing: 8,
+                crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
                   Container(
                     width: 8,
@@ -206,23 +245,23 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       },
                     ),
                   ),
-                  Expanded(
-                    child: Text(
-                      _diag?.text ?? 'Máy chủ',
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: c.text,
-                      ),
+                  Text(
+                    _diag?.text ?? 'Máy chủ',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: c.text,
                     ),
                   ),
-                  Button(
-                    title: _diag?.state == 'checking' ? '…' : 'Kiểm tra',
-                    kind: 'link',
-                    size: 'sm',
-                    accessibilityLabel: 'Kiểm tra kết nối máy chủ',
-                    onPress: _checkConnection,
-                    disabled: _diag?.state == 'checking',
+                  IntrinsicWidth(
+                    child: Button(
+                      title: _diag?.state == 'checking' ? '…' : 'Kiểm tra',
+                      kind: 'link',
+                      size: 'sm',
+                      accessibilityLabel: 'Kiểm tra kết nối máy chủ',
+                      onPress: _checkConnection,
+                      disabled: _diag?.state == 'checking',
+                    ),
                   ),
                 ],
               ),

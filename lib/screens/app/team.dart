@@ -98,7 +98,8 @@ class _TeamState extends ConsumerState<TeamScreen> {
                   action: (label: 'Xoá tìm kiếm & bộ lọc', onPress: reset),
                 ),
         ),
-        renderItem: (m) => Card(
+        renderItem: (m) => Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12),
           child: Row(
             spacing: 12,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -126,10 +127,11 @@ class _TeamState extends ConsumerState<TeamScreen> {
                     Muted(
                       'Đăng nhập gần nhất: ${fmtDate(m.lastLoginAt, true).replaceAll(' ', '\u00a0')}',
                     ),
-                    Pill(
-                      label: m.status == 'locked' ? 'Đã khoá' : 'Hoạt động',
-                      color: m.status == 'locked' ? c.muted : c.success,
-                      soft: true,
+                    Text(
+                      m.status == 'locked' ? 'Đã khoá' : 'Hoạt động',
+                      style: TextStyle(
+                        color: m.status == 'locked' ? c.muted : c.success,
+                      ),
                     ),
                   ],
                 ),

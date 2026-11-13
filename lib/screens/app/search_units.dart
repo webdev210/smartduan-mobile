@@ -2,6 +2,8 @@ import 'package:ionicons/ionicons.dart';
 
 import 'dart:async';
 
+import 'package:flutter/foundation.dart' show mapEquals;
+
 import 'package:material_ui/material_ui.dart'
     hide Card, Chip, Divider, SearchBar;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -30,8 +32,24 @@ class UnitSearchFilters {
     this.unitType = '',
     this.direction = '',
     this.sort = '',
+    this.bedrooms = '',
+    this.budget = '',
   });
-  final String q, status, unitType, direction, sort;
+  final String q, status, unitType, direction, sort, bedrooms, budget;
+  num? get priceCeiling {
+    final value =
+        (num.tryParse(budget.trim().replaceAll(',', '.')) ?? double.nan)
+            .toDouble() *
+        1000000000;
+    return value.isFinite && value > 0 ? value : null;
+  }
+
+  bool get local => bedrooms.isNotEmpty || budget.isNotEmpty;
+  bool matches(SearchRow row) =>
+      (budget.isEmpty || priceCeiling != null) &&
+      (bedrooms.isEmpty || row.bedrooms == int.tryParse(bedrooms)) &&
+      (priceCeiling == null ||
+          (searchPrice(row) != null && searchPrice(row)! <= priceCeiling!));
   Map<String, String> toParams() => {
     if (q.trim().isNotEmpty) 'q': q.trim(),
     if (status.trim().isNotEmpty) 'status': status.trim(),
@@ -58,7 +76,17 @@ class UnitSearchFilters {
     unitType: key == 'unit_type' ? value : unitType,
     direction: key == 'direction' ? value : direction,
     sort: key == 'sort' ? value : sort,
+    bedrooms: key == 'bedrooms' ? value : bedrooms,
+    budget: key == 'budget' ? value : budget,
   );
+}
+
+num? searchPrice(SearchRow row) {
+  for (final raw in [row.priceMin, row.priceList]) {
+    final price = num.tryParse(raw ?? '');
+    if (price != null && price.isFinite && price > 0) return price;
+  }
+  return null;
 }
 
 class SearchUnitsScreen extends ConsumerStatefulWidget {
@@ -72,20 +100,33 @@ class _SearchUnitsState extends ConsumerState<SearchUnitsScreen> {
   Map<String, String> params = const {'status': 'available'};
   Timer? timer;
   int page = 1;
-  bool sheet = false, saving = false, deleting = false;
+  bool sheet = false, naming = false, saving = false, deleting = false;
+  bool savedOk = false;
   String saveName = '';
   String? failure;
-  void filters(UnitSearchFilters value) {
-    setState(() => f = value);
+  void filters(UnitSearchFilters value, {bool typing = false}) {
+    setState(() {
+      f = value;
+      savedOk = false;
+    });
     timer?.cancel();
-    timer = Timer(searchDebounce, () {
+    void apply() {
       if (mounted) {
         setState(() {
-          params = value.toParams();
-          page = 1;
+          final next = value.toParams();
+          if (!mapEquals(params, next)) {
+            params = next;
+            page = 1;
+          }
         });
       }
-    });
+    }
+
+    if (typing) {
+      timer = Timer(searchDebounce, apply);
+    } else {
+      apply();
+    }
   }
 
   void toggle(String key, String value) {
@@ -93,6 +134,7 @@ class _SearchUnitsState extends ConsumerState<SearchUnitsScreen> {
       'status' => f.status,
       'unit_type' => f.unitType,
       'direction' => f.direction,
+      'bedrooms' => f.bedrooms,
       _ => f.sort,
     };
     filters(f.set(key, current == value ? '' : value));
@@ -105,15 +147,19 @@ class _SearchUnitsState extends ConsumerState<SearchUnitsScreen> {
   }
 
   Future<void> save() async {
-    if (saving || saveName.trim().isEmpty) return;
+    if (saving || saveName.trim().isEmpty || f.local) return;
     setState(() {
       saving = true;
       failure = null;
     });
     try {
-      await ref.read(saveFilterProvider)(saveName.trim(), params);
+      await ref.read(saveFilterProvider)(saveName.trim(), f.toParams());
       if (mounted) {
-        setState(() => saveName = '');
+        setState(() {
+          saveName = '';
+          naming = false;
+          savedOk = true;
+        });
         ref.invalidate(fetchSavedFiltersProvider);
       }
     } catch (e) {
@@ -128,6 +174,7 @@ class _SearchUnitsState extends ConsumerState<SearchUnitsScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
+        scrollable: true,
         title: const Text('Xoá bộ lọc?'),
         content: Text('Xoá bộ lọc “$name”?'),
         actions: [
@@ -168,12 +215,27 @@ class _SearchUnitsState extends ConsumerState<SearchUnitsScreen> {
     ];
     final results = queries.map((p) => ref.watch(p)).toList();
     final rows = results.expand((r) => r.value?.data ?? <SearchRow>[]).toList();
+    final matches = rows.where(f.matches).toList();
+    final unknown = f.priceCeiling == null
+        ? <SearchRow>[]
+        : rows
+              .where(
+                (u) =>
+                    searchPrice(u) == null &&
+                    (f.bedrooms.isEmpty ||
+                        u.bedrooms == int.tryParse(f.bedrooms)),
+              )
+              .toList();
+    final updating =
+        !mapEquals(params, f.toParams()) || results.any((r) => r.isLoading);
     final total = results.first.value?.total;
     final last = results.last;
     final next =
         last.value != null &&
         last.value!.page * last.value!.perPage < last.value!.total;
     final extras = <({String key, String label})>[
+      if (f.bedrooms.isNotEmpty) (key: 'bedrooms', label: '${f.bedrooms} PN'),
+      if (f.budget.isNotEmpty) (key: 'budget', label: 'Tối đa ${f.budget} tỷ'),
       if (f.unitType.isNotEmpty) (key: 'unit_type', label: f.unitType),
       if (f.direction.isNotEmpty)
         (
@@ -201,11 +263,11 @@ class _SearchUnitsState extends ConsumerState<SearchUnitsScreen> {
       body: Stack(
         children: [
           ListScreen<SearchRow>(
-            data: rows,
+            data: [...matches, ...unknown],
             keyOf: (u) => u.id,
             top: SearchBar(
               value: f.q,
-              onChangeText: (v) => filters(f.set('q', v)),
+              onChangeText: (v) => filters(f.set('q', v), typing: true),
               placeholder: 'Mã căn, mã công khai, tên dự án…',
               autoCapitalize: TextCapitalization.characters,
               onFilter: () => setState(() => sheet = true),
@@ -269,13 +331,35 @@ class _SearchUnitsState extends ConsumerState<SearchUnitsScreen> {
                         ),
                     ],
                   ),
+                Button(
+                  title: 'Lưu bộ lọc này',
+                  kind: 'link',
+                  onPress: () => setState(() => naming = true),
+                ),
+                if (savedOk)
+                  const Notice(tone: 'success', text: 'Đã lưu bộ lọc.'),
                 if (total != null)
                   Semantics(
                     liveRegion: true,
                     child: Text(
-                      '$total căn',
+                      updating
+                          ? 'Đang cập nhật kết quả…'
+                          : '${matches.length} phù hợp trong ${rows.length}/$total căn đã tải',
                       style: const TextStyle(fontWeight: FontWeight.w700),
                     ),
+                  ),
+                if (unknown.isNotEmpty)
+                  Muted(
+                    '${unknown.length} căn chưa có giá — cần xác nhận, chưa tính là phù hợp ngân sách.',
+                  ),
+                if (f.budget.isNotEmpty && f.priceCeiling == null)
+                  const Notice(
+                    tone: 'error',
+                    text: 'Kiểm tra giá tối đa trong bộ lọc. Nhập số tiền lớn hơn 0.',
+                  ),
+                if (next)
+                  const Muted(
+                    'Tải thêm để kiểm tra phần còn lại của bảng hàng.',
                   ),
               ],
             ),
@@ -284,7 +368,9 @@ class _SearchUnitsState extends ConsumerState<SearchUnitsScreen> {
               onRetry: () => ref.invalidate(queries.first),
               builder: (_) => Empty(
                 icon: Ionicons.searchOutline,
-                text: 'Không có căn phù hợp. Thử mã ngắn hơn hoặc đổi trạng thái.',
+                text: next
+                    ? 'Chưa có căn phù hợp trong phần đã tải. Tải thêm để kiểm tra tiếp.'
+                    : 'Không có căn phù hợp. Thử mã ngắn hơn hoặc đổi trạng thái.',
                 action: (
                   label: 'Đặt lại bộ lọc',
                   onPress: () => filters(const UnitSearchFilters()),
@@ -296,16 +382,15 @@ class _SearchUnitsState extends ConsumerState<SearchUnitsScreen> {
               accessibilityLabel:
                   'Căn ${u.publicCode ?? u.code}, ${statusLabel[u.status] ?? u.status}, ${u.project?.name ?? ''}, ${u.block?.name ?? ''}, ${u.floor == null ? '' : 'Tầng ${u.floor}'}, ${u.unitType ?? ''}, ${u.bedrooms == null ? '' : '${u.bedrooms} phòng ngủ'}, ${fmtArea(u.areaNet ?? u.areaGross)}, ${enums.value?.directionLabels[u.direction] ?? u.direction ?? ''}, ${fmtPrice(u.priceMin ?? u.priceList)}, ${u.priceMinLabel ?? ''}${u.heldBy?.isNotEmpty == true ? ', Đại lý giữ: ${u.heldBy}' : ''}',
               children: [
-                Row(
+                Wrap(
                   spacing: 8,
+                  runSpacing: 8,
                   children: [
-                    Expanded(
-                      child: Text(
-                        u.publicCode ?? u.code,
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w800,
-                        ),
+                    Text(
+                      u.publicCode ?? u.code,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
                       ),
                     ),
                     Pill(
@@ -314,6 +399,8 @@ class _SearchUnitsState extends ConsumerState<SearchUnitsScreen> {
                     ),
                   ],
                 ),
+                if (f.priceCeiling != null && searchPrice(u) == null)
+                  const Muted('Chưa có giá — chưa xác nhận ngân sách'),
                 if (u.project?.name.isNotEmpty == true ||
                     u.block?.name.isNotEmpty == true ||
                     u.floor != null)
@@ -368,7 +455,7 @@ class _SearchUnitsState extends ConsumerState<SearchUnitsScreen> {
                   ),
               ],
             ),
-            footer: last.hasError && rows.isNotEmpty
+            footer: last.hasError && page > 1
                 ? ErrorBox(
                     error: last.error!,
                     onRetry: () => ref.invalidate(queries.last),
@@ -398,46 +485,90 @@ class _SearchUnitsState extends ConsumerState<SearchUnitsScreen> {
                       filters(UnitSearchFilters(q: f.q, status: f.status)),
                 ),
                 Button(
-                  title: total == null ? 'Xem kết quả' : 'Xem $total căn',
+                  title: updating ? 'Đang cập nhật…' : 'Xem kết quả',
                   onPress: () => setState(() => sheet = false),
                 ),
               ],
             ),
             children: [
-              FilterGroup(
-                title: 'Sắp xếp',
-                children: [
-                  for (final (v, label) in searchSorts)
-                    Chip(
-                      label: label,
-                      active: f.sort == v,
-                      onPress: () => filters(f.set('sort', v)),
-                    ),
-                ],
-              ),
-              if (enums.value?.unitType.isNotEmpty == true)
-                FilterGroup(
-                  title: 'Loại căn',
+              Section(
+                title: 'Phòng ngủ',
+                child: Chips(
                   children: [
-                    for (final t in enums.value!.unitType)
+                    for (final count in ['0', '1', '2', '3', '4', '5'])
                       Chip(
-                        label: t,
-                        active: f.unitType == t,
-                        onPress: () => toggle('unit_type', t),
+                        label: count == '0' ? 'Studio' : '$count PN',
+                        active: f.bedrooms == count,
+                        onPress: () => toggle('bedrooms', count),
                       ),
                   ],
                 ),
-              if (enums.value?.direction.isNotEmpty == true)
-                FilterGroup(
-                  title: 'Hướng',
+              ),
+              Field(
+                label: 'Giá tối đa (tỷ đồng)',
+                value: f.budget,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                onChangeText: (v) => filters(f.set('budget', v)),
+                error: f.budget.isNotEmpty && f.priceCeiling == null
+                    ? 'Nhập số tiền lớn hơn 0.'
+                    : null,
+              ),
+              const Muted(
+                'Phòng ngủ và ngân sách lọc trên các căn đã tải, không gửi lên máy chủ.',
+              ),
+              Section(
+                title: 'Sắp xếp',
+                child: Chips(
                   children: [
-                    for (final d in enums.value!.direction)
+                    for (final (v, label) in searchSorts)
                       Chip(
-                        label: enums.value!.directionLabels[d] ?? d,
-                        active: f.direction == d,
-                        onPress: () => toggle('direction', d),
+                        label: label,
+                        active: f.sort == v,
+                        onPress: () => filters(f.set('sort', v)),
                       ),
                   ],
+                ),
+              ),
+              if (enums.value?.unitType.isNotEmpty == true)
+                Section(
+                  title: 'Loại căn',
+                  child: Chips(
+                    children: [
+                      for (final t in enums.value!.unitType)
+                        Chip(
+                          label: t,
+                          active: f.unitType == t,
+                          onPress: () => toggle('unit_type', t),
+                        ),
+                    ],
+                  ),
+                ),
+              if (enums.value?.direction.isNotEmpty == true)
+                Section(
+                  title: 'Hướng',
+                  child: Chips(
+                    children: [
+                      for (final d in enums.value!.direction)
+                        Chip(
+                          label: enums.value!.directionLabels[d] ?? d,
+                          active: f.direction == d,
+                          onPress: () => toggle('direction', d),
+                        ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+          Sheet(
+            visible: naming,
+            onClose: () => setState(() => naming = false),
+            title: 'Lưu bộ lọc',
+            children: [
+              if (f.local)
+                const Notice(
+                  text: 'Máy chủ chưa hỗ trợ lưu phòng ngủ và ngân sách. Xoá hai tiêu chí này trước khi lưu.',
                 ),
               Field(
                 label: 'Lưu bộ lọc đang dùng',
@@ -450,12 +581,12 @@ class _SearchUnitsState extends ConsumerState<SearchUnitsScreen> {
                 kind: 'soft',
                 icon: Ionicons.starOutline,
                 title: 'Lưu bộ lọc',
-                disabled: saveName.trim().isEmpty,
+                disabled: saveName.trim().isEmpty || f.local,
                 loading: saving,
                 onPress: save,
               ),
               if (saved.value?.isNotEmpty == true) ...[
-                const Muted('BỘ LỌC ĐÃ LƯU'),
+                const Muted('Bộ lọc đã lưu'),
                 for (final s in saved.value!)
                   Row(
                     children: [

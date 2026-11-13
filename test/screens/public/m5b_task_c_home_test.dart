@@ -25,6 +25,7 @@ void main() {
     expect(find.text('Theo chủ đầu tư'), findsOneWidget);
     expect(find.text('Thử lại'), findsNWidgets(3));
     await tester.ensureVisible(find.text('Thử lại').first);
+    await tester.pump();
     await tester.tap(find.text('Thử lại').first);
     await tester.pumpAndSettle();
     expect(attempts['/public/posts:news'], 2);

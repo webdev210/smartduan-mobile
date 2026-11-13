@@ -166,12 +166,14 @@ void main() {
       expect(find.byIcon(Ionicons.chevronDown), findsOneWidget);
       expect(find.textContaining('trước đây: Hà Tây'), findsOneWidget);
       await tester.ensureVisible(find.text('Câu hỏi?'));
+      await tester.pump();
       await tester.tap(find.text('Câu hỏi?'));
       await tester.pumpAndSettle();
       expect(find.text('Câu trả lời'), findsOneWidget);
       expect(find.byIcon(Ionicons.chevronUp), findsOneWidget);
       expect(find.byIcon(Ionicons.chevronDown), findsNothing);
       await tester.ensureVisible(find.text('Dự án khác'));
+      await tester.pump();
       await tester.tap(find.text('Dự án khác'));
       await tester.pumpAndSettle();
       expect(router.state.uri.path, '/chu-dau-tu/dev');
@@ -380,6 +382,7 @@ void main() {
     expect(find.text('1.'), findsOneWidget);
     expect(find.text('2.'), findsOneWidget);
     await tester.ensureVisible(find.text('Dự án A'));
+    await tester.pump();
     await tester.tap(find.text('Dự án A'));
     await tester.pumpAndSettle();
     expect(router.state.uri.path, '/cong-khai/SKY');
@@ -417,18 +420,30 @@ void main() {
       );
       await mount(tester, const DeveloperScreen(slug: 'dev'), container);
       expect(find.text('Uy tín'), findsOneWidget);
-      expect(find.byType(ProjectCard), findsNWidgets(5));
+      expect(find.text('Hiển thị 5/5 dự án'), findsOneWidget);
+      await tester.scrollUntilVisible(
+        find.text('Dự án 4'),
+        500,
+        scrollable: find.byType(Scrollable).first,
+      );
+      expect(find.text('Dự án 4'), findsOneWidget);
+      await tester.scrollUntilVisible(
+        find.byType(TextField),
+        -500,
+        scrollable: find.byType(Scrollable).first,
+      );
       await tester.enterText(find.byType(TextField), 'ho tay');
       await tester.pumpAndSettle();
       expect(find.byType(ProjectCard), findsOneWidget);
       await tester.enterText(find.byType(TextField), 'khong co');
       await tester.pumpAndSettle();
       expect(find.text('Không có dự án nào khớp.'), findsOneWidget);
-      expect(find.byIcon(Ionicons.searchOutline), findsOneWidget);
       await tester.ensureVisible(find.text('Xoá từ khoá'));
+      await tester.pump();
       await tester.tap(find.text('Xoá từ khoá'));
       await tester.pumpAndSettle();
-      expect(find.byType(ProjectCard), findsNWidgets(5));
+      expect(find.text('Hiển thị 5/5 dự án'), findsOneWidget);
+      expect(find.text('Hồ Tây'), findsOneWidget);
     },
   );
   testWidgets('developer empty collection has no search field', (tester) async {
@@ -498,6 +513,7 @@ void main() {
       await tester.enterText(find.byType(TextField).at(0), '2.000.000.000');
       await tester.enterText(find.byType(TextField).at(3), '8,5');
       await tester.ensureVisible(find.text('Tính'));
+      await tester.pump();
       await tester.tap(find.text('Tính'));
       await tester.pumpAndSettle();
       expect(http.seen.single.data, {
@@ -509,6 +525,7 @@ void main() {
       expect(find.byType(LoanResultCards), findsOneWidget);
       expect(find.text('Kỳ 12'), findsNothing);
       await tester.ensureVisible(find.text('Xem lịch trả 12 kỳ đầu'));
+      await tester.pump();
       await tester.tap(find.text('Xem lịch trả 12 kỳ đầu'));
       await tester.pumpAndSettle();
       expect(find.text('Kỳ 12'), findsOneWidget);
@@ -540,6 +557,7 @@ void main() {
       await tester.enterText(find.byType(TextField).first, '1');
       await tester.pump();
       await tester.ensureVisible(find.text('Tính'));
+      await tester.pump();
       await tester.tap(find.text('Tính'));
       await tester.pumpAndSettle();
       expect(http.seen, hasLength(1));
@@ -565,6 +583,7 @@ void main() {
       await tester.enterText(find.byType(TextField).first, '2000000000');
       await tester.pump();
       await tester.ensureVisible(find.text('Tính'));
+      await tester.pump();
       await tester.tap(find.text('Tính'));
       await tester.pumpAndSettle();
       expect(find.text('Có lỗi, vui lòng thử lại'), findsOneWidget);

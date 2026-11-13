@@ -48,12 +48,11 @@ class Card extends StatelessWidget {
       decoration:
           BoxDecoration(
             color: card,
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: line,
               width: 1 / MediaQuery.devicePixelRatioOf(context),
             ),
-            boxShadow: cardShadow,
           ).copyWith(
             color: style?.color,
             borderRadius: style?.borderRadius,
@@ -135,12 +134,9 @@ class Hero extends StatelessWidget {
   final BoxDecoration? style;
   @override
   Widget build(BuildContext context) => DecoratedBox(
-    decoration: BoxDecoration(
-      borderRadius: BorderRadius.circular(28),
-      boxShadow: floatShadow,
-    ),
+    decoration: BoxDecoration(borderRadius: BorderRadius.circular(16)),
     child: ClipRRect(
-      borderRadius: BorderRadius.circular(28),
+      borderRadius: BorderRadius.circular(16),
       child: Container(
         decoration: BoxDecoration(
           color: brandDeep,
@@ -190,15 +186,7 @@ class Stat extends StatelessWidget {
         m.Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: accent.withValues(alpha: 20 / 255),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(icon, size: 19, color: accent),
-            ),
+            Icon(icon, size: 24, color: accent),
             if (onPress != null)
               const Icon(Ionicons.arrowForward, size: 16, color: subtle),
           ],
@@ -259,19 +247,7 @@ class ListItem extends StatelessWidget {
             spacing: 12,
             children: [
               if (icon != null)
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: tone == 'danger' ? dangerSoft : brandSoft,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(
-                    icon,
-                    size: 19,
-                    color: tone == 'danger' ? danger : brand,
-                  ),
-                ),
+                Icon(icon, size: 24, color: tone == 'danger' ? danger : brand),
               Expanded(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -325,19 +301,7 @@ class Tile extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         spacing: 10,
         children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: tone == 'gold' ? goldSoft : brandSoft,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Icon(
-              icon,
-              size: 23,
-              color: tone == 'gold' ? goldDeep : brand,
-            ),
-          ),
+          Icon(icon, size: 24, color: tone == 'gold' ? goldDeep : brand),
           ConstrainedBox(
             constraints: BoxConstraints(
               minHeight: MediaQuery.textScalerOf(context).scale(13) * 34 / 13,
@@ -423,7 +387,6 @@ class Avatar extends StatelessWidget {
     decoration: BoxDecoration(
       color: tone == 'gold' ? gold : brand,
       shape: BoxShape.circle,
-      gradient: tone == 'gold' ? goldGradient : brandGradient,
     ),
     child: Text(
       initials(name),
@@ -445,6 +408,7 @@ class Sheet extends StatefulWidget {
     this.child,
     this.children,
     this.footer,
+    this.scrollBody = true,
   }) : assert((child == null) != (children == null));
   final bool visible;
   final VoidCallback onClose;
@@ -452,6 +416,9 @@ class Sheet extends StatefulWidget {
   final Widget? child;
   final List<Widget>? children;
   final Widget? footer;
+
+  /// False when the child supplies its own lazy scroll view.
+  final bool scrollBody;
   @override
   State<Sheet> createState() => _SheetState();
 }
@@ -481,6 +448,7 @@ class _SheetState extends State<Sheet> {
           isScrollControlled: true,
           isDismissible: true,
           enableDrag: false,
+          useSafeArea: true,
           sheetAnimationStyle: MediaQuery.disableAnimationsOf(context)
               ? AnimationStyle.noAnimation
               : null,
@@ -491,7 +459,10 @@ class _SheetState extends State<Sheet> {
             borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
           ),
           constraints: BoxConstraints(
-            maxHeight: MediaQuery.sizeOf(context).height * 0.88,
+            maxHeight:
+                MediaQuery.sizeOf(context).height -
+                MediaQuery.paddingOf(context).top,
+            maxWidth: 640,
           ),
         );
         _route = route;
@@ -547,54 +518,81 @@ class _SheetContent extends StatelessWidget {
   const _SheetContent({required this.sheet});
   final Sheet sheet;
   @override
-  Widget build(BuildContext context) => Padding(
-    padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
-    child: SingleChildScrollView(
-      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+  Widget build(BuildContext context) {
+    final keyboard = MediaQuery.viewInsetsOf(context).bottom > 0;
+    return Padding(
+      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
       child: SafeArea(
         top: false,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 14),
-              child: m.Row(
-                spacing: 12,
-                children: [
-                  Expanded(child: H2(sheet.title)),
-                  IconButton(
-                    icon: Ionicons.close,
-                    label: 'Đóng',
-                    onPress: () => Navigator.of(context).pop(),
-                  ),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-              child:
-                  sheet.child ??
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    mainAxisSize: MainAxisSize.min,
-                    spacing: 20,
-                    children: sheet.children!,
-                  ),
-            ),
-            if (sheet.footer != null)
+        child: LayoutBuilder(
+          builder: (context, constraints) => Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
               Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 12,
+                padding: EdgeInsets.fromLTRB(
+                  20,
+                  keyboard ? 4 : 12,
+                  20,
+                  keyboard ? 4 : 14,
                 ),
-                child: sheet.footer,
+                child: m.Row(
+                  spacing: 12,
+                  children: [
+                    Expanded(child: H2(sheet.title)),
+                    IconButton(
+                      icon: Ionicons.close,
+                      label: 'Đóng',
+                      onPress: () => Navigator.of(context).pop(),
+                    ),
+                  ],
+                ),
               ),
-          ],
+              Flexible(
+                child: sheet.scrollBody
+                    ? SingleChildScrollView(
+                        keyboardDismissBehavior:
+                            ScrollViewKeyboardDismissBehavior.onDrag,
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+                          child:
+                              sheet.child ??
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                mainAxisSize: MainAxisSize.min,
+                                spacing: 20,
+                                children: sheet.children!,
+                              ),
+                        ),
+                      )
+                    : Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: sheet.child,
+                      ),
+              ),
+              if (sheet.footer != null)
+                ConstrainedBox(
+                  // Leave room for the header and focused field even when
+                  // large-text actions stack above the keyboard.
+                  constraints: BoxConstraints(
+                    maxHeight: constraints.maxHeight * .4,
+                  ),
+                  child: SingleChildScrollView(
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: keyboard ? 4 : 12,
+                      ),
+                      child: sheet.footer,
+                    ),
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
-    ),
-  );
+    );
+  }
 }
 
 class Appear extends StatefulWidget {
@@ -609,7 +607,7 @@ class Appear extends StatefulWidget {
 class _AppearState extends State<Appear> with SingleTickerProviderStateMixin {
   late final AnimationController _controller = AnimationController(
     vsync: this,
-    duration: const Duration(milliseconds: 420),
+    duration: const Duration(milliseconds: 200),
   );
   late final CurvedAnimation _curve = CurvedAnimation(
     parent: _controller,

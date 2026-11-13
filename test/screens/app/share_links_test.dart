@@ -98,8 +98,9 @@ void main() {
       expect(sent.single, 'Dự án mẫu: https://smartduan.vn/s/ticket');
       expect(find.text('3 · 2'), findsOneWidget);
       expect(find.text('Người tạo mẫu'), findsOneWidget);
-      await tester.ensureVisible(find.text('Gửi lại link'));
-      await tester.tap(find.text('Gửi lại link'));
+      await tester.ensureVisible(find.text('Gửi lại link đang dùng'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Gửi lại link đang dùng'));
       await tester.pumpAndSettle();
       expect(sent.length, 2);
     },

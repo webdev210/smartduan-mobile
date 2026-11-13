@@ -86,14 +86,9 @@ const List<BoxShadow> cardShadow = [
 ];
 const List<BoxShadow> floatShadow = [
   BoxShadow(
-    color: Color.fromRGBO(19, 19, 19, 0.08),
+    color: Color.fromRGBO(19, 19, 19, 0.12),
     offset: Offset(0, 4),
-    blurRadius: 12,
-  ),
-  BoxShadow(
-    color: Color.fromRGBO(19, 19, 19, 0.14),
-    offset: Offset(0, 16),
-    blurRadius: 40,
+    blurRadius: 16,
   ),
 ];
 const List<BoxShadow> brandShadow = [

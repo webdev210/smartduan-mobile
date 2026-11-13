@@ -378,7 +378,7 @@ void main() {
       await t.longPress(find.bySemanticsLabel('So sánh Dự án An'));
       await t.pumpAndSettle();
       expect(container.read(projectCompareProvider), ['A']);
-      expect(find.text('Chọn dự án so sánh'), findsOneWidget);
+      expect(find.text('So sánh dự án'), findsOneWidget);
       expect(http.seen.single.path, '/public/projects');
       for (final name in [
         'Dự án An',
@@ -462,7 +462,9 @@ void main() {
   testWidgets('comparison below two guides selection', (t) async {
     await show(t, const ProjectCompareScreen());
     expect(find.textContaining('Chọn ít nhất 2 dự án'), findsOneWidget);
-    expect(find.byIcon(Ionicons.gitCompareOutline), findsOneWidget);
+    expect(find.text('Chọn dự án'), findsOneWidget);
+    await press(t, find.text('Chọn dự án'));
+    expect(find.widgetWithText(kit.H2, 'So sánh dự án'), findsOneWidget);
   });
   testWidgets('unit picker adds same-project unit and opens compare', (
     t,
@@ -482,7 +484,14 @@ void main() {
       t,
       UnitComparePicker(projectId: 'P', visible: true, onClose: () {}),
     );
-    await press(t, find.bySemanticsLabel(RegExp('^Chọn căn A-01,')));
+    await press(
+      t,
+      find.byWidgetPredicate(
+        (w) =>
+            w is Semantics &&
+            RegExp('^Chọn căn A-01,').hasMatch(w.properties.label ?? ''),
+      ),
+    );
     expect(find.text('Đã chọn 0/4 căn'), findsOneWidget);
   });
   testWidgets(
@@ -493,20 +502,41 @@ void main() {
         UnitComparePicker(projectId: 'P', visible: true, onClose: () {}),
       );
       expect(find.text('Đã chọn 1/4 căn'), findsOneWidget);
-      await press(t, find.bySemanticsLabel(RegExp('^Chọn căn B-01,')));
+      await press(
+        t,
+        find.byWidgetPredicate(
+          (w) =>
+              w is Semantics &&
+              RegExp('^Chọn căn B-01,').hasMatch(w.properties.label ?? ''),
+        ),
+      );
       expect(find.text('Rổ so sánh đã đủ 4 căn.'), findsOneWidget);
       expect(find.text('Đã chọn 1/4 căn'), findsOneWidget);
       expect(picked, ['u1']);
       expect(
         t
-            .widget<Semantics>(find.bySemanticsLabel(RegExp('^Chọn căn A-01,')))
+            .widget<Semantics>(
+              find.byWidgetPredicate(
+                (w) =>
+                    w is Semantics &&
+                    RegExp('^Chọn căn A-01,')
+                        .hasMatch(w.properties.label ?? ''),
+              ),
+            )
             .properties
             .checked,
         true,
       );
       expect(
         t
-            .widget<Semantics>(find.bySemanticsLabel(RegExp('^Chọn căn B-01,')))
+            .widget<Semantics>(
+              find.byWidgetPredicate(
+                (w) =>
+                    w is Semantics &&
+                    RegExp('^Chọn căn B-01,')
+                        .hasMatch(w.properties.label ?? ''),
+              ),
+            )
             .properties
             .checked,
         false,

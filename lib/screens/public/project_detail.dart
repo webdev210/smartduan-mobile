@@ -1,4 +1,5 @@
 import 'package:ionicons/ionicons.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../../ui/network_image.dart';
 
@@ -8,12 +9,14 @@ import 'package:go_router/go_router.dart';
 
 import '../../api/public.dart';
 import '../../auth/session.dart';
+import '../../auth/roles.dart';
 import '../../config.dart';
 import '../../ui/catalog.dart';
 import '../../ui/developer_chip.dart';
 import '../../ui/format.dart';
 import '../../ui/in_app.dart';
 import '../../ui/kit.dart' as kit;
+import '../../ui/preview_text.dart';
 import '../../ui/map_embed.dart';
 import '../../ui/overview.dart';
 import '../../ui/project_card.dart';
@@ -29,13 +32,48 @@ class ProjectDetailScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final q = ref.watch(fetchPublicProjectProvider(code));
-    final signedIn =
-        ref.watch(sessionProvider).status == SessionStatus.signedIn;
+    final session = ref.watch(sessionProvider);
+    final signedIn = session.status == SessionStatus.signedIn;
     final p = q.asData?.value;
+    final directBoard =
+        signedIn && p != null && screens['salesFloor']!(session.roles);
     return Scaffold(
       appBar: AppBar(
         title: Text(p?.name ?? 'Dự án'),
-        actions: [FavoriteButton(code: code, name: p?.name ?? 'dự án')],
+        actions: [
+          if (p != null)
+            Builder(
+              builder: (context) => kit.IconButton(
+                icon: Ionicons.shareSocialOutline,
+                label: 'Chia sẻ trang dự án',
+                onPress: () async {
+                  final box = context.findRenderObject()! as RenderBox;
+                  try {
+                    await SharePlus.instance.share(
+                      ShareParams(
+                        text:
+                            '${webUrl.isEmpty ? 'https://smartduan.vn' : webUrl}/du-an/${Uri.encodeComponent(p.code)}',
+                        title: p.name,
+                        sharePositionOrigin:
+                            box.localToGlobal(Offset.zero) & box.size,
+                      ),
+                    );
+                  } catch (_) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'Không mở được chia sẻ. Vui lòng thử lại.',
+                          ),
+                        ),
+                      );
+                    }
+                  }
+                },
+              ),
+            ),
+          FavoriteButton(code: code, name: p?.name ?? 'dự án'),
+        ],
       ),
       body: SafeArea(
         top: false,
@@ -54,6 +92,7 @@ class ProjectDetailScreen extends ConsumerWidget {
               ),
             ),
             Container(
+              constraints: const BoxConstraints(maxWidth: 640),
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
               color: c.card,
               child: LayoutBuilder(
@@ -95,11 +134,52 @@ class ProjectDetailScreen extends ConsumerWidget {
                         width: stacked
                             ? constraints.maxWidth
                             : (constraints.maxWidth - 16) * 2 / 3,
-                        child: kit.Button(
-                          icon: Ionicons.lockOpenOutline,
-                          title: 'Xem bảng hàng',
-                          onPress: () =>
-                              _openBoard(context, ref, signedIn, p?.id),
+                        child: kit.Pressable(
+                          label: directBoard ? 'Bảng hàng' : 'Xem bảng hàng',
+                          disabled: p == null,
+                          onPress: () => directBoard
+                              ? context.push(
+                                  Uri(
+                                    path:
+                                        '/bang-hang/${Uri.encodeComponent(p.id)}',
+                                    queryParameters: {'name': p.name},
+                                  ).toString(),
+                                )
+                              : _openBoard(context, ref, signedIn, p?.id),
+                          // ponytail: kit.Button is single-line, reuse Pressable
+                          // until the shared button allows scaled labels to wrap.
+                          child: Container(
+                            constraints: const BoxConstraints(minHeight: 52),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 20,
+                              vertical: 12,
+                            ),
+                            decoration: BoxDecoration(
+                              color: c.primary,
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            child: Row(
+                              spacing: 8,
+                              children: [
+                                const Icon(
+                                  Ionicons.lockOpenOutline,
+                                  size: 20,
+                                  color: c.card,
+                                ),
+                                Expanded(
+                                  child: Text(
+                                    directBoard ? 'Bảng hàng' : 'Xem bảng hàng',
+                                    textAlign: TextAlign.center,
+                                    style: const TextStyle(
+                                      color: c.card,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
                       ),
                     ],
@@ -275,7 +355,15 @@ class _Detail extends ConsumerWidget {
           kit.Section(
             title: 'Tổng quan',
             children: [
-              if (overview.summary case final summary?) _PreviewText(summary),
+              if (overview.summary case final summary?)
+                PreviewText(
+                  summary,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    height: 1.6,
+                    color: c.text,
+                  ),
+                ),
               if (overview.usp.isNotEmpty) _Bullets(items: overview.usp),
             ],
           ),
@@ -325,7 +413,7 @@ class _Detail extends ConsumerWidget {
                                     const ColoredBox(color: c.quiet),
                               ),
                             ),
-                            kit.Muted(f.name, numberOfLines: 1),
+                            kit.Muted(f.name),
                           ],
                         ),
                       ),
@@ -341,104 +429,109 @@ class _Detail extends ConsumerWidget {
               const kit.Muted(
                 'Giá và bảng hàng từng căn hiển thị sau khi đăng nhập.',
               ),
-              kit.Card(
-                child: _PreviewList(
-                  children: [
-                    for (final d in p.subdivisions!)
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        spacing: 8,
-                        children: [
-                          if (mediaUrl(d.coverUrl) case final cover?)
-                            AspectRatio(
-                              aspectRatio: 16 / 9,
-                              child: AppNetworkImage(
-                                cover,
-                                fit: BoxFit.cover,
-                                semanticLabel: d.name,
-                                errorBuilder: (_, _, _) =>
-                                    const ColoredBox(color: c.quiet),
-                              ),
+              _PreviewList(
+                children: [
+                  for (final d in p.subdivisions!)
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      spacing: 8,
+                      children: [
+                        if (mediaUrl(d.coverUrl) case final cover?)
+                          AspectRatio(
+                            aspectRatio: 16 / 9,
+                            child: AppNetworkImage(
+                              cover,
+                              fit: BoxFit.cover,
+                              semanticLabel: d.name,
+                              errorBuilder: (_, _, _) =>
+                                  const ColoredBox(color: c.quiet),
                             ),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            spacing: 4,
-                            children: [
-                              kit.Body(d.name),
-                              if (d.description case final description?)
-                                _PreviewText(description),
-                            ],
                           ),
-                        ],
-                      ),
-                  ],
-                ),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          spacing: 4,
+                          children: [
+                            kit.Body(d.name),
+                            if (d.description case final description?)
+                              PreviewText(
+                                description,
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  height: 1.6,
+                                  color: c.text,
+                                ),
+                              ),
+                          ],
+                        ),
+                      ],
+                    ),
+                ],
               ),
             ],
           ),
         if (p.progress?.isNotEmpty == true)
           kit.Section(
             title: 'Tiến độ',
-            child: kit.Card(
-              child: _PreviewList(
-                children: [
-                  for (final e in p.progress!)
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      spacing: 2,
-                      children: [
-                        kit.Muted(fmtDate(e.occurredOn)),
-                        kit.Body(e.title),
-                        if (e.body case final body?) _PreviewText(body),
-                      ],
-                    ),
-                ],
-              ),
+            child: _PreviewList(
+              children: [
+                for (final e in p.progress!)
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    spacing: 2,
+                    children: [
+                      kit.Muted(fmtDate(e.occurredOn)),
+                      kit.Body(e.title),
+                      if (e.body case final body?)
+                        PreviewText(
+                          body,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            height: 1.6,
+                            color: c.text,
+                          ),
+                        ),
+                    ],
+                  ),
+              ],
             ),
           ),
         if (docs.isNotEmpty)
           kit.Section(
             title: 'Tài liệu',
-            child: kit.Card(
-              padding: EdgeInsets.zero,
-              child: _PreviewList(
-                children: [
-                  for (final d in docs)
-                    Material(
-                      color: Colors.transparent,
-                      child: ListTile(
-                        leading: const Icon(
-                          Ionicons.documentTextOutline,
-                          size: 20,
-                          color: c.brand,
-                        ),
-                        title: Text(d.name ?? 'Tài liệu'),
-                        trailing: const Icon(Ionicons.openOutline, size: 16),
-                        onTap: () =>
-                            openInApp(context, d.url!, d.name ?? 'Tài liệu'),
+            child: _PreviewList(
+              children: [
+                for (final d in docs)
+                  Material(
+                    color: Colors.transparent,
+                    child: ListTile(
+                      leading: const Icon(
+                        Ionicons.documentTextOutline,
+                        size: 20,
+                        color: c.brand,
                       ),
+                      title: Text(d.name ?? 'Tài liệu'),
+                      trailing: const Icon(Ionicons.openOutline, size: 16),
+                      onTap: () =>
+                          openInApp(context, d.url!, d.name ?? 'Tài liệu'),
                     ),
-                ],
-              ),
+                  ),
+              ],
             ),
           ),
         if (p.faqs?.isNotEmpty == true)
           kit.Section(
             title: 'Hỏi đáp',
-            child: kit.Card(
-              padding: EdgeInsets.zero,
-              children: [
-                for (final f in p.faqs!)
-                  Material(
-                    color: Colors.transparent,
-                    child: kit.FaqItem(
-                      key: ValueKey(f.id),
-                      question: f.question,
-                      answer: f.answer,
-                    ),
+            children: [
+              for (final f in p.faqs!)
+                Material(
+                  color: Colors.transparent,
+                  child: kit.FaqItem(
+                    key: ValueKey(f.id),
+                    question: f.question,
+                    answer: f.answer,
                   ),
-              ],
-            ),
+                ),
+            ],
           ),
         if (overview.source case final source?)
           ProjectSourcePreview(name: p.name, source: source, cover: p.coverUrl),
@@ -464,14 +557,9 @@ class _Detail extends ConsumerWidget {
               ),
             ],
           ),
-        kit.Card(
-          style: BoxDecoration(
-            color: c.brandSoft,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: c.brandBorder),
-          ),
+        kit.Section(
+          title: 'Bảng hàng, giá từng căn và chính sách',
           children: [
-            const kit.H2('Bảng hàng, giá từng căn và chính sách'),
             if (signedIn) ...[
               const kit.Muted(
                 'Xem rổ hàng, quỹ căn và tài liệu nội bộ nếu dự án đã phân bổ cho bạn.',
@@ -542,15 +630,6 @@ class ProjectSourcePreview extends StatelessWidget {
                     fit: BoxFit.cover,
                     errorBuilder: (_, _, _) => const ColoredBox(color: c.quiet),
                   ),
-                  const DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.center,
-                        end: Alignment.bottomCenter,
-                        colors: [Colors.transparent, Colors.black38],
-                      ),
-                    ),
-                  ),
                   Positioned(
                     right: 8,
                     bottom: 8,
@@ -604,7 +683,16 @@ class _Bullets extends StatelessWidget {
           spacing: 10,
           children: [
             const Text('•', style: TextStyle(color: c.brand)),
-            Expanded(child: _PreviewText(item)),
+            Expanded(
+              child: PreviewText(
+                item,
+                style: const TextStyle(
+                  fontSize: 16,
+                  height: 1.6,
+                  color: c.text,
+                ),
+              ),
+            ),
           ],
         ),
     ],
@@ -648,48 +736,6 @@ class _PreviewListState extends State<_PreviewList> {
   );
 }
 
-class _PreviewText extends StatefulWidget {
-  const _PreviewText(this.text);
-  final String text;
-  @override
-  State<_PreviewText> createState() => _PreviewTextState();
-}
-
-class _PreviewTextState extends State<_PreviewText> {
-  bool expanded = false;
-  @override
-  Widget build(BuildContext context) => LayoutBuilder(
-    builder: (context, constraints) {
-      const style = TextStyle(fontSize: 16, height: 1.6, color: c.text);
-      final painter = TextPainter(
-        text: TextSpan(text: widget.text, style: style),
-        maxLines: 6,
-        textDirection: Directionality.of(context),
-        textScaler: MediaQuery.textScalerOf(context),
-      )..layout(maxWidth: constraints.maxWidth);
-      final long = painter.didExceedMaxLines;
-      painter.dispose();
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(
-            widget.text,
-            style: style,
-            maxLines: expanded ? null : 6,
-            overflow: expanded ? TextOverflow.visible : TextOverflow.ellipsis,
-          ),
-          if (long)
-            kit.Button(
-              kind: 'link',
-              title: expanded ? 'Thu gọn' : 'Xem thêm',
-              onPress: () => setState(() => expanded = !expanded),
-            ),
-        ],
-      );
-    },
-  );
-}
-
 class _Gallery extends StatefulWidget {
   const _Gallery({
     required this.name,
@@ -719,18 +765,19 @@ class _GalleryState extends State<_Gallery> {
             aspectRatio: 4 / 3,
             child: Stack(
               children: [
-                PageView(
+                PageView.builder(
                   onPageChanged: (i) => setState(() => index = i),
-                  children: [
-                    for (final m in widget.images)
-                      AppNetworkImage(
-                        mediaUrl(m.url)!,
-                        fit: BoxFit.cover,
-                        semanticLabel: m.caption ?? widget.name,
-                        errorBuilder: (_, _, _) =>
-                            ProjectMedia(name: widget.name),
-                      ),
-                  ],
+                  itemCount: widget.images.length,
+                  itemBuilder: (context, i) {
+                    final m = widget.images[i];
+                    return AppNetworkImage(
+                      mediaUrl(m.url)!,
+                      fit: BoxFit.cover,
+                      semanticLabel: m.caption ?? widget.name,
+                      errorBuilder: (_, _, _) =>
+                          ProjectMedia(name: widget.name),
+                    );
+                  },
                 ),
                 Positioned(
                   right: 12,

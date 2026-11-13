@@ -9,7 +9,6 @@ import 'kit.dart' show Button;
 import 'project_card.dart';
 import 'tour.dart';
 import 'tour_frame.dart';
-import 'theme.dart' as c;
 
 class Tour360 extends StatefulWidget {
   const Tour360({
@@ -82,43 +81,54 @@ class _Tour360State extends State<Tour360> {
                               onTap: () => setState(() => playing = true),
                               child: ColoredBox(
                                 color: Colors.black45,
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  spacing: 12,
-                                  children: [
-                                    const Icon(
-                                      Ionicons.cubeOutline,
-                                      color: Colors.white,
-                                      size: 30,
+                                child: Center(
+                                  child: SingleChildScrollView(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                      vertical: 48,
                                     ),
-                                    const Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      spacing: 8,
+                                    child: Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      spacing: 12,
                                       children: [
-                                        Icon(
-                                          Ionicons.play,
-                                          size: 14,
-                                          color: c.text,
+                                        const Icon(
+                                          Ionicons.cubeOutline,
+                                          color: Colors.white,
+                                          size: 30,
                                         ),
-                                        Text(
-                                          'Xem tour 360°',
+                                        const Wrap(
+                                          alignment: WrapAlignment.center,
+                                          crossAxisAlignment:
+                                              WrapCrossAlignment.center,
+                                          spacing: 8,
+                                          children: [
+                                            Icon(
+                                              Ionicons.play,
+                                              size: 14,
+                                              color: Colors.white,
+                                            ),
+                                            Text(
+                                              'Xem tour 360°',
+                                              style: TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 18,
+                                                fontWeight: FontWeight.w700,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        const Text(
+                                          'Kéo để nhìn quanh · chụm hai ngón để phóng to',
+                                          textAlign: TextAlign.center,
                                           style: TextStyle(
                                             color: Colors.white,
-                                            fontSize: 18,
-                                            fontWeight: FontWeight.w700,
+                                            fontSize: 12,
                                           ),
                                         ),
                                       ],
                                     ),
-                                    const Text(
-                                      'Kéo để nhìn quanh · chụm hai ngón để phóng to',
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                  ],
+                                  ),
                                 ),
                               ),
                             ),
@@ -139,6 +149,10 @@ class _Tour360State extends State<Tour360> {
                               button: true,
                               excludeSemantics: true,
                               child: IconButton(
+                                constraints: const BoxConstraints(
+                                  minWidth: 48,
+                                  minHeight: 48,
+                                ),
                                 tooltip: 'Xem tour 360° toàn màn hình',
                                 onPressed: fullscreen,
                                 icon: const Icon(

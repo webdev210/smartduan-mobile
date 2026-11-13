@@ -95,12 +95,10 @@ class _AnnouncementsState extends ConsumerState<AnnouncementsScreen> {
                   text: 'Chưa có tin.',
                 ),
         ),
-        renderItem: (a) => Card(
+        renderItem: (a) => ListItem(
+          title: a.title,
+          subtitle: fmtDate(a.publishedAt, true),
           onPress: () => context.push('/bang-tin/${Uri.encodeComponent(a.id)}'),
-          children: [
-            Body(a.title, style: const TextStyle(fontWeight: FontWeight.w600)),
-            Muted(fmtDate(a.publishedAt, true)),
-          ],
         ),
         footer: list.hasError && all.isNotEmpty
             ? ErrorBox(

@@ -44,7 +44,7 @@ void main() {
       expect(find.byType(InkWell).evaluate().length, lessThan(300));
       await tester.drag(
         find.byType(SingleChildScrollView).first,
-        const Offset(-1000, 0),
+        const Offset(-2000, 0),
       );
       await tester.pumpAndSettle();
       expect(find.text('99-11').hitTestable(), findsOneWidget);
@@ -66,7 +66,7 @@ void main() {
     },
   );
   testWidgets(
-    'floors descend, axes align, sold label and open work even when dimmed',
+    'floors descend, axes align, sold label and excluded cells are disabled',
     (tester) async {
       String? opened;
       await tester.pumpWidget(
@@ -88,9 +88,9 @@ void main() {
       expect(find.text('Đã bán'), findsOneWidget);
       expect(find.text('01'), findsOneWidget);
       await tester.tap(find.text('A-01.01'));
-      expect(opened, 'A-01.01');
+      expect(opened, isNull);
       expect(
-        find.byWidgetPredicate((w) => w is Opacity && w.opacity == 0.2),
+        find.byWidgetPredicate((w) => w is Opacity && w.opacity == 0.4),
         findsNWidgets(3),
       );
       expect(tester.takeException(), isNull);
@@ -175,7 +175,7 @@ void main() {
       );
       await tester.drag(
         find.byType(SingleChildScrollView),
-        const Offset(-900, 0),
+        const Offset(-2000, 0),
       );
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);

@@ -2,7 +2,7 @@ import 'package:material_ui/material_ui.dart';
 
 import '../api/models.dart';
 import 'format.dart';
-import 'kit.dart' show Empty;
+import 'kit.dart' show Empty, Segmented;
 import 'theme.dart' as c;
 
 class StackGrid extends StatefulWidget {
@@ -27,6 +27,7 @@ class StackGrid extends StatefulWidget {
 }
 
 class _StackGridState extends State<StackGrid> {
+  bool _list = false;
   final _horizontal = _BoardScrollController();
   late List<({StackFloor floor, List<StackCell?> cells})> _rows;
   late Map<StackCell, String> _prices;
@@ -78,11 +79,82 @@ class _StackGridState extends State<StackGrid> {
   @override
   Widget build(BuildContext context) {
     final scale = MediaQuery.textScalerOf(context);
-    final width = 84 * (scale.scale(11) / 11).clamp(1.0, double.infinity);
-    final height = 52 + (scale.scale(11) - 11).clamp(0.0, double.infinity) * 3;
+    final width = 120 * (scale.scale(14) / 14).clamp(1.0, double.infinity);
+    final height = 88 * (scale.scale(14) / 14).clamp(1.0, double.infinity);
     if (_rows.isEmpty) {
       const empty = Empty(text: 'Toà này chưa có căn nào bạn được xem.');
       return widget.sliver ? const SliverToBoxAdapter(child: empty) : empty;
+    }
+    final modes = Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Segmented(
+        value: _list ? 'list' : 'grid',
+        onChange: (value) => setState(() => _list = value == 'list'),
+        options: const [
+          (key: 'grid', label: 'Sơ đồ', count: null),
+          (key: 'list', label: 'Danh sách', count: null),
+        ],
+      ),
+    );
+    Widget withMode(Widget content) => widget.sliver
+        ? SliverMainAxisGroup(
+            slivers: [
+              SliverPadding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                sliver: SliverToBoxAdapter(child: modes),
+              ),
+              content,
+            ],
+          )
+        : Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [modes, content],
+          );
+    if (_list) {
+      final matches = _rows
+          .expand((row) => row.cells)
+          .whereType<StackCell>()
+          .where((cell) => widget.keep?.call(cell) ?? true)
+          .toList();
+      Widget item(BuildContext context, int index) {
+        final cell = matches[index];
+        return Material(
+          color: c.card,
+          child: ListTile(
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 20,
+              vertical: 8,
+            ),
+            title: Text(cell.code),
+            subtitle: Text(
+              [
+                statusLabel[cell.status] ?? cell.status,
+                _prices[cell]!,
+                if (cell.areaNet != null) '${cell.areaNet} m²',
+                if (cell.direction != null) cell.direction!,
+              ].join(' · '),
+            ),
+            onTap: () => widget.onOpen(cell.id),
+          ),
+        );
+      }
+
+      if (matches.isEmpty) {
+        const empty = Empty(text: 'Không có căn khớp bộ lọc trong tòa này.');
+        return withMode(
+          widget.sliver ? const SliverToBoxAdapter(child: empty) : empty,
+        );
+      }
+      return withMode(
+        widget.sliver
+            ? SliverList.builder(itemCount: matches.length, itemBuilder: item)
+            : ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: matches.length,
+                itemBuilder: item,
+              ),
+      );
     }
     final header = plan.layout == 'floors'
         ? Row(
@@ -114,35 +186,42 @@ class _StackGridState extends State<StackGrid> {
         (count, row) => row.cells.length > count ? row.cells.length : count,
       );
       final boardWidth = 44 + columns * (width + 4);
-      return SliverPadding(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        sliver: SliverList.builder(
-          itemCount: _rows.length + (header == null ? 0 : 1),
-          itemBuilder: (context, index) {
-            final rowIndex = index - (header == null ? 0 : 1);
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 4),
-              child: SingleChildScrollView(
-                controller: _horizontal,
-                scrollDirection: Axis.horizontal,
-                child: SizedBox(
-                  width: boardWidth,
-                  child: rowIndex < 0
-                      ? header
-                      : _row(_rows[rowIndex], width, height),
+      return withMode(
+        SliverPadding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          sliver: SliverList.builder(
+            itemCount: _rows.length + (header == null ? 0 : 1),
+            itemBuilder: (context, index) {
+              final rowIndex = index - (header == null ? 0 : 1);
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: SingleChildScrollView(
+                  controller: _horizontal,
+                  scrollDirection: Axis.horizontal,
+                  child: SizedBox(
+                    width: boardWidth,
+                    child: rowIndex < 0
+                        ? header
+                        : _row(_rows[rowIndex], width, height),
+                  ),
                 ),
-              ),
-            );
-          },
+              );
+            },
+          ),
         ),
       );
     }
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        spacing: 4,
-        children: [?header, for (final row in _rows) _row(row, width, height)],
+    return withMode(
+      SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          spacing: 4,
+          children: [
+            ?header,
+            for (final row in _rows) _row(row, width, height),
+          ],
+        ),
       ),
     );
   }
@@ -174,22 +253,25 @@ class _StackGridState extends State<StackGrid> {
   }
 
   Widget _cell(StackCell cell, double width, double height) {
+    final included = widget.keep?.call(cell) ?? true;
     final price = _prices[cell]!;
     final raw = widget.fundColors?[cell.fund];
     final dot = raw == null ? null : _hex(raw);
     return Opacity(
-      opacity: widget.keep != null && !widget.keep!(cell) ? 0.2 : 1,
+      opacity: included ? 1 : 0.4,
       child: Semantics(
         button: true,
-        label: 'Căn ${cell.code}, ${statusLabel[cell.status]}, $price',
+        enabled: included,
+        label:
+            'Căn ${cell.code}, ${statusLabel[cell.status]}, $price${included ? '' : ', Không khớp bộ lọc'}',
         excludeSemantics: true,
-        onTap: () => widget.onOpen(cell.id),
+        onTap: included ? () => widget.onOpen(cell.id) : null,
         child: Material(
           color: _hex(statusColor[cell.status] ?? '#9ca3af')!,
           borderRadius: BorderRadius.circular(8),
           child: InkWell(
             borderRadius: BorderRadius.circular(8),
-            onTap: () => widget.onOpen(cell.id),
+            onTap: included ? () => widget.onOpen(cell.id) : null,
             child: SizedBox(
               width: width,
               height: height,
@@ -211,7 +293,7 @@ class _StackGridState extends State<StackGrid> {
                               color: c.solidForeground(
                                 _hex(statusColor[cell.status] ?? '#9ca3af')!,
                               ),
-                              fontSize: 11,
+                              fontSize: 14,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
@@ -224,7 +306,18 @@ class _StackGridState extends State<StackGrid> {
                             color: c.solidForeground(
                               _hex(statusColor[cell.status] ?? '#9ca3af')!,
                             ),
-                            fontSize: 11,
+                            fontSize: 14,
+                          ),
+                        ),
+                        Text(
+                          included
+                              ? statusLabel[cell.status] ?? cell.status
+                              : 'Không khớp',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: c.solidForeground(
+                              _hex(statusColor[cell.status] ?? '#9ca3af')!,
+                            ),
                           ),
                         ),
                       ],

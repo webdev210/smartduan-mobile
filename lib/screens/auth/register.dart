@@ -8,8 +8,7 @@ import '../../api/public.dart';
 import '../../auth/register.dart';
 import '../../auth/session.dart';
 import '../../ui/captcha.dart';
-import '../../ui/kit.dart'
-    show Screen, Muted, Card, Field, Notice, Button, AsyncView;
+import '../../ui/kit.dart' show Screen, Muted, Field, Notice, Button, AsyncView;
 import '../../ui/otp_step.dart';
 import '../../ui/theme.dart' as theme;
 
@@ -148,7 +147,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             'Tài khoản miễn phí cho chuyên viên kinh doanh, xác nhận bằng mã OTP gửi qua email. Sau đó đăng ký làm sale tự do ở Menu.',
             style: TextStyle(fontSize: 15),
           ),
-          Card(
+          Padding(
             padding: const EdgeInsets.all(20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -274,12 +273,23 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     value: policy,
                     builder: (_) => const SizedBox.shrink(),
                   ),
-                Captcha(
-                  key: ValueKey(_captchaKey),
-                  action: 'register',
-                  onToken: (token) {
-                    if (mounted) setState(() => _token = token);
-                  },
+                LayoutBuilder(
+                  builder: (context, constraints) => SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: SizedBox(
+                      // ponytail: CAPTCHA retry row has an intrinsic-width button; remove when shared CAPTCHA wraps it.
+                      width: MediaQuery.textScalerOf(context)
+                          .scale(220)
+                          .clamp(constraints.maxWidth, double.infinity),
+                      child: Captcha(
+                        key: ValueKey(_captchaKey),
+                        action: 'register',
+                        onToken: (token) {
+                          if (mounted) setState(() => _token = token);
+                        },
+                      ),
+                    ),
+                  ),
                 ),
                 if (_error != null) Notice(tone: 'error', text: _error!),
                 Button(

@@ -28,6 +28,7 @@ class _ProfileState extends ConsumerState<ProfileScreen> {
       await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
+          scrollable: true,
           title: Text(title),
           content: Text(text),
           actions: [
@@ -105,7 +106,6 @@ class _ProfileState extends ConsumerState<ProfileScreen> {
                           children: [
                             Text(
                               p.fullName ?? p.email,
-                              maxLines: 2,
                               style: const TextStyle(
                                 fontSize: 19,
                                 fontWeight: FontWeight.w700,
@@ -229,7 +229,7 @@ class _ProfileState extends ConsumerState<ProfileScreen> {
           ],
         ),
         Section(
-          title: 'Tài liệu đã tải',
+          title: 'Lịch sử tải tài liệu',
           child: Card(
             child: AsyncView(
               value: ref.watch(fetchDownloadsProvider),

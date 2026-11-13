@@ -314,7 +314,7 @@ void main() {
       expect(find.byType(BasketScreen), findsOneWidget);
       platform.last.message({'type': 'sd:ready'});
       await tester.pump();
-      await tester.tap(find.text('Quay lại'));
+      await tester.tap(find.byTooltip('Quay lại'));
       await tester.pumpAndSettle();
       expect(find.byType(BasketScreen), findsNothing);
       open();

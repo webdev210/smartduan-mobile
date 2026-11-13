@@ -104,6 +104,7 @@ void main() {
       );
       await mountHome(tester, FakeHttp((c) => homeReply(c.path)));
       await tester.ensureVisible(find.text('0901234567'));
+      await tester.pump();
       await tester.tap(find.text('0901234567'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Chat Zalo'));
@@ -204,6 +205,7 @@ void main() {
       }
       expect(find.text('Ngoài danh mục'), findsNothing);
       await tester.ensureVisible(find.text('Căn hộ · 1'));
+      await tester.pump();
       await tester.tap(find.text('Căn hộ · 1'));
       await tester.pumpAndSettle();
       expect(router.state.uri.path, '/kham-pha');
@@ -211,6 +213,7 @@ void main() {
       router.pop();
       await tester.pumpAndSettle();
       await tester.ensureVisible(find.text('Sun Group').last);
+      await tester.pump();
       await tester.tap(find.text('Sun Group').last);
       await tester.pumpAndSettle();
       expect(router.state.uri.path, '/chu-dau-tu/sun-group');

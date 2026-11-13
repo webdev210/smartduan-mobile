@@ -49,6 +49,8 @@ class _LoanScreenState extends ConsumerState<LoanScreen> {
   String price = '', ratio = '70', term = '240', rate = '', grace = '';
   Object? validation;
   Object? submitted;
+  bool overrides = false;
+  final resultKey = GlobalKey();
   Object get inputs =>
       (widget.unitId, projectId, price, ratio, term, rate, grace);
   void calculate() {
@@ -65,10 +67,20 @@ class _LoanScreenState extends ConsumerState<LoanScreen> {
         (rate.isNotEmpty && (a == null || !a.isFinite)) ||
         (grace.isNotEmpty && (g == null || !g.isFinite))) {
       setState(
-        () => validation = const ApiError(
+        () => validation = ApiError(
           422,
           'validation',
           'Dữ liệu không hợp lệ',
+          details: {
+            if (r == null || !r.isFinite)
+              'loan_ratio': ['Nhập tỷ lệ vay bằng số.'],
+            if (t == null || !t.isFinite)
+              'term_months': ['Nhập thời hạn bằng số tháng.'],
+            if (rate.isNotEmpty && (a == null || !a.isFinite))
+              'floating_rate': ['Nhập lãi suất bằng số.'],
+            if (grace.isNotEmpty && (g == null || !g.isFinite))
+              'grace_months': ['Nhập số tháng ưu đãi bằng số.'],
+          },
         ),
       );
       return;
@@ -77,6 +89,7 @@ class _LoanScreenState extends ConsumerState<LoanScreen> {
       validation = null;
       submitted = inputs;
     });
+    FocusScope.of(context).unfocus();
     ref.read(loanResultProvider(owner).notifier).calculate({
       if (widget.unitId != null)
         'unit_id': widget.unitId
@@ -94,12 +107,33 @@ class _LoanScreenState extends ConsumerState<LoanScreen> {
   @override
   Widget build(BuildContext context) {
     final result = ref.watch(loanResultProvider(owner));
+    ref.listen(loanResultProvider(owner), (_, next) {
+      if (next?.hasValue == true && submitted == inputs) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          final target = resultKey.currentContext;
+          if (mounted && target != null) Scrollable.ensureVisible(target);
+        });
+      }
+    });
     final error = validation ?? result?.error;
     final projects = widget.unitId == null
         ? ref.watch(fetchAllProjectsProvider)
         : null;
     return Scaffold(
       appBar: AppBar(title: const Text('Tính lãi vay')),
+      bottomNavigationBar: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          child: kit.Button(
+            title: 'Tính',
+            loading: result?.isLoading == true,
+            disabled:
+                widget.unitId == null && (projectId == null || price.isEmpty),
+            onPress: calculate,
+          ),
+        ),
+      ),
       body: kit.Screen(
         children: [
           if (widget.unitId != null)
@@ -161,6 +195,7 @@ class _LoanScreenState extends ConsumerState<LoanScreen> {
             value: ratio,
             onChangeText: (s) => setState(() => ratio = s),
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            error: fieldError(error, 'loan_ratio'),
           ),
           kit.Field(
             label: 'Thời hạn (tháng)',
@@ -168,35 +203,56 @@ class _LoanScreenState extends ConsumerState<LoanScreen> {
             value: term,
             onChangeText: (s) => setState(() => term = s),
             keyboardType: TextInputType.number,
+            error: fieldError(error, 'term_months'),
           ),
-          kit.Field(
-            label: 'Lãi thả nổi (%/năm) — bỏ trống = theo CSBH',
-            textInputAction: TextInputAction.next,
-            value: rate,
-            onChangeText: (s) => setState(() => rate = s),
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            error: fieldError(error, 'floating_rate'),
+          kit.Chips(
+            children: [
+              for (final years in [10, 15, 20, 25, 30])
+                kit.Chip(
+                  label: '$years năm',
+                  active: term == '${years * 12}',
+                  onPress: () => setState(() => term = '${years * 12}'),
+                ),
+            ],
           ),
-          kit.Field(
-            label: 'Số tháng ưu đãi — bỏ trống = theo CSBH',
-            textInputAction: TextInputAction.done,
-            onSubmit: (_) => calculate(),
-            value: grace,
-            onChangeText: (s) => setState(() => grace = s),
-            keyboardType: TextInputType.number,
-            error: fieldError(error, 'grace_months'),
+          kit.Button(
+            kind: 'link',
+            title: overrides
+                ? 'Ẩn điều chỉnh lãi suất'
+                : 'Điều chỉnh lãi suất / ưu đãi',
+            onPress: () => setState(() => overrides = !overrides),
           ),
+          if (overrides ||
+              fieldError(error, 'floating_rate') != null ||
+              fieldError(error, 'grace_months') != null) ...[
+            kit.Field(
+              label: 'Lãi thả nổi (%/năm) — bỏ trống = theo CSBH',
+              textInputAction: TextInputAction.next,
+              value: rate,
+              onChangeText: (s) => setState(() => rate = s),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
+              error: fieldError(error, 'floating_rate'),
+            ),
+            kit.Field(
+              label: 'Số tháng ưu đãi — bỏ trống = theo CSBH',
+              textInputAction: TextInputAction.done,
+              onSubmit: (_) => calculate(),
+              value: grace,
+              onChangeText: (s) => setState(() => grace = s),
+              keyboardType: TextInputType.number,
+              error: fieldError(error, 'grace_months'),
+            ),
+          ],
           if (error != null)
             kit.Notice(tone: 'error', text: errorMessage(error)),
-          kit.Button(
-            title: 'Tính',
-            loading: result?.isLoading == true,
-            disabled:
-                widget.unitId == null && (projectId == null || price.isEmpty),
-            onPress: calculate,
-          ),
           if (result?.asData?.value case final r? when submitted == inputs)
-            LoanResultCards(r: r, child: kit.Muted(loanTermsLabel(r))),
+            LoanResultCards(
+              key: resultKey,
+              r: r,
+              child: kit.Muted(loanTermsLabel(r)),
+            ),
         ],
       ),
     );

@@ -259,6 +259,7 @@ class _DeviceCardState extends ConsumerState<_DeviceCard>
         context: context,
         builder: (ctx) => AlertDialog(
           title: Text(deviceActionLabel[action]!),
+          scrollable: true,
           content: Text(
             action == 'approve'
                 ? 'Thiết bị cùng loại đang dùng sẽ bị thu hồi; các phiên trên đó sẽ kết thúc.'
@@ -349,13 +350,10 @@ class _DeviceCardState extends ConsumerState<_DeviceCard>
         Chips(
           children: [
             for (final a in actions)
-              FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Chip(
-                  label: deviceActionLabel[a]!,
-                  active: mode == a,
-                  onPress: busy ? null : () => run(a),
-                ),
+              Chip(
+                label: deviceActionLabel[a]!,
+                active: mode == a,
+                onPress: busy ? null : () => run(a),
               ),
           ],
         ),

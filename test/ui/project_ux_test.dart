@@ -13,6 +13,7 @@ import 'package:smartduan/ui/project_facts.dart';
 import 'package:smartduan/ui/post_body.dart';
 
 import '../screens/app/task_h_fakes.dart';
+import '../screens/app/project_test.dart' show reveal;
 import '../screens/public/detail_screens_test.dart' show project, DetailSession;
 
 Future<void> mount(
@@ -174,10 +175,7 @@ void main() {
           ),
         );
         await tester.pumpAndSettle();
-        final buttons = tester.widgetList<kit.Button>(find.byType(kit.Button));
-        expect(buttons.where((b) => b.kind == 'primary').map((b) => b.title), [
-          'Xem bảng hàng',
-        ]);
+        expect(find.text('Xem bảng hàng'), findsOneWidget);
         for (final button in find.byType(kit.Button).evaluate()) {
           expect(
             tester.getSize(find.byWidget(button.widget)).height,
@@ -273,11 +271,11 @@ void main() {
         tester.view.physicalSize = Size(width, 844);
         await tester.pumpAndSettle();
         expect(
-          tester
-              .widgetList<kit.Button>(find.byType(kit.Button))
-              .where((b) => b.kind == 'primary')
-              .map((b) => b.title),
-          ['Mở bảng hàng'],
+          find.descendant(
+            of: find.byKey(const ValueKey('project-actions')),
+            matching: find.text('Bảng hàng'),
+          ),
+          findsOneWidget,
         );
         expect(find.byType(ProjectFacts), findsOneWidget);
         for (final title in [
@@ -289,9 +287,10 @@ void main() {
           'Đào tạo (1)',
           'Hỏi đáp',
         ]) {
+          await reveal(tester, find.text(title));
           expect(find.text(title), findsOneWidget);
         }
-        await tester.ensureVisible(find.text('Khi nào bàn giao?'));
+        await reveal(tester, find.text('Khi nào bàn giao?'));
         await tester.tap(find.text('Khi nào bàn giao?'));
         await tester.pumpAndSettle();
         expect(find.text('Năm 2027'), findsOneWidget);
@@ -326,7 +325,7 @@ void main() {
           final paragraph = tester.renderObject<RenderParagraph>(
             find.text(title),
           );
-          expect(paragraph.maxLines, 1);
+          expect(paragraph.maxLines, isNull);
           if (scale == 1) expect(paragraph.didExceedMaxLines, isFalse);
         }
         expect(tester.takeException(), isNull);
@@ -388,10 +387,10 @@ void main() {
           matching: find.byWidgetPredicate(
             (w) =>
                 w is Container &&
-                w.constraints?.minHeight == (size == 'sm' ? 44 : 52),
+                w.constraints?.minHeight == (size == 'sm' ? 48 : 52),
           ),
         );
-        expect(tester.getSize(surface).height, size == 'sm' ? 44 : 52);
+        expect(tester.getSize(surface).height, size == 'sm' ? 48 : 52);
       }
     });
   }

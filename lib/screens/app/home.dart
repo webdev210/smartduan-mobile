@@ -11,12 +11,13 @@ import '../../api/sales.dart';
 import '../../auth/roles.dart';
 import '../../auth/session.dart';
 import '../../ui/format.dart';
-import '../../ui/kit.dart' hide Row;
+import '../../ui/kit.dart' hide Row, Divider;
 import '../../ui/menu.dart';
 import '../../ui/project_browser.dart';
 import '../../ui/project_card.dart';
 import '../../ui/project_compare.dart';
 import '../../ui/project_compare_kit.dart';
+import '../../ui/favorite_button.dart';
 import 'menu_tab.dart' show menuIcon;
 import 'projects_tab.dart' show TabProject;
 
@@ -47,6 +48,8 @@ class _HomeState extends ConsumerState<HomeScreen> {
         ? ref.watch(fetchAnnouncementsProvider(1))
         : null;
     final survey = ref.watch(tabSurveyProvider);
+    final unread = ref.watch(fetchNotificationsProvider).value?.unread;
+    final favorites = ref.watch(savedProjectsProvider).value ?? <String>[];
     final comparing = ref.watch(projectCompareProvider).isNotEmpty;
     final rows = showPublic
         ? hot?.value?.data ?? <PublicProject>[]
@@ -105,11 +108,44 @@ class _HomeState extends ConsumerState<HomeScreen> {
                 maxLength: 60,
               ),
               ProjectQuickFind(q: q, projects: rows, onOpen: open, onAll: all),
+              ListItem(
+                title: unread == null
+                    ? 'Thông báo'
+                    : 'Thông báo · $unread chưa đọc',
+                onPress: () => context.push('/thong-bao'),
+              ),
+              if (announcements != null)
+                Section(
+                  title: 'Bảng tin mới',
+                  action: (
+                    label: 'Xem tất cả',
+                    onPress: () => context.push('/bang-tin'),
+                  ),
+                  child: AsyncView(
+                    value: announcements,
+                    onRetry: () =>
+                        ref.invalidate(fetchAnnouncementsProvider(1)),
+                    builder: (data) => Column(
+                      children: [
+                        if (data.data.isEmpty)
+                          const Padding(
+                            padding: EdgeInsets.all(16),
+                            child: Muted('Chưa có tin.'),
+                          ),
+                        for (final a in data.data.take(3))
+                          ListItem(
+                            title: a.title,
+                            subtitle: fmtDate(a.publishedAt),
+                            onPress: () => context.push(
+                              '/bang-tin/${Uri.encodeComponent(a.id)}',
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
               Section(
                 title: showPublic ? 'Dự án nổi bật trên sàn' : 'Dự án của bạn',
-                eyebrow: showPublic
-                    ? null
-                    : '${rows.length} dự án được phân bổ',
                 action: (
                   label: 'Xem tất cả',
                   onPress: () =>
@@ -131,64 +167,100 @@ class _HomeState extends ConsumerState<HomeScreen> {
                     : AsyncView(
                         value: projects!,
                         onRetry: () => ref.invalidate(fetchAllProjectsProvider),
-                        builder: (_) => _rail(
-                          rows.take(8).toList(),
-                          cardWidth,
-                          open,
-                          'Chưa có dự án nào.',
+                        builder: (_) => Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            if (rows.isEmpty) const Muted('Chưa có dự án nào.'),
+                            for (final p in rows.take(8)) ...[
+                              ListItem(
+                                title: p.name,
+                                subtitle: p.inventoryUpdatedAt == null
+                                    ? 'Chưa có thời điểm cập nhật'
+                                    : 'Cập nhật ${fmtDate(p.inventoryUpdatedAt, true)}',
+                                onPress: () => open(p),
+                              ),
+                              Wrap(
+                                spacing: 8,
+                                children: [
+                                  if (p.code.isNotEmpty &&
+                                      p.isPublic != false) ...[
+                                    FavoriteButton(code: p.code, name: p.name),
+                                    CompareChip(code: p.code, name: p.name),
+                                  ],
+                                  TextButton(
+                                    onPressed: () => context.push(
+                                      '/bang-hang/${Uri.encodeComponent(p.id)}',
+                                    ),
+                                    child: const Text('Bảng hàng'),
+                                  ),
+                                  TextButton(
+                                    onPressed: () => context.push(
+                                      '/bien-dong/${Uri.encodeComponent(p.id)}',
+                                    ),
+                                    child: const Text('Biến động'),
+                                  ),
+                                ],
+                              ),
+                              const Divider(),
+                            ],
+                          ],
                         ),
                       ),
               ),
-              if (survey.value == true) const _SurveyCard(),
+              Section(
+                title: 'Yêu thích',
+                action: (
+                  label: 'Xem tất cả',
+                  onPress: () => context.push('/da-luu'),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    for (final p
+                        in rows
+                            .where(
+                              (p) =>
+                                  p.code.isNotEmpty &&
+                                  p.isPublic != false &&
+                                  favorites.contains(p.code),
+                            )
+                            .take(3))
+                      ListItem(
+                        title: p.name,
+                        subtitle: showPublic ? null : 'Bảng hàng',
+                        onPress: () => showPublic
+                            ? open(p)
+                            : context.push(
+                                '/bang-hang/${Uri.encodeComponent(p.id)}',
+                              ),
+                      ),
+                    TextButton(
+                      onPressed: () => context.push('/quan-tam'),
+                      child: const Text('Nhận thông báo dự án'),
+                    ),
+                  ],
+                ),
+              ),
               Section(
                 title: 'Truy cập nhanh',
                 action: (
                   label: 'Tất cả tính năng',
                   onPress: () => context.push('/menu'),
                 ),
-                child: TileGrid(
+                child: Column(
                   children: [
                     for (final item in quickActions(roles))
-                      Tile(
+                      ListItem(
                         icon: menuIcon(item.icon),
-                        label: item.label,
+                        title: item.label,
+                        subtitle: item.hint,
                         onPress: () => context.push(item.href),
                       ),
                   ],
                 ),
               ),
-              if (announcements != null)
-                Section(
-                  title: 'Bảng tin mới',
-                  action: (
-                    label: 'Xem tất cả',
-                    onPress: () => context.push('/bang-tin'),
-                  ),
-                  child: AsyncView(
-                    value: announcements,
-                    onRetry: () =>
-                        ref.invalidate(fetchAnnouncementsProvider(1)),
-                    builder: (data) => Card(
-                      padding: EdgeInsets.zero,
-                      children: [
-                        if (data.data.isEmpty)
-                          const Padding(
-                            padding: EdgeInsets.all(16),
-                            child: Muted('Chưa có tin.'),
-                          ),
-                        for (final a in data.data.take(3))
-                          ListItem(
-                            title: a.title,
-                            subtitle: fmtDate(a.publishedAt),
-                            onPress: () => context.push(
-                              '/bang-tin/${Uri.encodeComponent(a.id)}',
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                ),
               if (comparing) const SizedBox(height: 70),
+              if (survey.value == true) const _SurveyCard(),
             ],
           ),
           const CompareDock(bottom: 12),

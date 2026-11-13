@@ -10,7 +10,7 @@ import 'package:smartduan/ui/unit_compare_picker.dart';
 import 'task_h_fakes.dart';
 
 void main() {
-  testWidgets('offscreen unit images are not mounted until scrolling', (
+  testWidgets('unit image preview expands into a lazy image list', (
     tester,
   ) async {
     final env = HEnv();
@@ -25,6 +25,14 @@ void main() {
     await env.mount(tester, const UnitScreen(id: 'u'));
     expect(find.byType(AppNetworkImage).evaluate().length, lessThan(10));
     expect(find.byKey(const ValueKey('99')), findsNothing);
+    await tester.scrollUntilVisible(
+      find.text('Xem tất cả 100 hình ảnh'),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Xem tất cả 100 hình ảnh'));
+    await tester.pumpAndSettle();
     await tester.scrollUntilVisible(
       find.byKey(const ValueKey('99')),
       1000,
@@ -57,7 +65,7 @@ void main() {
       await env.mount(tester, const UnitScreen(id: 'u'));
       expect(find.text('P-A101'), findsNWidgets(2));
       expect(find.text('400 tr'), findsNWidgets(2));
-      expect(find.text('50,5 m²'), findsOneWidget);
+      expect(find.textContaining('50,5 m²'), findsOneWidget);
       expect(find.text('Chưa có hình ảnh.'), findsOneWidget);
       expect(find.text('Chưa có lịch sử thay đổi.'), findsOneWidget);
       expect(find.text('Tạo tin đăng'), findsNothing);
@@ -93,7 +101,7 @@ void main() {
       hasLength(1),
     );
   });
-  testWidgets('add then long-press opens existing picker without another add', (
+  testWidgets('first addition immediately opens the existing picker once', (
     tester,
   ) async {
     final env = HEnv();
@@ -106,8 +114,6 @@ void main() {
     expect(find.text('Đã thêm · chọn thêm căn'), findsOneWidget);
     expect(find.byIcon(Ionicons.checkmarkCircle), findsOneWidget);
     expect(find.byIcon(Ionicons.gitCompareOutline), findsNothing);
-    await tester.longPress(find.text('Đã thêm · chọn thêm căn'));
-    await tester.pumpAndSettle();
     expect(find.text('Chọn căn so sánh'), findsOneWidget);
     expect(
       tester.widget<UnitComparePicker>(find.byType(UnitComparePicker)).visible,

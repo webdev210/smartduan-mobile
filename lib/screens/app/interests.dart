@@ -37,7 +37,7 @@ class _InterestsState extends ConsumerState<InterestsScreen> {
     super.initState();
     final me = ref.read(sessionProvider).me;
     region = me?['region'] as String?;
-    ids = jsonStrings(me?['interested_project_ids']);
+    ids = jsonStrings(me?['interested_project_ids']).toList();
     initialRegion = region;
     initialIds = ids.toSet();
   }
@@ -49,6 +49,7 @@ class _InterestsState extends ConsumerState<InterestsScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Bỏ thay đổi chưa lưu?'),
+        scrollable: true,
         content: const Text('Lựa chọn miền và dự án của bạn chưa được lưu.'),
         actions: [
           TextButton(
@@ -152,10 +153,11 @@ class _InterestsState extends ConsumerState<InterestsScreen> {
                           (key: r.key, label: r.label, count: null),
                       ],
                     ),
-                    Row(
+                    Wrap(
                       spacing: 12,
+                      crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
-                        const Expanded(child: H2('Dự án quan tâm')),
+                        const H2('Dự án quan tâm'),
                         Semantics(
                           label:
                               'Chỉ xem dự án đã chọn, đã chọn ${ids.length} trên 50',
@@ -204,9 +206,21 @@ class _InterestsState extends ConsumerState<InterestsScreen> {
                         '${p.name}${on ? ', đang theo dõi' : ''}',
                     onPress: busy
                         ? null
-                        : () => setState(
-                            () => on ? ids.remove(p.id) : ids.add(p.id),
-                          ),
+                        : () => setState(() {
+                            if (on) {
+                              ids.remove(p.id);
+                            } else if (ids.length < 50) {
+                              ids.add(p.id);
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    'Chỉ chọn tối đa 50 dự án. Bỏ chọn một dự án để chọn thêm.',
+                                  ),
+                                ),
+                              );
+                            }
+                          }),
                     style: on
                         ? BoxDecoration(
                             color: c.brandSoft,
@@ -223,7 +237,6 @@ class _InterestsState extends ConsumerState<InterestsScreen> {
                             children: [
                               Text(
                                 p.name,
-                                maxLines: 2,
                                 style: const TextStyle(
                                   fontSize: 15,
                                   fontWeight: FontWeight.w600,
@@ -245,29 +258,30 @@ class _InterestsState extends ConsumerState<InterestsScreen> {
                 },
               ),
             ),
-            SafeArea(
-              top: false,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 12,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  spacing: 10,
-                  children: [
-                    if (failure != null)
-                      Notice(tone: 'error', text: errorMessage(failure)),
-                    Button(
-                      title: 'Lưu',
-                      loading: busy,
-                      disabled: region == null || ids.length > 50,
-                      onPress: save,
-                    ),
-                  ],
+            if (MediaQuery.viewInsetsOf(context).bottom == 0)
+              SafeArea(
+                top: false,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 12,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    spacing: 10,
+                    children: [
+                      if (failure != null)
+                        Notice(tone: 'error', text: errorMessage(failure)),
+                      Button(
+                        title: 'Lưu',
+                        loading: busy,
+                        disabled: region == null || ids.length > 50,
+                        onPress: save,
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
           ],
         ),
       ),

@@ -49,6 +49,8 @@ class _ShareLinksScreenState extends ConsumerState<ShareLinksScreen> {
   bool creating = false, revoking = false;
   Object? error;
   String? copied;
+  ShareLink? created;
+  bool shareFailed = false;
   Timer? _copyTimer;
   @override
   void dispose() {
@@ -80,8 +82,19 @@ class _ShareLinksScreenState extends ConsumerState<ShareLinksScreen> {
         widget.blockId,
       );
       if (!mounted || !identical(session, ref.read(sessionProvider))) return;
+      setState(() {
+        created = link;
+        shareFailed = false;
+        only = 'all';
+      });
       ref.invalidate(fetchShareLinksProvider(widget.projectId));
-      await _send(link);
+      try {
+        await _send(link);
+      } catch (_) {
+        if (mounted && identical(session, ref.read(sessionProvider))) {
+          setState(() => shareFailed = true);
+        }
+      }
     } catch (e) {
       if (mounted && identical(session, ref.read(sessionProvider))) {
         setState(() => error = e);
@@ -97,6 +110,7 @@ class _ShareLinksScreenState extends ConsumerState<ShareLinksScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
+        scrollable: true,
         title: const Text('Thu hồi link?'),
         content: const Text('Khách đang giữ link này sẽ không mở được nữa.'),
         actions: [
@@ -138,6 +152,7 @@ class _ShareLinksScreenState extends ConsumerState<ShareLinksScreen> {
   Future<void> _resend(ShareLink link) async {
     try {
       await _send(link);
+      if (mounted) setState(() => shareFailed = false);
     } catch (e) {
       if (mounted) setState(() => error = e);
     }
@@ -161,13 +176,30 @@ class _ShareLinksScreenState extends ConsumerState<ShareLinksScreen> {
   Widget build(BuildContext context) {
     final provider = fetchShareLinksProvider(widget.projectId);
     final links = ref.watch(provider);
-    final filtered = (links.value ?? <ShareLink>[])
+    final all = [
+      if (created != null &&
+          !(links.value ?? <ShareLink>[]).any((l) => l.id == created!.id))
+        created!,
+      ...?links.value,
+    ];
+    final latest = all
+        .where((l) => !shareLinkIsDead(l))
+        .fold<ShareLink?>(
+          null,
+          (a, b) =>
+              a == null || b.insertedAt.compareTo(a.insertedAt) > 0 ? b : a,
+        );
+    final filtered = all
         .where(
           (link) => only == 'all' || shareLinkIsDead(link) == (only == 'dead'),
         )
         .toList();
     ref.listen(sessionProvider, (_, _) {
-      setState(() => error = null);
+      setState(() {
+        error = null;
+        created = null;
+        shareFailed = false;
+      });
     });
     return Scaffold(
       appBar: AppBar(
@@ -194,12 +226,24 @@ class _ShareLinksScreenState extends ConsumerState<ShareLinksScreen> {
           const kit.Muted(
             'Khách mở link trên trình duyệt, xem bảng hàng với giá làm tròn và để lại liên hệ cho bạn.',
           ),
+          if (latest != null)
+            kit.Button(
+              title: 'Gửi lại link đang dùng',
+              icon: Ionicons.shareSocialOutline,
+              onPress: () => _resend(latest),
+            ),
           kit.Button(
+            kind: latest == null ? 'primary' : 'secondary',
             icon: Ionicons.shareSocialOutline,
             title: 'Tạo link mới và gửi',
             loading: creating,
             onPress: _create,
           ),
+          if (shareFailed)
+            const kit.Notice(
+              tone: 'warn',
+              text: 'Đã tạo link; chưa mở được chia sẻ. Bạn có thể gửi lại hoặc sao chép link bên dưới.',
+            ),
           if (error != null)
             kit.Notice(tone: 'error', text: errorMessage(error)),
           kit.AsyncView(
@@ -207,10 +251,12 @@ class _ShareLinksScreenState extends ConsumerState<ShareLinksScreen> {
             onRetry: () => ref.invalidate(provider),
             builder: (list) {
               if (list.isEmpty) {
-                return const kit.Empty(
-                  icon: Ionicons.shareSocialOutline,
-                  text: 'Chưa có link chia sẻ nào.',
-                );
+                return created != null
+                    ? const SizedBox.shrink()
+                    : const kit.Empty(
+                        icon: Ionicons.shareSocialOutline,
+                        text: 'Chưa có link chia sẻ nào.',
+                      );
               }
               final ended = list.where(shareLinkIsDead).length;
               final rows = list.where(
@@ -253,14 +299,13 @@ class _ShareLinksScreenState extends ConsumerState<ShareLinksScreen> {
   Widget _linkCard(ShareLink link) => kit.Card(
     key: ValueKey(link.id),
     children: [
-      kit.Pill(
-        soft: true,
-        label: link.revokedAt?.isNotEmpty == true
+      Text(
+        link.revokedAt?.isNotEmpty == true
             ? 'Đã thu hồi'
             : shareLinkIsDead(link)
             ? 'Hết hạn'
             : 'Còn hiệu lực',
-        color: shareLinkIsDead(link) ? c.muted : c.success,
+        style: TextStyle(color: shareLinkIsDead(link) ? c.muted : c.success),
       ),
       kit.Row(label: 'Tạo lúc', value: fmtDate(link.insertedAt, true)),
       kit.Row(

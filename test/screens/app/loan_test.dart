@@ -31,11 +31,17 @@ void main() {
           find.byType(kit.SearchBar),
           count > 12 ? findsOneWidget : findsNothing,
         );
-        expect(find.byType(kit.Chip), findsNWidgets(count));
+        expect(
+          find.descendant(
+            of: find.byType(kit.Chips).first,
+            matching: find.byType(kit.Chip),
+          ),
+          findsNWidgets(count),
+        );
         if (count <= 12) return;
         expect(
           tester.getBottomLeft(find.byType(kit.SearchBar)).dy,
-          lessThanOrEqualTo(tester.getTopLeft(find.byType(kit.Chips)).dy),
+          lessThanOrEqualTo(tester.getTopLeft(find.byType(kit.Chips).first).dy),
         );
         await tester.tap(find.text('Đông Sài Gòn'));
         final search = find.descendant(
@@ -44,19 +50,43 @@ void main() {
         );
         await tester.enterText(search, 'du an 12');
         await tester.pumpAndSettle();
-        expect(find.byType(kit.Chip), findsNWidgets(2));
+        expect(
+          find.descendant(
+            of: find.byType(kit.Chips).first,
+            matching: find.byType(kit.Chip),
+          ),
+          findsNWidgets(2),
+        );
         expect(find.text('Đông Sài Gòn'), findsOneWidget);
         expect(find.text('Dự án 12'), findsOneWidget);
         await tester.enterText(search, 'dong sai gon');
         await tester.pumpAndSettle();
-        expect(find.byType(kit.Chip), findsOneWidget);
+        expect(
+          find.descendant(
+            of: find.byType(kit.Chips).first,
+            matching: find.byType(kit.Chip),
+          ),
+          findsOneWidget,
+        );
         await tester.enterText(search, 'no match');
         await tester.pumpAndSettle();
         expect(find.text('Đông Sài Gòn'), findsOneWidget);
-        expect(find.byType(kit.Chip), findsOneWidget);
+        expect(
+          find.descendant(
+            of: find.byType(kit.Chips).first,
+            matching: find.byType(kit.Chip),
+          ),
+          findsOneWidget,
+        );
         await tester.enterText(search, '');
         await tester.pumpAndSettle();
-        expect(find.byType(kit.Chip), findsNWidgets(count));
+        expect(
+          find.descendant(
+            of: find.byType(kit.Chips).first,
+            matching: find.byType(kit.Chip),
+          ),
+          findsNWidgets(count),
+        );
       },
     );
   }
@@ -102,6 +132,9 @@ void main() {
       await tester.tap(find.text('Dự án mẫu'));
       await tester.pump();
       await tester.enterText(find.byType(TextField).at(0), '400.000.000');
+      await tester.ensureVisible(find.text('Điều chỉnh lãi suất / ưu đãi'));
+      await tester.tap(find.text('Điều chỉnh lãi suất / ưu đãi'));
+      await tester.pump();
       await tester.enterText(find.byType(TextField).at(3), '8,5');
       await tester.enterText(find.byType(TextField).at(4), '12');
       await tester.ensureVisible(find.text('Tính'));

@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:dio/dio.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -144,6 +145,7 @@ class ViewerScreen extends StatefulWidget {
 }
 
 class _ViewerScreenState extends State<ViewerScreen> {
+  bool openFile = false;
   String? source;
   @override
   void initState() {
@@ -161,57 +163,98 @@ class _ViewerScreenState extends State<ViewerScreen> {
   @override
   void didUpdateWidget(ViewerScreen old) {
     super.didUpdateWidget(old);
-    if (old.url != widget.url) _setSource();
+    if (old.url != widget.url) {
+      openFile = false;
+      _setSource();
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final android = Theme.of(context).platform == TargetPlatform.android;
     final src = source;
-    return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: Theme.of(context).brightness == Brightness.dark
-          ? SystemUiOverlayStyle.light
-          : SystemUiOverlayStyle.dark,
-      child: ColoredBox(
-        color: Theme.of(context).scaffoldBackgroundColor,
-        child: ViewerSafeArea(
-          child: Scaffold(
-            appBar: AppBar(
-              title: Text(widget.title.isEmpty ? 'Xem' : widget.title),
-            ),
-            body: SafeArea(
-              top: false,
-              child: src == null
-                  ? const kit.Screen(
-                      children: [
-                        kit.Notice(tone: 'warn', text: 'Link không hợp lệ.'),
-                      ],
-                    )
-                  : android && (widget.file || isFileUrl(src))
-                  ? _FileOpen(key: ValueKey(src), url: src)
-                  : PublicWebView(
-                      url: src,
-                      title: widget.title,
-                      navigation: (url, top) {
-                        final verdict = viewerNavigation(
-                          url,
-                          top,
-                          android: android,
-                        );
-                        if (verdict == 'download') setState(() => source = url);
-                        return verdict;
-                      },
-                      onOpen: (url) async {
-                        try {
-                          await launchUrl(
-                            Uri.parse(url),
-                            mode: LaunchMode.externalApplication,
-                          );
-                        } catch (_) {
-                          /* RN best effort. */
-                        }
-                      },
+    return PopScope(
+      canPop: false,
+      child: AnnotatedRegion<SystemUiOverlayStyle>(
+        value: Theme.of(context).brightness == Brightness.dark
+            ? SystemUiOverlayStyle.light
+            : SystemUiOverlayStyle.dark,
+        child: ColoredBox(
+          color: Theme.of(context).scaffoldBackgroundColor,
+          child: ViewerSafeArea(
+            child: Scaffold(
+              appBar: AppBar(
+                leading: Tooltip(
+                  message: 'Quay lại',
+                  child: BackButton(
+                    style: IconButton.styleFrom(
+                      minimumSize: const Size(48, 48),
                     ),
+                    onPressed: () {
+                      if (Navigator.canPop(context)) {
+                        Navigator.pop(context);
+                      } else {
+                        context.go('/');
+                      }
+                    },
+                  ),
+                ),
+                title: Tooltip(
+                  message: widget.title.isEmpty ? 'Xem' : widget.title,
+                  child: Text(widget.title.isEmpty ? 'Xem' : widget.title),
+                ),
+                actions: [
+                  if (!android &&
+                      !openFile &&
+                      src != null &&
+                      (widget.file || isFileUrl(src)))
+                    IconButton(
+                      tooltip: 'Chia sẻ tài liệu',
+                      constraints: const BoxConstraints(
+                        minWidth: 48,
+                        minHeight: 48,
+                      ),
+                      icon: const Icon(Ionicons.shareSocialOutline),
+                      onPressed: () => setState(() => openFile = true),
+                    ),
+                ],
+              ),
+              body: SafeArea(
+                top: false,
+                child: src == null
+                    ? const kit.Screen(
+                        children: [
+                          kit.Notice(tone: 'warn', text: 'Link không hợp lệ.'),
+                        ],
+                      )
+                    : (android || openFile) && (widget.file || isFileUrl(src))
+                    ? _FileOpen(key: ValueKey(src), url: src)
+                    : PublicWebView(
+                        url: src,
+                        title: widget.title,
+                        navigation: (url, top) {
+                          final verdict = viewerNavigation(
+                            url,
+                            top,
+                            android: android,
+                          );
+                          if (verdict == 'download') {
+                            setState(() => source = url);
+                          }
+                          return verdict;
+                        },
+                        onOpen: (url) async {
+                          try {
+                            await launchUrl(
+                              Uri.parse(url),
+                              mode: LaunchMode.externalApplication,
+                            );
+                          } catch (_) {
+                            /* RN best effort. */
+                          }
+                        },
+                      ),
+              ),
             ),
           ),
         ),
@@ -229,7 +272,13 @@ class _FileOpen extends ConsumerStatefulWidget {
 
 class _FileOpenState extends ConsumerState<_FileOpen> {
   String? shared;
+  bool shareFailed = false, sharing = false;
   Future<void> _share(String path) async {
+    if (sharing) return;
+    setState(() {
+      sharing = true;
+      shareFailed = false;
+    });
     try {
       final box = context.findRenderObject() as RenderBox?;
       await SharePlus.instance.share(
@@ -241,7 +290,9 @@ class _FileOpenState extends ConsumerState<_FileOpen> {
         ),
       );
     } catch (_) {
-      /* Cancelling or unavailable sharing must keep the file. */
+      if (mounted) setState(() => shareFailed = true);
+    } finally {
+      if (mounted) setState(() => sharing = false);
     }
   }
 
@@ -261,12 +312,26 @@ class _FileOpenState extends ConsumerState<_FileOpen> {
         kit.AsyncView(
           value: value,
           onRetry: () => ref.invalidate(viewerFileProvider(widget.url)),
-          builder: (path) => kit.Card(
+          builder: (path) => Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            spacing: 12,
             children: [
               const kit.Muted(
                 'Đã tải file về máy. Chọn ứng dụng để xem (Drive, trình đọc PDF…).',
               ),
+              if (shareFailed)
+                const kit.Notice(
+                  tone: 'error',
+                  text: 'Đã tải file; chưa mở được chia sẻ. Thử lại bằng file đã tải.',
+                ),
               kit.Button(
+                title: 'Chia sẻ tài liệu',
+                icon: Ionicons.shareSocialOutline,
+                loading: sharing,
+                onPress: () => _share(path),
+              ),
+              kit.Button(
+                kind: 'link',
                 icon: Ionicons.openOutline,
                 title: 'Mở file',
                 onPress: () => _share(path),

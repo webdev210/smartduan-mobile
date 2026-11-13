@@ -200,6 +200,7 @@ class _AccountCardState extends ConsumerState<_AccountCard>
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text(title),
+        scrollable: true,
         content: Text(message),
         actions: [
           TextButton(

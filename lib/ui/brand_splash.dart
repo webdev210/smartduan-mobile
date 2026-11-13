@@ -85,102 +85,106 @@ class BrandSplash extends StatelessWidget {
                         constraints: BoxConstraints(
                           minHeight: bounds.maxHeight,
                         ),
-                        child: IntrinsicHeight(
-                          child: Column(
-                            children: [
-                              ConstrainedBox(
-                                // Centre the brand at 18.5% of the full screen.
-                                // Grow naturally for large text; short windows scroll.
-                                constraints: BoxConstraints(
-                                  minHeight:
-                                      (media.size.height * .37 -
-                                              media.padding.top * 2)
-                                          .clamp(0.0, double.infinity),
-                                ),
-                                child: Center(
-                                  child: Appear(
-                                    child: ConstrainedBox(
-                                      constraints: const BoxConstraints(
-                                        maxWidth: 440,
-                                      ),
-                                      child: Column(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Image.asset(
-                                            'assets/smartland-mark.png',
-                                            width: 64,
-                                            height: 64,
-                                            color: c.gold,
-                                            fit: BoxFit.contain,
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            ConstrainedBox(
+                              // Centre the brand at 18.5% of the full screen.
+                              // Grow naturally for large text; short windows scroll.
+                              constraints: BoxConstraints(
+                                minHeight:
+                                    (media.size.height * .37 -
+                                            media.padding.top * 2)
+                                        .clamp(0.0, double.infinity),
+                              ),
+                              child: Center(
+                                child: Appear(
+                                  child: ConstrainedBox(
+                                    constraints: const BoxConstraints(
+                                      maxWidth: 440,
+                                    ),
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Image.asset(
+                                          'assets/smartland-mark.png',
+                                          width: 64,
+                                          height: 64,
+                                          color: c.gold,
+                                          fit: BoxFit.contain,
+                                        ),
+                                        const SizedBox(height: 16),
+                                        const Text(
+                                          'Smart Dự Án',
+                                          textAlign: TextAlign.center,
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 32,
+                                            height: 1.1,
+                                            fontWeight: FontWeight.w600,
+                                            letterSpacing: -.5,
+                                            decoration: TextDecoration.none,
+                                            shadows: [
+                                              Shadow(
+                                                color: Color(0x990a0f1c),
+                                                blurRadius: 12,
+                                              ),
+                                            ],
                                           ),
-                                          const SizedBox(height: 16),
-                                          const Text(
-                                            'Smart Dự Án',
-                                            textAlign: TextAlign.center,
-                                            style: TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 32,
-                                              height: 1.1,
-                                              fontWeight: FontWeight.w600,
-                                              letterSpacing: -.5,
-                                              decoration: TextDecoration.none,
-                                              shadows: [
-                                                Shadow(
-                                                  color: Color(0x990a0f1c),
-                                                  blurRadius: 12,
-                                                ),
-                                              ],
-                                            ),
+                                        ),
+                                        const SizedBox(height: 12),
+                                        const Text(
+                                          'Bảng hàng & dự án bất động sản trong tay\u00a0bạn',
+                                          textAlign: TextAlign.center,
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 15,
+                                            height: 1.4,
+                                            fontWeight: FontWeight.w400,
+                                            decoration: TextDecoration.none,
+                                            shadows: [
+                                              Shadow(
+                                                color: Color(0x990a0f1c),
+                                                blurRadius: 12,
+                                              ),
+                                            ],
                                           ),
-                                          const SizedBox(height: 12),
-                                          const Text(
-                                            'Bảng hàng & dự án bất động sản trong tay\u00a0bạn',
-                                            textAlign: TextAlign.center,
-                                            style: TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 15,
-                                              height: 1.4,
-                                              fontWeight: FontWeight.w400,
-                                              decoration: TextDecoration.none,
-                                              shadows: [
-                                                Shadow(
-                                                  color: Color(0x990a0f1c),
-                                                  blurRadius: 12,
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        ],
-                                      ),
+                                        ),
+                                      ],
                                     ),
                                   ),
                                 ),
                               ),
-                              const Spacer(),
-                              const SizedBox(height: 24),
-                              SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: CircularProgressIndicator(
-                                  value: reduceMotion ? 1 : null,
-                                  color: c.gold,
-                                  strokeWidth: 1.5,
+                            ),
+
+                            Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const SizedBox(height: 24),
+                                SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                    value: reduceMotion ? 1 : null,
+                                    color: c.gold,
+                                    strokeWidth: 1.5,
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(height: 20),
-                              const Text(
-                                'SMARTLAND',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w600,
-                                  letterSpacing: 4,
-                                  decoration: TextDecoration.none,
+                                const SizedBox(height: 20),
+                                const Text(
+                                  'SMARTLAND',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    letterSpacing: 4,
+                                    decoration: TextDecoration.none,
+                                  ),
                                 ),
-                              ),
-                            ],
-                          ),
+                              ],
+                            ),
+                          ],
                         ),
                       ),
                     ),

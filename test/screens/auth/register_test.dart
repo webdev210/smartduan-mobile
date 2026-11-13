@@ -44,6 +44,7 @@ void main() {
       await tester.pump();
       expect(fields[1].focusNode!.hasFocus, isTrue);
       await tester.ensureVisible(find.byType(TextField).last);
+      await tester.pump();
       await tester.tap(find.byType(TextField).last);
       await tester.testTextInput.receiveAction(TextInputAction.done);
       await tester.pumpAndSettle();
@@ -161,6 +162,7 @@ void main() {
           await tester.enterText(find.byType(TextField).at(index), value);
         }
         await tester.ensureVisible(find.byType(Switch));
+        await tester.pump();
         await tester.tap(find.byType(Switch));
         platform.latest.message('{"type":"turnstile","token":"once"}');
         await tester.pumpAndSettle();
@@ -195,6 +197,7 @@ void main() {
       await tester.enterText(find.byType(TextField).at(index), value);
     }
     await tester.ensureVisible(find.byType(Switch));
+    await tester.pump();
     await tester.tap(find.byType(Switch));
     await tester.pumpAndSettle();
     expect(find.textContaining('phiên bản v3'), findsOneWidget);

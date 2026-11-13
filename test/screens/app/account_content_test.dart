@@ -153,6 +153,7 @@ class KEnv {
 Future<void> press(WidgetTester t, String title) async {
   final f = find.widgetWithText(Button, title);
   await t.ensureVisible(f);
+  await t.pump();
   await t.tap(f);
   await t.pumpAndSettle();
 }
@@ -188,7 +189,10 @@ void main() {
       }),
     );
     await t.pumpAndSettle();
-    expect(find.text('Manager · '), findsOneWidget);
+    await press(t, 'Chọn quản lý');
+    expect(find.text('Manager'), findsOneWidget);
+    await t.tap(find.text('Manager'));
+    await t.pumpAndSettle();
     expect(find.text('Name kept'), findsOneWidget);
   });
   testWidgets(
@@ -268,7 +272,9 @@ void main() {
   testWidgets('refresh me changes free sales into the F2 request flow', (
     t,
   ) async {
-    final e = KEnv(me: {'roles': <String>[]});
+    final e = KEnv(
+      me: {'roles': <String>[], 'phone_verified_at': '2026-11-13'},
+    );
     e.session.nextMe = {
       'roles': ['sales_free'],
     };
@@ -612,7 +618,9 @@ void main() {
   });
   for (final success in [true, false]) {
     testWidgets('become sales mutation $success', (t) async {
-      final e = KEnv(me: {'roles': <String>[]});
+      final e = KEnv(
+        me: {'roles': <String>[], 'phone_verified_at': '2026-11-13'},
+      );
       final original = e.http.respond;
       e.http.respond = (r) => r.path == '/sales/become-sales'
           ? (success

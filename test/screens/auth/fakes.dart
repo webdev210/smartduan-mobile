@@ -103,6 +103,7 @@ Future<void> tapText(WidgetTester tester, String text) async {
   await tester.pumpAndSettle();
   final finder = find.text(text).last;
   await tester.ensureVisible(finder);
+  await tester.pump();
   await tester.tap(finder);
   await tester.pumpAndSettle();
 }

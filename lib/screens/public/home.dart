@@ -145,8 +145,10 @@ class PublicHome extends ConsumerWidget {
           children: [
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              child: Row(
+              child: Wrap(
                 spacing: 10,
+                runSpacing: 8,
+                crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
                   Image.asset(
                     'assets/icon.png',
@@ -154,14 +156,12 @@ class PublicHome extends ConsumerWidget {
                     height: 32,
                     semanticLabel: 'Smartland',
                   ),
-                  const Expanded(
-                    child: Text(
-                      'Smart Dự Án',
-                      style: TextStyle(
-                        fontSize: 19,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -.5,
-                      ),
+                  const Text(
+                    'Smart Dự Án',
+                    style: TextStyle(
+                      fontSize: 19,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -.5,
                     ),
                   ),
                   Button(
@@ -209,92 +209,86 @@ class PublicHome extends ConsumerWidget {
                                       ],
                                     ),
                                   ),
-                                Appear(
-                                  child: projects.isLoading
-                                      ? _pad(
-                                          Skeleton(
-                                            height: math.min(
-                                              (math.min(width, 640) - 40) * 1.1,
-                                              MediaQuery.sizeOf(context)
-                                                      .height *
-                                                  .6,
-                                            ),
-                                            style: BoxDecoration(
-                                              borderRadius:
-                                                  BorderRadius.circular(28),
+                                projects.isLoading
+                                    ? _pad(
+                                        Skeleton(
+                                          height: math.min(
+                                            (math.min(width, 640) - 40) * 1.1,
+                                            MediaQuery.sizeOf(context).height *
+                                                .6,
+                                          ),
+                                          style: BoxDecoration(
+                                            borderRadius: BorderRadius.circular(
+                                              16,
                                             ),
                                           ),
-                                        )
-                                      : AsyncView(
-                                          value: projects,
-                                          onRetry: () => ref.invalidate(
-                                            listAllPublicProjectsProvider,
-                                          ),
-                                          builder: (_) => _HeroSlides(
-                                            slides: slides,
-                                            index: state.slide,
-                                            onChanged: control.slide,
-                                          ),
                                         ),
-                                ),
-                                Appear(
-                                  delay: 80,
-                                  child: _pad(
-                                    Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.stretch,
-                                      spacing: 14,
-                                      children: [
-                                        SearchBar(
-                                          value: state.q,
-                                          onChangeText: control.search,
-                                          onSubmit: search,
-                                          placeholder:
-                                              'Tìm dự án, khu vực, chủ đầu tư…',
-                                          maxLength: 60,
-                                          onFilter: search,
+                                      )
+                                    : AsyncView(
+                                        value: projects,
+                                        onRetry: () => ref.invalidate(
+                                          listAllPublicProjectsProvider,
                                         ),
-                                        ProjectQuickFind(
-                                          q: state.q,
-                                          projects: all,
-                                          onOpen: (p) =>
-                                              _openProject(context, p),
-                                          onAll: search,
+                                        builder: (_) => _HeroSlides(
+                                          slides: slides,
+                                          index: state.slide,
+                                          onChanged: control.slide,
                                         ),
-                                        if (stats.value case final value?)
-                                          Card(
-                                            child: IntrinsicHeight(
-                                              child: Row(
-                                                children: [
-                                                  _trust(
-                                                    value.projectsSelling,
-                                                    'dự án đang bán',
-                                                  ),
+                                      ),
+                                _pad(
+                                  Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.stretch,
+                                    spacing: 14,
+                                    children: [
+                                      SearchBar(
+                                        value: state.q,
+                                        onChangeText: control.search,
+                                        onSubmit: search,
+                                        placeholder:
+                                            'Tìm dự án, khu vực, chủ đầu tư…',
+                                        maxLength: 60,
+                                        onFilter: search,
+                                      ),
+                                      ProjectQuickFind(
+                                        q: state.q,
+                                        projects: all,
+                                        onOpen: (p) => _openProject(context, p),
+                                        onAll: search,
+                                      ),
+                                      if (stats.value case final value?)
+                                        Card(
+                                          child: IntrinsicHeight(
+                                            child: Row(
+                                              children: [
+                                                _trust(
+                                                  value.projectsSelling,
+                                                  'dự án đang bán',
+                                                ),
+                                                const VerticalDivider(
+                                                  width: 1,
+                                                  color: c.border,
+                                                ),
+                                                _trust(
+                                                  value.developers,
+                                                  'chủ đầu tư',
+                                                ),
+                                                if (value.activity7dTotal >
+                                                    0) ...[
                                                   const VerticalDivider(
                                                     width: 1,
                                                     color: c.border,
                                                   ),
                                                   _trust(
-                                                    value.developers,
-                                                    'chủ đầu tư',
+                                                    value.activity7dTotal,
+                                                    'giao dịch 7 ngày',
                                                   ),
-                                                  if (value.activity7dTotal >
-                                                      0) ...[
-                                                    const VerticalDivider(
-                                                      width: 1,
-                                                      color: c.border,
-                                                    ),
-                                                    _trust(
-                                                      value.activity7dTotal,
-                                                      'giao dịch 7 ngày',
-                                                    ),
-                                                  ],
                                                 ],
-                                              ),
+                                              ],
                                             ),
                                           ),
-                                      ],
-                                    ),
+                                        ),
+                                    ],
                                   ),
                                 ),
                                 Column(
@@ -302,7 +296,6 @@ class PublicHome extends ConsumerWidget {
                                   children: [
                                     _pad(
                                       Section(
-                                        eyebrow: 'Khám phá dự án',
                                         title: 'Dự án nổi bật',
                                         action: (
                                           label: 'Xem tất cả',
@@ -390,7 +383,6 @@ class PublicHome extends ConsumerWidget {
                                     children: [
                                       _pad(
                                         Section(
-                                          eyebrow: 'Tìm thêm dự án',
                                           title: 'Theo khu vực',
                                           child: ChipRail(
                                             children: [
@@ -690,7 +682,7 @@ class _HeroSlidesState extends State<_HeroSlides> {
                     child: Pressable(
                       onPress: () => _openProject(context, p),
                       child: ClipRRect(
-                        borderRadius: BorderRadius.circular(28),
+                        borderRadius: BorderRadius.circular(16),
                         child: Stack(
                           fit: StackFit.expand,
                           children: [
@@ -733,37 +725,6 @@ class _HeroSlidesState extends State<_HeroSlides> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   spacing: 6,
                                   children: [
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 10,
-                                        vertical: 4,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        gradient: c.goldGradient,
-                                        borderRadius: BorderRadius.circular(
-                                          999,
-                                        ),
-                                      ),
-                                      child: const Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        spacing: 4,
-                                        children: [
-                                          Icon(
-                                            Ionicons.flame,
-                                            size: 13,
-                                            color: c.brandDeep,
-                                          ),
-                                          Text(
-                                            'Nổi bật',
-                                            style: TextStyle(
-                                              color: c.brandDeep,
-                                              fontSize: 12,
-                                              fontWeight: FontWeight.w800,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
                                     Text(
                                       p.name,
                                       maxLines: 2,
@@ -797,8 +758,7 @@ class _HeroSlidesState extends State<_HeroSlides> {
                                           999,
                                         ),
                                       ),
-                                      child: const Row(
-                                        mainAxisSize: MainAxisSize.min,
+                                      child: const Wrap(
                                         spacing: 6,
                                         children: [
                                           Text(
@@ -877,7 +837,7 @@ class _Rail extends StatelessWidget {
       );
     }
     if (items.isEmpty) {
-      return Empty(icon: Ionicons.businessOutline, text: empty);
+      return _pad(Muted(empty));
     }
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
@@ -928,8 +888,8 @@ class _PostBand extends StatelessWidget {
     return _pad(
       Section(
         title: title,
-        child: Card(
-          padding: EdgeInsets.zero,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             for (var i = 0; i < posts.length; i++) ...[
               if (i > 0) const Divider(),
@@ -1050,13 +1010,7 @@ class _GuestBar extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     decoration: const BoxDecoration(
       color: c.card,
-      boxShadow: [
-        BoxShadow(
-          color: Color(0x12131313),
-          offset: Offset(0, -6),
-          blurRadius: 24,
-        ),
-      ],
+      border: Border(top: BorderSide(color: c.border)),
     ),
     child: SafeArea(
       top: false,

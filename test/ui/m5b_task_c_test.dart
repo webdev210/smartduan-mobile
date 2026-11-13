@@ -94,6 +94,7 @@ void main() {
       );
       expect(find.text('Kỳ 1'), findsNothing);
       await tester.ensureVisible(find.text('Xem lịch trả 12 kỳ đầu'));
+      await tester.pump();
       await tester.tap(find.text('Xem lịch trả 12 kỳ đầu'));
       await tester.pumpAndSettle();
       expect(find.text('Kỳ 1'), findsOneWidget);
@@ -223,8 +224,18 @@ void main() {
     expect(find.text('Dự án 30'), findsNothing);
     await tester.tap(find.text('Tải thêm'));
     await tester.pumpAndSettle();
-    expect(find.text('Dự án 30'), findsOneWidget);
     expect(find.text('Hiển thị 31/31 dự án'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('Dự án 30'),
+      300,
+      scrollable: find
+          .descendant(
+            of: find.byType(ListView),
+            matching: find.byType(Scrollable),
+          )
+          .first,
+    );
+    expect(find.text('Dự án 30'), findsOneWidget);
   });
 
   testWidgets('21 unit picker announces visible price type and status', (
@@ -289,6 +300,16 @@ void main() {
     expect(find.text('Hiển thị 40/41 căn'), findsOneWidget);
     await tester.tap(find.text('Tải thêm'));
     await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('U40'),
+      300,
+      scrollable: find
+          .descendant(
+            of: find.byType(ListView),
+            matching: find.byType(Scrollable),
+          )
+          .first,
+    );
     expect(find.text('U40'), findsOneWidget);
   });
 
@@ -333,10 +354,29 @@ void main() {
         ),
         findsOneWidget,
       );
+      await tester.scrollUntilVisible(
+        find.text('Tải thêm'),
+        500,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.ensureVisible(find.text('Tải thêm'));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Tải thêm'));
       await tester.pumpAndSettle();
-      expect(find.text('Hiển thị 6/6 dự án'), findsOneWidget);
+      await tester.scrollUntilVisible(
+        find.text('Dự án 5'),
+        500,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.ensureVisible(find.text('Dự án 5'));
+      await tester.pumpAndSettle();
       expect(find.text('Dự án 5'), findsOneWidget);
+      await tester.scrollUntilVisible(
+        find.text('Hiển thị 6/6 dự án'),
+        -500,
+        scrollable: find.byType(Scrollable).first,
+      );
+      expect(find.text('Hiển thị 6/6 dự án'), findsOneWidget);
     },
   );
 
@@ -439,10 +479,12 @@ void main() {
     expect(tester.widget<Text>(find.text(text)).maxLines, 6);
     expect(find.text('Tiện ích 5'), findsNothing);
     await tester.ensureVisible(find.text('Xem thêm (6)'));
+    await tester.pump();
     await tester.tap(find.text('Xem thêm (6)'));
     await tester.pumpAndSettle();
     expect(find.text('Tiện ích 5'), findsOneWidget);
     await tester.ensureVisible(find.text('Xem thêm'));
+    await tester.pump();
     await tester.tap(find.text('Xem thêm'));
     await tester.pumpAndSettle();
     expect(tester.widget<Text>(find.text(text)).maxLines, isNull);
@@ -479,6 +521,7 @@ void main() {
       expect(find.text('Chủ đầu tư 7 · 1'), findsOneWidget);
       expect(find.text('Chủ đầu tư 6 · 1'), findsNothing);
       await tester.ensureVisible(find.text('Xem thêm chủ đầu tư (8)'));
+      await tester.pump();
       await tester.tap(find.text('Xem thêm chủ đầu tư (8)'));
       await tester.pumpAndSettle();
       final search = find.byWidgetPredicate(
@@ -547,6 +590,7 @@ void main() {
       for (var i = 0; i < 3; i++) {
         final action = find.text('Xem thêm (6)').first;
         await tester.ensureVisible(action);
+        await tester.pump();
         await tester.tap(action);
         await tester.pumpAndSettle();
       }

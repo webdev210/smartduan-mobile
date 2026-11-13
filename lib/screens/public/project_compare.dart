@@ -124,11 +124,7 @@ class _ProjectCompareScreenState extends ConsumerState<ProjectCompareScreen> {
     final queries = [
       for (final code in codes) ref.watch(fetchPublicProjectProvider(code)),
     ];
-    final failed = [
-      for (var i = 0; i < codes.length; i++)
-        if (queries[i].hasError) codes[i],
-    ];
-    final projects = [for (final q in queries) ?q.asData?.value];
+    final projects = [for (final q in queries) q.asData?.value];
     final pick = ComparePicker(
       visible: picker,
       onClose: () => setState(() => picker = false),
@@ -140,46 +136,22 @@ class _ProjectCompareScreenState extends ConsumerState<ProjectCompareScreen> {
           kit.Screen(
             children: codes.length < 2
                 ? [
-                    kit.Empty(
-                      icon: Ionicons.gitCompareOutline,
-                      text: 'Chọn ít nhất 2 dự án để so sánh giá, loại hình, bàn giao, tiện ích… Trên thẻ dự án: bấm “So sánh”, hoặc giữ nút để chọn nhiều dự án.',
-                      action: (
-                        label: 'Chọn dự án',
-                        onPress: () => setState(() => picker = true),
-                      ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      spacing: 12,
+                      children: [
+                        const kit.Muted(
+                          'Chọn ít nhất 2 dự án để so sánh giá, loại hình, bàn giao, tiện ích… Trên thẻ dự án: bấm “So sánh”, hoặc giữ nút để chọn nhiều dự án.',
+                        ),
+                        kit.Button(
+                          title: 'Chọn dự án',
+                          onPress: () => setState(() => picker = true),
+                        ),
+                      ],
                     ),
                   ]
                 : [
-                    if (failed.isNotEmpty) ...[
-                      kit.Notice(
-                        tone: 'warn',
-                        text:
-                            'Không tải được ${failed.length} dự án (có thể đã ngừng công khai).',
-                      ),
-                      kit.Button(
-                        title: 'Thử lại dự án lỗi',
-                        onPress: () {
-                          for (final code in failed) {
-                            ref.invalidate(fetchPublicProjectProvider(code));
-                          }
-                        },
-                      ),
-                      kit.Button(
-                        kind: 'secondary',
-                        size: 'sm',
-                        title: 'Bỏ dự án lỗi',
-                        onPress: () {
-                          for (final code in failed) {
-                            ref
-                                .read(projectCompareProvider.notifier)
-                                .remove(code);
-                          }
-                        },
-                      ),
-                    ],
-                    if (projects.length < codes.length - failed.length)
-                      const kit.Loading(),
-                    kit.Card(
+                    Padding(
                       padding: const EdgeInsets.all(12),
                       child: SingleChildScrollView(
                         scrollDirection: Axis.horizontal,
@@ -196,82 +168,121 @@ class _ProjectCompareScreenState extends ConsumerState<ProjectCompareScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 spacing: 12,
                                 children: [
-                                  for (final p in projects)
+                                  for (var i = 0; i < codes.length; i++)
                                     Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.stretch,
-                                        spacing: 8,
-                                        children: [
-                                          ClipRRect(
-                                            borderRadius: BorderRadius.circular(
-                                              12,
-                                            ),
-                                            child: AspectRatio(
+                                      key: ValueKey('compare-${codes[i]}'),
+                                      child: switch (projects[i]) {
+                                        null => Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.stretch,
+                                          children: [
+                                            const AspectRatio(
                                               aspectRatio: 16 / 10,
-                                              child: ProjectMedia(
-                                                compact: true,
-                                                name: p.name,
-                                                uri: p.coverUrl,
-                                              ),
+                                              child: kit.Skeleton(height: 120),
                                             ),
-                                          ),
-                                          Semantics(
-                                            link: true,
-                                            child: InkWell(
-                                              onTap: () => context.push(
-                                                '/cong-khai/${Uri.encodeComponent(p.code)}',
+                                            Text(codes[i]),
+                                            Text(
+                                              queries[i].hasError
+                                                  ? 'Không tải được dự án (có thể đã ngừng công khai).'
+                                                  : 'Đang tải dự án…',
+                                            ),
+                                            if (queries[i].hasError) ...[
+                                              kit.Button(
+                                                title: 'Thử lại dự án lỗi',
+                                                kind: 'link',
+                                                onPress: () => ref.invalidate(
+                                                  fetchPublicProjectProvider(
+                                                    codes[i],
+                                                  ),
+                                                ),
                                               ),
-                                              child: Text(
-                                                p.name,
-                                                maxLines: 3,
-                                                style: const TextStyle(
-                                                  fontSize: 15,
-                                                  fontWeight: FontWeight.w700,
-                                                  height: 20 / 15,
+                                              kit.Button(
+                                                title: 'Bỏ dự án lỗi',
+                                                kind: 'link',
+                                                onPress: () => ref
+                                                    .read(
+                                                      projectCompareProvider
+                                                          .notifier,
+                                                    )
+                                                    .remove(codes[i]),
+                                              ),
+                                            ],
+                                          ],
+                                        ),
+                                        final p => Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.stretch,
+                                          spacing: 8,
+                                          children: [
+                                            ClipRRect(
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
+                                              child: AspectRatio(
+                                                aspectRatio: 16 / 10,
+                                                child: ProjectMedia(
+                                                  compact: true,
+                                                  name: p.name,
+                                                  uri: p.coverUrl,
                                                 ),
                                               ),
                                             ),
-                                          ),
-                                          Semantics(
-                                            button: true,
-                                            label: 'Bỏ ${p.name} khỏi so sánh',
-                                            onTap: () => ref
-                                                .read(
-                                                  projectCompareProvider
-                                                      .notifier,
-                                                )
-                                                .remove(p.code),
-                                            excludeSemantics: true,
-                                            child: InkWell(
+                                            Semantics(
+                                              link: true,
+                                              child: InkWell(
+                                                onTap: () => context.push(
+                                                  '/cong-khai/${Uri.encodeComponent(p.code)}',
+                                                ),
+                                                child: Text(
+                                                  p.name,
+                                                  style: const TextStyle(
+                                                    fontSize: 15,
+                                                    fontWeight: FontWeight.w700,
+                                                    height: 20 / 15,
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                            Semantics(
+                                              button: true,
+                                              label:
+                                                  'Bỏ ${p.name} khỏi so sánh',
                                               onTap: () => ref
                                                   .read(
                                                     projectCompareProvider
                                                         .notifier,
                                                   )
                                                   .remove(p.code),
-                                              child: const Padding(
-                                                padding: EdgeInsets.zero,
-                                                child: SizedBox(
-                                                  width: 48,
-                                                  height: 48,
-                                                  child: Center(
-                                                    child: Text(
-                                                      'Bỏ',
-                                                      style: TextStyle(
-                                                        fontSize: 13,
-                                                        fontWeight:
-                                                            FontWeight.w600,
-                                                        color: c.brand,
+                                              excludeSemantics: true,
+                                              child: InkWell(
+                                                onTap: () => ref
+                                                    .read(
+                                                      projectCompareProvider
+                                                          .notifier,
+                                                    )
+                                                    .remove(p.code),
+                                                child: const Padding(
+                                                  padding: EdgeInsets.zero,
+                                                  child: SizedBox(
+                                                    width: 48,
+                                                    height: 48,
+                                                    child: Center(
+                                                      child: Text(
+                                                        'Bỏ',
+                                                        style: TextStyle(
+                                                          fontSize: 13,
+                                                          fontWeight:
+                                                              FontWeight.w600,
+                                                          color: c.brand,
+                                                        ),
                                                       ),
                                                     ),
                                                   ),
                                                 ),
                                               ),
                                             ),
-                                          ),
-                                        ],
-                                      ),
+                                          ],
+                                        ),
+                                      },
                                     ),
                                 ],
                               ),
@@ -293,12 +304,11 @@ class _ProjectCompareScreenState extends ConsumerState<ProjectCompareScreen> {
                                     spacing: 8,
                                     children: [
                                       Text(
-                                        label.toUpperCase(),
+                                        label,
                                         style: const TextStyle(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w700,
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w600,
                                           color: c.muted,
-                                          letterSpacing: .3,
                                         ),
                                       ),
                                       DefaultTextStyle(
@@ -314,7 +324,13 @@ class _ProjectCompareScreenState extends ConsumerState<ProjectCompareScreen> {
                                           spacing: 12,
                                           children: [
                                             for (final p in projects)
-                                              Expanded(child: cell(p)),
+                                              Expanded(
+                                                child: p == null
+                                                    ? _quiet(
+                                                        'Chưa tải được dữ liệu',
+                                                      )
+                                                    : cell(p),
+                                              ),
                                           ],
                                         ),
                                       ),
@@ -327,7 +343,7 @@ class _ProjectCompareScreenState extends ConsumerState<ProjectCompareScreen> {
                       ),
                     ),
                     kit.Button(
-                      kind: codes.length < 3 ? 'soft' : 'secondary',
+                      kind: 'secondary',
                       icon: codes.length < 3 ? Ionicons.add : null,
                       title: codes.length < 3
                           ? 'Thêm dự án so sánh'

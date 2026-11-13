@@ -22,16 +22,13 @@ class _LoanResultCardsState extends State<LoanResultCards> {
     children: [
       Card(
         children: [
-          const H2('Kết quả'),
+          const H2('Trả hàng tháng — kỳ đầu'),
+          H1(fmtMoney(r.monthlyPayment)),
           Row(label: 'Giá', value: fmtMoney(r.price)),
           Row(
             label: 'Khoản vay',
             value:
                 '${fmtMoney(r.loanAmount)} (${(r.loanRatio * 100).round()}%)',
-          ),
-          Row(
-            label: 'Trả hàng tháng (kỳ đầu)',
-            value: fmtMoney(r.monthlyPayment),
           ),
           Row(label: 'Tổng lãi', value: fmtMoney(r.totals.interest)),
           Row(label: 'Tổng trả', value: fmtMoney(r.totals.total)),

@@ -1,5 +1,8 @@
 import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart' show Factory;
+import 'package:flutter/gestures.dart';
+
 import 'package:material_ui/material_ui.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_android/webview_flutter_android.dart';
@@ -206,7 +209,16 @@ class _PublicWebViewState extends State<PublicWebView> {
       child: Stack(
         children: [
           if (controller case final c?)
-            Positioned.fill(child: WebViewWidget(controller: c)),
+            Positioned.fill(
+              child: WebViewWidget(
+                controller: c,
+                gestureRecognizers: {
+                  Factory<OneSequenceGestureRecognizer>(
+                    EagerGestureRecognizer.new,
+                  ),
+                },
+              ),
+            ),
           if (loading)
             Center(
               child: Column(

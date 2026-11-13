@@ -28,6 +28,7 @@ class Pressable extends StatefulWidget {
     this.disabled = false,
     this.pressedOpacity = 0.9,
     this.pressedScale = 1,
+    this.onHighlightChanged,
   });
   final Widget child;
   final VoidCallback? onPress;
@@ -35,6 +36,7 @@ class Pressable extends StatefulWidget {
   final String? label;
   final bool disabled;
   final double pressedOpacity, pressedScale;
+  final ValueChanged<bool>? onHighlightChanged;
   @override
   State<Pressable> createState() => _PressableState();
 }
@@ -45,6 +47,7 @@ class _PressableState extends State<Pressable> {
   bool get enabled => !widget.disabled && widget.onPress != null;
   void _pressed(bool value) {
     if (mounted) setState(() => pressed = value);
+    widget.onHighlightChanged?.call(value);
   }
 
   @override
@@ -212,41 +215,26 @@ class Screen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Widget scroll = slivers.isNotEmpty
-        ? CustomScrollView(
-            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-            physics: onRefresh == null
-                ? null
-                : const AlwaysScrollableScrollPhysics(),
-            slivers: [
-              SliverPadding(
-                padding: padded
-                    ? const EdgeInsets.fromLTRB(20, 12, 20, 16)
-                    : EdgeInsets.zero,
-                sliver: SliverToBoxAdapter(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    spacing: padded ? 16 : 0,
-                    children: children,
-                  ),
-                ),
-              ),
-              ...slivers,
-              const SliverToBoxAdapter(child: SizedBox(height: 48)),
-            ],
-          )
-        : SingleChildScrollView(
-            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-            physics: onRefresh == null
-                ? null
-                : const AlwaysScrollableScrollPhysics(),
-            padding: padded ? const EdgeInsets.fromLTRB(20, 12, 20, 48) : null,
+    final Widget scroll = CustomScrollView(
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+      physics: onRefresh == null ? null : const AlwaysScrollableScrollPhysics(),
+      slivers: [
+        SliverPadding(
+          padding: padded
+              ? const EdgeInsets.fromLTRB(20, 12, 20, 16)
+              : EdgeInsets.zero,
+          sliver: SliverToBoxAdapter(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               spacing: padded ? 16 : 0,
               children: children,
             ),
-          );
+          ),
+        ),
+        ...slivers,
+        const SliverToBoxAdapter(child: SizedBox(height: 48)),
+      ],
+    );
     return ColoredBox(
       color: bg,
       child: Align(
@@ -604,15 +592,7 @@ class Empty extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       spacing: 14,
       children: [
-        Container(
-          width: 68,
-          height: 68,
-          decoration: const BoxDecoration(
-            color: brandSoft,
-            shape: BoxShape.circle,
-          ),
-          child: Icon(icon, size: 30, color: brand),
-        ),
+        Icon(icon, size: 24, color: muted),
         Muted(
           text,
           textAlign: TextAlign.center,

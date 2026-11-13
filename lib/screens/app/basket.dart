@@ -55,10 +55,10 @@ class BasketScreen extends ConsumerWidget {
       child: Scaffold(
         appBar: AppBar(
           automaticallyImplyLeading: false,
-          leadingWidth: 125,
-          leading: TextButton.icon(
+          leading: IconButton(
+            tooltip: 'Quay lại',
+            constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
             icon: const Icon(Ionicons.chevronBack),
-            label: const Text('Quay lại'),
             onPressed: () {
               final navigator = Navigator.of(context);
               if (navigator.canPop()) {
@@ -70,14 +70,18 @@ class BasketScreen extends ConsumerWidget {
           ),
           title: const Text('Rổ hàng'),
         ),
-        body: session.status != SessionStatus.signedIn
-            ? const SizedBox.shrink()
-            : _Basket(
-                key: ObjectKey(session),
-                projectId: projectId,
-                url: url,
-                mint: ref.watch(mintBasketTokenProvider),
-              ),
+        body: SafeArea(
+          top: false,
+          bottom: false,
+          child: session.status != SessionStatus.signedIn
+              ? const SizedBox.shrink()
+              : _Basket(
+                  key: ObjectKey(session),
+                  projectId: projectId,
+                  url: url,
+                  mint: ref.watch(mintBasketTokenProvider),
+                ),
+        ),
       ),
     );
   }

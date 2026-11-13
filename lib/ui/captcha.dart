@@ -124,11 +124,13 @@ class _CaptchaState extends State<Captcha> {
           spacing: 8,
           children: [
             Expanded(child: Muted(_failed!)),
-            Button(
-              title: 'Xác minh lại',
-              kind: 'link',
-              size: 'sm',
-              onPress: () => unawaited(_load()),
+            Flexible(
+              child: Button(
+                title: 'Xác minh lại',
+                kind: 'link',
+                size: 'sm',
+                onPress: () => unawaited(_load()),
+              ),
             ),
           ],
         ),

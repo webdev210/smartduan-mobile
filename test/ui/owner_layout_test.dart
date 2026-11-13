@@ -214,7 +214,7 @@ void main() {
     await gesture.up();
     await tester.pump();
     expect(container.read(projectCompareProvider), ['A']);
-    expect(find.text('Chọn dự án so sánh'), findsOneWidget);
+    expect(find.text('So sánh dự án'), findsOneWidget);
     expect(opened, 0);
     await tester.pumpWidget(const SizedBox());
     await tester.pump(const Duration(seconds: 3));

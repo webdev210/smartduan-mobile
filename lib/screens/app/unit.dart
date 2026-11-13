@@ -9,6 +9,7 @@ import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../api/errors.dart';
+import '../../api/content.dart' show fetchPolicyScopesProvider;
 import '../../api/sales.dart';
 import '../../api/units.dart';
 import '../../api/unit_compare.dart' show unitCompareProvider;
@@ -60,6 +61,8 @@ class UnitScreen extends ConsumerStatefulWidget {
 class _UnitScreenState extends ConsumerState<UnitScreen> {
   bool picker = false;
   bool allHistory = false;
+  bool allImages = false;
+  bool policies = false;
   SessionState? loggedSession;
   @override
   Widget build(BuildContext context) {
@@ -90,6 +93,142 @@ class _UnitScreenState extends ConsumerState<UnitScreen> {
     }
     return Scaffold(
       appBar: AppBar(title: Text(u?.publicCode ?? u?.code ?? 'Chi tiết căn')),
+      bottomNavigationBar: u == null
+          ? null
+          : SafeArea(
+              top: false,
+              child: Center(
+                heightFactor: 1,
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 640),
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      spacing: 8,
+                      children: [
+                        kit.Sheet(
+                          visible: policies,
+                          title: 'Chính sách dự án',
+                          onClose: () => setState(() => policies = false),
+                          child: Consumer(
+                            builder: (context, ref, _) {
+                              final provider = fetchPolicyScopesProvider(
+                                u.projectId,
+                              );
+                              return kit.AsyncView(
+                                value: ref.watch(provider),
+                                onRetry: () => ref.invalidate(provider),
+                                builder: (list) => Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  spacing: 16,
+                                  children: [
+                                    if (list.isEmpty)
+                                      const kit.Muted(
+                                        'Chưa có chính sách dự án.',
+                                      ),
+                                    for (final p in list) ...[
+                                      kit.H2(p.title),
+                                      kit.Muted(
+                                        '${p.fund == null || p.fund!.isEmpty ? 'CSBH chung' : enums?.fundLabels[p.fund] ?? p.fund} · Hiệu lực ${fmtDate(p.effectiveFrom)}',
+                                      ),
+                                      if (p.summary?.isNotEmpty == true)
+                                        kit.Body(p.summary!),
+                                      if (p.fileUrl case final url?
+                                          when url.isNotEmpty)
+                                        kit.Button(
+                                          title: 'Xem chính sách',
+                                          kind: 'link',
+                                          onPress: () =>
+                                              openInApp(context, url, p.title),
+                                        ),
+                                    ],
+                                  ],
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                        kit.Button(
+                          kind: 'secondary',
+                          title: 'Tính lãi vay căn này',
+                          onPress: () => context.push(
+                            Uri(
+                              path: '/lai-vay',
+                              queryParameters: {
+                                'unitId': u.id,
+                                'code': u.publicCode ?? u.code,
+                              },
+                            ).toString(),
+                          ),
+                        ),
+                        if (screens['compare']!(session.roles)) ...[
+                          kit.Button(
+                            kind: 'secondary',
+                            icon: compare.asData?.value == true
+                                ? Ionicons.checkmarkCircle
+                                : Ionicons.gitCompareOutline,
+                            title: compare.asData?.value == true
+                                ? 'Đã thêm · chọn thêm căn'
+                                : 'Thêm vào so sánh',
+                            loading: compare.isLoading,
+                            onPress: () async {
+                              if (compare.asData?.value == true) {
+                                setState(() => picker = true);
+                              } else {
+                                await ref
+                                    .read(
+                                      unitCompareAddProvider(widget.id)
+                                          .notifier,
+                                    )
+                                    .add();
+                                if (mounted &&
+                                    ref
+                                            .read(
+                                              unitCompareAddProvider(widget.id),
+                                            )
+                                            .asData
+                                            ?.value ==
+                                        true) {
+                                  setState(() => picker = true);
+                                }
+                              }
+                            },
+                            onLongPress: () {
+                              if (compare.asData?.value != true &&
+                                  !compare.isLoading) {
+                                ref
+                                    .read(
+                                      unitCompareAddProvider(widget.id)
+                                          .notifier,
+                                    )
+                                    .add();
+                              }
+                              setState(() => picker = true);
+                            },
+                          ),
+                          if (compare.hasError)
+                            kit.Notice(
+                              tone: 'error',
+                              text: errorMessage(compare.error),
+                            ),
+                          UnitComparePicker(
+                            projectId: u.projectId,
+                            visible: picker,
+                            onClose: () {
+                              setState(() => picker = false);
+                              ref.invalidate(fetchCompareProvider);
+                            },
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
       body: u == null
           ? kit.Screen(
               children: [
@@ -102,7 +241,9 @@ class _UnitScreenState extends ConsumerState<UnitScreen> {
               ],
             )
           : kit.ListScreen<UnitImage>(
-              data: images?.value?.data ?? const [],
+              data: allImages
+                  ? images?.value?.data ?? const []
+                  : images?.value?.data.take(1).toList() ?? const [],
               keyOf: (image) => image.id,
               renderItem: (img) => AppNetworkImage(
                 img.url,
@@ -133,10 +274,11 @@ class _UnitScreenState extends ConsumerState<UnitScreen> {
                       onRetry: () =>
                           ref.invalidate(fetchUnitImagesProvider(widget.id)),
                     ),
-                  Row(
+                  Wrap(
                     spacing: 12,
+                    runSpacing: 8,
                     children: [
-                      Expanded(child: kit.H1(u.publicCode ?? u.code)),
+                      kit.H1(u.publicCode ?? u.code),
                       kit.Pill(
                         label: statusLabel[u.status] ?? u.status,
                         color: Color(
@@ -152,6 +294,15 @@ class _UnitScreenState extends ConsumerState<UnitScreen> {
                     ],
                   ),
                   if (u.title.isNotEmpty) kit.Muted(u.title),
+                  kit.Muted(
+                    [
+                      if (u.bedrooms != null) '${u.bedrooms}PN',
+                      '${u.areaNet != null ? 'Thông thuỷ' : 'Tim tường'} ${fmtArea(u.areaNet ?? u.areaGross)}',
+                      enums?.directionLabels[u.direction] ??
+                          u.direction ??
+                          'Chưa có hướng',
+                    ].join(' · '),
+                  ),
                   kit.Body(
                     fmtPrice(u.priceMin ?? u.priceList),
                     selectable: true,
@@ -165,6 +316,18 @@ class _UnitScreenState extends ConsumerState<UnitScreen> {
                         (u.priceMin != null && u.priceMin != ''
                             ? 'Giá tốt nhất'
                             : 'Giá niêm yết'),
+                  ),
+                  if (images?.value?.priceSheet?.url ?? u.priceSheetUrl
+                      case final url? when url.isNotEmpty)
+                    kit.Button(
+                      kind: 'link',
+                      title: 'Phiếu giá',
+                      onPress: () => openInApp(context, url, 'Phiếu tính giá'),
+                    ),
+                  kit.Button(
+                    kind: 'link',
+                    title: 'Chính sách dự án',
+                    onPress: () => setState(() => policies = true),
                   ),
                 ],
               ),
@@ -180,7 +343,9 @@ class _UnitScreenState extends ConsumerState<UnitScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 spacing: 16,
                 children: [
-                  kit.Card(
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    spacing: 8,
                     children: [
                       const kit.H2('Thông tin'),
                       kit.Row(label: 'Toà', value: u.block?.name ?? '—'),
@@ -189,24 +354,12 @@ class _UnitScreenState extends ConsumerState<UnitScreen> {
                         value: '${u.floor ?? '—'} / ${u.axis ?? '—'}',
                       ),
                       kit.Row(label: 'Loại căn', value: u.unitType ?? '—'),
-                      kit.Row(label: 'Phòng ngủ', value: u.bedrooms ?? '—'),
                       kit.Row(
                         label: 'DT tim tường',
                         value: fmtArea(u.areaGross),
                       ),
-                      kit.Row(
-                        label: 'DT thông thuỷ',
-                        value: fmtArea(u.areaNet),
-                      ),
                       if (u.areaLand != null && u.areaLand != '')
                         kit.Row(label: 'DT đất', value: fmtArea(u.areaLand)),
-                      kit.Row(
-                        label: 'Hướng',
-                        value:
-                            enums?.directionLabels[u.direction] ??
-                            u.direction ??
-                            '—',
-                      ),
                       kit.Row(label: 'View', value: u.view ?? '—'),
                       kit.Row(
                         label: 'Bàn giao',
@@ -223,7 +376,17 @@ class _UnitScreenState extends ConsumerState<UnitScreen> {
                         kit.Body(u.keySellingPoint!),
                     ],
                   ),
-                  kit.Card(
+                  if ((images?.value?.data.length ?? 0) > 1)
+                    kit.Button(
+                      kind: 'link',
+                      title: allImages
+                          ? 'Thu gọn hình ảnh'
+                          : 'Xem tất cả ${images!.value!.data.length} hình ảnh',
+                      onPress: () => setState(() => allImages = !allImages),
+                    ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    spacing: 8,
                     children: [
                       const kit.H2('Giá'),
                       kit.Row(
@@ -272,90 +435,15 @@ class _UnitScreenState extends ConsumerState<UnitScreen> {
                         kit.Muted(u.priceNote!),
                       if (u.priceSheetNote != null && u.priceSheetNote != '')
                         kit.Muted(u.priceSheetNote!),
-                      if (images?.value?.priceSheet case final sheet?)
-                        kit.Button(
-                          kind: 'link',
-                          title: 'Xem phiếu tính giá',
-                          onPress: () =>
-                              openInApp(context, sheet.url, 'Phiếu tính giá'),
-                        )
-                      else if (u.priceSheetUrl != null && u.priceSheetUrl != '')
-                        kit.Button(
-                          kind: 'link',
-                          title: 'Mở phiếu tính giá',
-                          onPress: () => openInApp(
-                            context,
-                            u.priceSheetUrl!,
-                            'Phiếu tính giá',
-                          ),
-                        ),
                       kit.Muted(
                         'Cập nhật ${fmtDate(u.updatedAt, true)} · Xác nhận ${fmtDate(u.verifiedAt, true)}',
                       ),
                     ],
                   ),
-                  kit.Button(
-                    kind: 'secondary',
-                    title: 'Tính lãi vay căn này',
-                    onPress: () => context.push(
-                      Uri(
-                        path: '/lai-vay',
-                        queryParameters: {
-                          'unitId': u.id,
-                          'code': u.publicCode ?? u.code,
-                        },
-                      ).toString(),
-                    ),
-                  ),
-                  if (screens['compare']!(session.roles)) ...[
-                    kit.Button(
-                      kind: 'secondary',
-                      icon: compare.asData?.value == true
-                          ? Ionicons.checkmarkCircle
-                          : Ionicons.gitCompareOutline,
-                      title: compare.asData?.value == true
-                          ? 'Đã thêm · chọn thêm căn'
-                          : 'Thêm vào so sánh',
-                      loading: compare.isLoading,
-                      onPress: () {
-                        if (compare.asData?.value == true) {
-                          setState(() => picker = true);
-                        } else {
-                          ref
-                              .read(unitCompareAddProvider(widget.id).notifier)
-                              .add();
-                        }
-                      },
-                      onLongPress: () {
-                        if (compare.asData?.value != true &&
-                            !compare.isLoading) {
-                          ref
-                              .read(unitCompareAddProvider(widget.id).notifier)
-                              .add();
-                        }
-                        setState(() => picker = true);
-                      },
-                    ),
-                    const kit.Muted(
-                      'Giữ nút để chọn thêm căn cùng dự án',
-                      textAlign: TextAlign.center,
-                    ),
-                    if (compare.hasError)
-                      kit.Notice(
-                        tone: 'error',
-                        text: errorMessage(compare.error),
-                      ),
-                    UnitComparePicker(
-                      projectId: u.projectId,
-                      visible: picker,
-                      onClose: () {
-                        setState(() => picker = false);
-                        ref.invalidate(fetchCompareProvider);
-                      },
-                    ),
-                  ],
                   if (u.related.isNotEmpty)
-                    kit.Card(
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      spacing: 8,
                       children: [
                         const kit.H2('Có thể bạn quan tâm'),
                         for (final r in u.related)
@@ -373,7 +461,9 @@ class _UnitScreenState extends ConsumerState<UnitScreen> {
                           ref.invalidate(fetchUnitHistoryProvider(widget.id)),
                       builder: (data) => data.data.isEmpty
                           ? const kit.Muted('Chưa có lịch sử thay đổi.')
-                          : kit.Card(
+                          : Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              spacing: 8,
                               children: [
                                 const kit.H2('Lịch sử thay đổi'),
                                 kit.Muted(

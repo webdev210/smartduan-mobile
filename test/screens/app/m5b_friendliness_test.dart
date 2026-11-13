@@ -28,11 +28,11 @@ import 'package:smartduan/screens/app/team.dart';
 import 'package:smartduan/screens/app/top_units.dart';
 import 'package:smartduan/screens/app/unit.dart';
 import 'package:smartduan/ui/kit.dart' as kit;
-import 'package:smartduan/ui/project_card.dart';
 
 import 'account_content_test.dart' show KEnv;
 import 'presentation_test.dart' show board, plan;
 import 'task_h_fakes.dart';
+import 'project_test.dart' show reveal;
 import '../../realtime/fakes.dart' show BoardSocket;
 
 Future<void> mountInventory(WidgetTester t, HEnv e, Widget child) async {
@@ -109,6 +109,7 @@ void main() {
     expect(projectContactsProvider('p').retry, isNotNull);
     expect(projectContactsProvider('p').retry!(1, Exception()), isNull);
     await e.mount(t, const ProjectScreen(id: 'p'));
+    await reveal(t, find.text('Lỗi đầu mối'));
     expect(find.text('Lỗi đầu mối'), findsOneWidget);
     await t.pump(const Duration(seconds: 20));
     expect(
@@ -147,7 +148,7 @@ void main() {
             })
           : hReply(r.path);
       await e.mount(t, const SearchUnitsScreen());
-      await t.tap(find.bySemanticsLabel(RegExp('^Bộ lọc')));
+      await t.tap(find.text('Lưu bộ lọc này'));
       await t.pumpAndSettle();
       await tap(t, 'Xoá');
       expect(find.text('Xoá bộ lọc “Căn hướng Đông”?'), findsOneWidget);
@@ -293,7 +294,7 @@ void main() {
         : hReply(r.path);
     await e.mount(t, const UnitScreen(id: 'u'));
     await t.scrollUntilVisible(
-      find.text('Đông'),
+      find.textContaining('· Đông'),
       400,
       scrollable: find.byType(Scrollable).first,
     );
@@ -564,6 +565,7 @@ void main() {
             })
           : hReply(r.path);
       await e.mount(t, const ProjectScreen(id: 'p'));
+      await reveal(t, find.text('09★★'));
       expect(find.text('09★★'), findsOneWidget);
       expect(
         find.ancestor(of: find.text('09★★'), matching: find.byType(kit.Button)),
@@ -621,7 +623,12 @@ void main() {
       final buttons = find.byWidgetPredicate(
         (w) => w is kit.Button && w.title == 'Tải',
       );
-      await t.ensureVisible(buttons.first);
+      await reveal(
+        t,
+        find.byWidgetPredicate(
+          (w) => w is kit.Button && w.accessibilityLabel == 'Tải Tài liệu A',
+        ),
+      );
       await t.tap(buttons.first);
       await t.pump();
       final all = t.widgetList<kit.Button>(buttons).toList();
@@ -652,14 +659,18 @@ void main() {
             })
           : hReply(r.path);
       await e.mount(t, const ProjectScreen(id: 'p'));
+      await reveal(t, find.text(long));
       expect(t.widget<Text>(find.text(long)).maxLines, 6);
+      await reveal(t, find.text('Tài liệu (7)'));
       expect(find.text('Tài liệu (7)'), findsOneWidget);
       expect(find.text('Tài liệu 6'), findsNothing);
+      await reveal(t, find.text('Xem thêm'));
       await tap(t, 'Xem thêm');
       expect(t.widget<Text>(find.text(long)).maxLines, isNull);
-      await t.ensureVisible(find.byType(TextField));
+      await reveal(t, find.byType(TextField));
       await t.enterText(find.byType(TextField), 'Tài liệu 6');
       await t.pumpAndSettle();
+      await reveal(t, find.text('Tài liệu 6', findRichText: true).last);
       expect(find.text('Tài liệu 6', findRichText: true).last, findsOneWidget);
     },
   );
@@ -809,9 +820,7 @@ void main() {
     },
   );
 
-  testWidgets('44 home rail cards have matched heights with uneven names', (
-    t,
-  ) async {
+  testWidgets('44 home working rows retain uneven project names', (t) async {
     final e = KEnv();
     final original = e.http.respond;
     e.http.respond = (r) => r.path == '/projects'
@@ -830,13 +839,21 @@ void main() {
           })
         : original(r);
     await e.mount(t, const Scaffold(body: HomeScreen()));
-    final cards = find.byType(ProjectCard);
-    expect(cards, findsNWidgets(2));
-    expect(t.getSize(cards.first).height, t.getSize(cards.last).height);
+    expect(
+      find.widgetWithText(kit.ListItem, hProject['name']!),
+      findsOneWidget,
+    );
+    expect(
+      find.widgetWithText(
+        kit.ListItem,
+        'Tên dự án rất dài xuống hai dòng cùng địa chỉ và chủ đầu tư',
+      ),
+      findsOneWidget,
+    );
     expect(t.takeException(), isNull);
   });
 
-  testWidgets('44 narrow home supports doubled text without rail overflow', (
+  testWidgets('44 narrow home supports doubled text without row overflow', (
     t,
   ) async {
     final e = KEnv();
@@ -857,7 +874,10 @@ void main() {
     );
     t.view.physicalSize = const Size(320, 900);
     await t.pumpAndSettle();
-    expect(find.byType(ProjectCard), findsOneWidget);
+    expect(
+      find.widgetWithText(kit.ListItem, hProject['name']!),
+      findsOneWidget,
+    );
     expect(t.takeException(), isNull);
   });
 

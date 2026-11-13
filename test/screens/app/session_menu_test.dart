@@ -6,7 +6,7 @@ import 'package:smartduan/auth/session.dart';
 import 'package:smartduan/auth/token_store.dart';
 import 'package:smartduan/main.dart';
 import 'package:smartduan/router.dart';
-import 'package:smartduan/ui/kit.dart' show Button, Tile;
+import 'package:smartduan/ui/kit.dart' show Button, ListItem;
 
 import '../../api/fake_http.dart';
 import '../../auth/token_store_test.dart' show MemoryStorage;
@@ -32,6 +32,7 @@ void main() {
                   : <String>[],
               'full_name': 'Nguyễn An',
               'address': 'Hà Nội',
+              'phone_verified_at': '2026-11-13T00:00:00Z',
               'referred_manager_id': 'm',
             }),
             '/sales/become-sales' || '/sales/request-f2' => (() {
@@ -61,7 +62,7 @@ void main() {
         );
         await tester.pumpAndSettle();
         expect(
-          find.widgetWithText(Tile, 'Dự án của tôi'),
+          find.widgetWithText(ListItem, 'Dự án của tôi'),
           f2 ? findsOneWidget : findsNothing,
         );
         expect(
@@ -84,7 +85,7 @@ void main() {
         ]);
         router.go('/menu');
         await tester.pumpAndSettle();
-        expect(find.widgetWithText(Tile, 'Dự án của tôi'), findsOneWidget);
+        expect(find.widgetWithText(ListItem, 'Dự án của tôi'), findsOneWidget);
         expect(find.text('Đăng ký làm sale'), findsNothing);
         expect(find.text('Xin xác nhận F2'), f2 ? findsNothing : findsWidgets);
       },

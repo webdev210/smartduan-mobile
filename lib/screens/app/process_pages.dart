@@ -103,8 +103,7 @@ class _ProcessPagesState extends ConsumerState<ProcessPagesScreen> {
               context.push('/quy-trinh/${Uri.encodeComponent(p.slug)}'),
           children: [
             Body(p.title, style: const TextStyle(fontWeight: FontWeight.w600)),
-            if (p.summary?.isNotEmpty == true)
-              Muted(p.summary!, numberOfLines: 3),
+            if (p.summary?.isNotEmpty == true) Muted(p.summary!),
             Muted(
               '${p.projectName != null ? '${p.projectName} · ' : ''}Cập nhật ${fmtDate(p.updatedAt)}',
             ),

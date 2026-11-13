@@ -4,6 +4,9 @@ import 'package:go_router/go_router.dart';
 
 import '../../api/public.dart';
 import '../../api/errors.dart';
+import '../../api/projects.dart' show fetchAllProjectsProvider;
+import '../../auth/roles.dart';
+import '../../auth/session.dart';
 import '../../ui/favorite_button.dart';
 import '../../ui/kit.dart' show Notice, Button;
 import '../../ui/project_browser.dart';
@@ -17,6 +20,14 @@ class SavedProjectsScreen extends ConsumerWidget {
     final projects = [
       for (final code in saved.value ?? <String>[])
         ref.watch(fetchPublicProjectProvider(code)),
+    ];
+    final working = screens['salesFloor']!(ref.watch(sessionProvider).roles)
+        ? ref.watch(fetchAllProjectsProvider)
+        : null;
+    final allowed = {for (final p in working?.value ?? []) p.id};
+    final shortcuts = [
+      for (final p in projects)
+        if (p.value != null && allowed.contains(p.value!.id)) p.value!,
     ];
     bool unavailable(Object? error) =>
         error is ApiError && (error.status == 403 || error.status == 404);
@@ -52,27 +63,39 @@ class SavedProjectsScreen extends ConsumerWidget {
         onOpen: (p) =>
             context.push('/cong-khai/${Uri.encodeComponent(p.code)}'),
         emptyText: 'Chưa có dự án yêu thích. Bấm trái tim trên thẻ hoặc trang dự án để thêm.',
-        banner: gone > 0 || failed > 0
-            ? Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  if (gone > 0)
-                    Notice(text: '$gone dự án hiện không còn công khai.'),
-                  if (failed > 0) ...[
-                    Notice(
-                      tone: 'warn',
-                      text:
-                          'Chưa tải được $failed dự án. Kiểm tra kết nối rồi thử lại.',
-                    ),
-                    Button(
-                      title: 'Thử lại dự án lỗi',
-                      kind: 'secondary',
-                      onPress: retry,
-                    ),
-                  ],
-                ],
-              )
-            : null,
+        banner: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            for (final p in shortcuts)
+              Button(
+                title: 'Bảng hàng · ${p.name}',
+                kind: 'secondary',
+                onPress: () =>
+                    context.push('/bang-hang/${Uri.encodeComponent(p.id)}'),
+              ),
+            if (working?.hasError == true) ...[
+              const Notice(text: 'Chưa kiểm tra được quyền mở bảng hàng.'),
+              Button(
+                title: 'Kiểm tra lại bảng hàng',
+                kind: 'link',
+                onPress: () => ref.invalidate(fetchAllProjectsProvider),
+              ),
+            ],
+            if (gone > 0) Notice(text: '$gone dự án hiện không còn công khai.'),
+            if (failed > 0) ...[
+              Notice(
+                tone: 'warn',
+                text:
+                    'Chưa tải được $failed dự án. Kiểm tra kết nối rồi thử lại.',
+              ),
+              Button(
+                title: 'Thử lại dự án lỗi',
+                kind: 'secondary',
+                onPress: retry,
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }

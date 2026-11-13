@@ -59,7 +59,7 @@ class _ProcessPageState extends ConsumerState<ProcessPageScreen> {
               children: [
                 if (p.coverUrl != null && p.coverUrl!.isNotEmpty)
                   ClipRRect(
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(16),
                     child: AppNetworkImage(
                       p.coverUrl!,
                       height: 180,

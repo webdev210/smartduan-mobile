@@ -224,7 +224,8 @@ class _ComparePickerState extends ConsumerState<ComparePicker> {
     return kit.Sheet(
       visible: widget.visible,
       onClose: close,
-      title: 'Chọn dự án so sánh',
+      title: 'So sánh dự án',
+      scrollBody: false,
       footer: Consumer(
         builder: (context, ref, _) {
           final picked = ref.watch(projectCompareProvider);
@@ -280,128 +281,134 @@ class _ComparePickerState extends ConsumerState<ComparePicker> {
               const {},
             ).where((p) => !picked.contains(p.code)),
           ];
-          final rows = matches.take(state.limit);
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            spacing: 8,
-            children: [
-              kit.SearchBar(
-                value: state.q,
-                onChangeText: ref.read(_pickerProvider(owner).notifier).search,
-                placeholder: 'Tên dự án, khu vực, chủ đầu tư…',
-                maxLength: 60,
-              ),
-              if (catalog.hasValue)
-                kit.Muted('Hiển thị ${rows.length}/${matches.length} dự án'),
-              if (matches.length > state.limit)
-                kit.Button(
-                  title: 'Tải thêm',
-                  kind: 'secondary',
-                  onPress: ref.read(_pickerProvider(owner).notifier).more,
-                ),
-              if (state.full)
-                const kit.Notice(
-                  tone: 'warn',
-                  text: '$_full. Bỏ bớt một dự án để chọn thêm.',
-                ),
-              if (catalog.isLoading)
-                const kit.Loading()
-              else if (catalog.hasError)
-                kit.ErrorBox(
-                  error: catalog.error!,
-                  onRetry: () => ref.invalidate(listAllPublicProjectsProvider),
-                )
-              else if (rows.isEmpty)
-                const kit.Muted('Không có dự án khớp.')
-              else
-                for (final p in rows)
-                  Semantics(
-                    checked: picked.contains(p.code),
-                    label: 'Chọn ${p.name}',
-                    onTap: () => ref
-                        .read(_pickerProvider(owner).notifier)
-                        .full(
-                          !ref
-                              .read(projectCompareProvider.notifier)
-                              .toggle(p.code),
-                        ),
-                    excludeSemantics: true,
-                    child: InkWell(
-                      onTap: () => ref
+          final rows = matches.take(state.limit).toList();
+          return ListView.builder(
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+            itemCount:
+                1 + (!catalog.isLoading && !catalog.hasError ? rows.length : 0),
+            itemBuilder: (context, index) {
+              if (index == 0) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  spacing: 8,
+                  children: [
+                    kit.SearchBar(
+                      value: state.q,
+                      onChangeText: ref
                           .read(_pickerProvider(owner).notifier)
-                          .full(
-                            !ref
-                                .read(projectCompareProvider.notifier)
-                                .toggle(p.code),
+                          .search,
+                      placeholder: 'Tên dự án, khu vực, chủ đầu tư…',
+                      maxLength: 60,
+                    ),
+                    if (catalog.hasValue)
+                      kit.Muted(
+                        'Hiển thị ${rows.length}/${matches.length} dự án',
+                      ),
+                    if (matches.length > state.limit)
+                      kit.Button(
+                        title: 'Tải thêm',
+                        kind: 'secondary',
+                        onPress: ref.read(_pickerProvider(owner).notifier).more,
+                      ),
+                    if (state.full)
+                      const kit.Notice(
+                        tone: 'warn',
+                        text: '$_full. Bỏ bớt một dự án để chọn thêm.',
+                      ),
+                    if (catalog.isLoading)
+                      const kit.Loading()
+                    else if (catalog.hasError)
+                      kit.ErrorBox(
+                        error: catalog.error!,
+                        onRetry: () =>
+                            ref.invalidate(listAllPublicProjectsProvider),
+                      )
+                    else if (rows.isEmpty)
+                      const kit.Muted('Không có dự án khớp.'),
+                  ],
+                );
+              }
+              final p = rows[index - 1];
+              return Semantics(
+                checked: picked.contains(p.code),
+                label: 'Chọn ${p.name}',
+                onTap: () => ref
+                    .read(_pickerProvider(owner).notifier)
+                    .full(
+                      !ref.read(projectCompareProvider.notifier).toggle(p.code),
+                    ),
+                excludeSemantics: true,
+                child: InkWell(
+                  onTap: () => ref
+                      .read(_pickerProvider(owner).notifier)
+                      .full(
+                        !ref
+                            .read(projectCompareProvider.notifier)
+                            .toggle(p.code),
+                      ),
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: picked.contains(p.code) ? c.brandSoft : c.card,
+                      border: Border.all(
+                        color: picked.contains(p.code) ? c.brand : c.line,
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Row(
+                      spacing: 12,
+                      children: [
+                        SizedBox(
+                          width: 52,
+                          height: 52,
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: ProjectMedia(
+                              compact: true,
+                              name: p.name,
+                              uri: p.coverUrl,
+                            ),
                           ),
-                      child: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: picked.contains(p.code) ? c.brandSoft : c.card,
-                          border: Border.all(
-                            color: picked.contains(p.code) ? c.brand : c.line,
-                          ),
-                          borderRadius: BorderRadius.circular(16),
                         ),
-                        child: Row(
-                          spacing: 12,
-                          children: [
-                            SizedBox(
-                              width: 52,
-                              height: 52,
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(12),
-                                child: ProjectMedia(
-                                  compact: true,
-                                  name: p.name,
-                                  uri: p.coverUrl,
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                p.name,
+                                style: const TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w700,
                                 ),
                               ),
-                            ),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    p.name,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                  kit.Muted(
-                                    [p.province, developerOf(p)]
-                                            .whereType<String>()
-                                            .where((s) => s.isNotEmpty)
-                                            .join(' · ')
-                                            .isEmpty
-                                        ? '—'
-                                        : [p.province, developerOf(p)]
-                                              .whereType<String>()
-                                              .where((s) => s.isNotEmpty)
-                                              .join(' · '),
-                                    numberOfLines: 1,
-                                    style: const TextStyle(fontSize: 13),
-                                  ),
-                                ],
+                              kit.Muted(
+                                [p.province, developerOf(p)]
+                                        .whereType<String>()
+                                        .where((s) => s.isNotEmpty)
+                                        .join(' · ')
+                                        .isEmpty
+                                    ? '—'
+                                    : [p.province, developerOf(p)]
+                                          .whereType<String>()
+                                          .where((s) => s.isNotEmpty)
+                                          .join(' · '),
+                                style: const TextStyle(fontSize: 13),
                               ),
-                            ),
-                            Icon(
-                              picked.contains(p.code)
-                                  ? Ionicons.checkbox
-                                  : Ionicons.squareOutline,
-                              color: picked.contains(p.code)
-                                  ? c.brand
-                                  : c.subtle,
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                      ),
+                        Icon(
+                          picked.contains(p.code)
+                              ? Ionicons.checkbox
+                              : Ionicons.squareOutline,
+                          color: picked.contains(p.code) ? c.brand : c.subtle,
+                        ),
+                      ],
                     ),
                   ),
-            ],
+                ),
+              );
+            },
           );
         },
       ),
@@ -476,11 +483,13 @@ class _CompareDockState extends ConsumerState<CompareDock> {
                     ),
                   ),
                 ),
-                kit.Button(
-                  size: 'sm',
-                  title: 'So sánh',
-                  disabled: picked.length < 2,
-                  onPress: () => context.push('/so-sanh-du-an'),
+                Flexible(
+                  child: kit.Button(
+                    size: 'sm',
+                    title: 'So sánh',
+                    disabled: picked.length < 2,
+                    onPress: () => context.push('/so-sanh-du-an'),
+                  ),
                 ),
               ],
             ),

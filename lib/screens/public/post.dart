@@ -44,11 +44,7 @@ class PostScreen extends ConsumerWidget {
                     spacing: 8,
                     crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
-                      kit.Pill(
-                        label: _kindLabel[p.kind] ?? p.kind,
-                        color: c.brand,
-                        soft: true,
-                      ),
+                      kit.Muted(_kindLabel[p.kind] ?? p.kind),
                       kit.Muted(fmtDate(p.eventAt ?? p.publishedAt)),
                     ],
                   ),
@@ -81,7 +77,7 @@ class PostScreen extends ConsumerWidget {
                     ),
                   if (mediaUrl(p.coverUrl) case final cover?)
                     ClipRRect(
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(16),
                       child: AspectRatio(
                         aspectRatio: 16 / 9,
                         child: AppNetworkImage(

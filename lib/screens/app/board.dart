@@ -52,6 +52,8 @@ class BoardScreen extends ConsumerStatefulWidget {
 class _BoardScreenState extends ConsumerState<BoardScreen> {
   late String? _pickedBlock = widget.blockId;
   BoardFilter _filter = emptyFilter;
+  bool _list = false;
+  String _budget = '';
   bool _sheet = false, _exporting = false;
   Object? _exportError;
 
@@ -114,20 +116,34 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
         stack.error is ApiError &&
         (stack.error as ApiError).code == 'grid_too_large';
     final noBlocks = blocks.hasValue && blocks.value!.isEmpty;
-    final flat = tooLarge || noBlocks;
+    final flat = _list || tooLarge || noBlocks;
     final units = flat
         ? ref.watch(inventoryUnitsProvider(id))
         : const AsyncData<List<Unit>>([]);
     final plan = flat ? null : stack.value;
     final pool = <Filterable>[
       if (flat)
-        ...?units.value?.where((u) => noBlocks || u.blockId == blockId)
+        ...?units.value?.where((u) => _list || noBlocks || u.blockId == blockId)
       else if (plan != null)
         ...cellsOf(plan),
     ];
     final counts = countByStatus(pool);
     final opts = filterOptions(pool, plan);
     final f = _filter;
+    final budget = num.tryParse(_budget);
+    final unknownPrices = pool
+        .whereType<Unit>()
+        .where(
+          (u) =>
+              keeps(u, f) &&
+              num.tryParse(u.priceMin ?? u.priceList ?? '') == null,
+        )
+        .length;
+    final incompatible =
+        (f.type != null && !opts.types.contains(f.type)) ||
+        (f.bedrooms != null && !opts.bedrooms.contains(f.bedrooms)) ||
+        (f.direction != null && !opts.directions.contains(f.direction)) ||
+        (f.fund != null && !opts.funds.contains(f.fund));
     String fundName(String slug) => enums?.fundLabels[slug] ?? slug;
     String dirName(String slug) => enums?.directionLabels[slug] ?? slug;
     final extra = <({String key, String label})>[
@@ -144,7 +160,11 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
         opts.funds.isNotEmpty;
     final matched = pool.where((u) => keeps(u, f, plan)).length;
     final flatRows = flat
-        ? pool.cast<Unit>().where((u) => keeps(u, f)).toList()
+        ? pool.cast<Unit>().where((u) {
+            final price = num.tryParse(u.priceMin ?? u.priceList ?? '');
+            return keeps(u, f) &&
+                (budget == null || (price != null && price <= budget));
+          }).toList()
         : <Unit>[];
     return Scaffold(
       appBar: AppBar(
@@ -253,6 +273,36 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
                   text:
                       'Không tải được file Excel: ${errorMessage(_exportError)}',
                 ),
+              Chips(
+                children: [
+                  Chip(
+                    label: 'Lưới theo toà',
+                    active: !_list,
+                    onPress: () => setState(() => _list = false),
+                  ),
+                  Chip(
+                    label: 'Danh sách dự án',
+                    active: _list,
+                    onPress: () => setState(() => _list = true),
+                  ),
+                ],
+              ),
+              if (_list)
+                Field(
+                  label: 'Giá tối đa (đồng)',
+                  value: _budget,
+                  keyboardType: TextInputType.number,
+                  onChangeText: (value) => setState(() => _budget = value),
+                  error:
+                      _budget.isNotEmpty &&
+                          (budget == null || !budget.isFinite || budget < 0)
+                      ? 'Nhập giá tối đa bằng số không âm.'
+                      : null,
+                ),
+              if (_list)
+                const Muted(
+                  'Phạm vi: toàn dự án. Danh sách hiển thị sau khi tải đủ các trang.',
+                ),
               AsyncView(
                 value: blocks,
                 onRetry: () => ref.invalidate(fetchBlocksProvider(id)),
@@ -267,7 +317,6 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
                               active: b.id == blockId,
                               onPress: () {
                                 setState(() => _pickedBlock = b.id);
-                                _clearExtra();
                               },
                             ),
                         ],
@@ -320,6 +369,15 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
                       onPress: _clearExtra,
                     ),
                   ],
+                ),
+              if (incompatible && (plan != null || units.hasValue))
+                const Notice(
+                  tone: 'warn',
+                  text: 'Phạm vi này không có lựa chọn đang lọc. Bộ lọc vẫn được giữ; bỏ tiêu chí bên trên để xem thêm căn.',
+                ),
+              if (flat && budget != null && unknownPrices > 0)
+                Muted(
+                  '$unknownPrices căn chưa có giá, chưa tính vào kết quả theo ngân sách. Xoá giá tối đa để xem.',
                 ),
               if (flat) ...[
                 if (tooLarge)
@@ -436,10 +494,7 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
               style: const TextStyle(fontWeight: FontWeight.w600),
             ),
           ),
-          Pill(
-            label: statusLabel[u.status] ?? u.status,
-            color: _color(statusColor[u.status]) ?? c.subtle,
-          ),
+          Flexible(child: Body(statusLabel[u.status] ?? u.status)),
         ],
       ),
       Muted(

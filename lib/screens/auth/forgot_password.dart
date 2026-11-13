@@ -5,7 +5,7 @@ import '../../api/errors.dart';
 import '../../auth/register.dart';
 import '../../auth/session.dart';
 import '../../ui/captcha.dart';
-import '../../ui/kit.dart' show Screen, Muted, Card, Field, Notice, Button;
+import '../../ui/kit.dart' show Screen, Muted, Field, Notice, Button;
 
 class ForgotPasswordScreen extends ConsumerStatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -62,7 +62,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
         const Muted(
           'Nhập email đăng ký, chúng tôi sẽ gửi link đặt lại mật khẩu.',
         ),
-      Card(
+      Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -81,12 +81,23 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
               autofillHints: const [AutofillHints.email],
               maxLength: 254,
             ),
-            Captcha(
-              key: ValueKey(_captchaKey),
-              action: 'forgot-password',
-              onToken: (token) {
-                if (mounted) setState(() => _token = token);
-              },
+            LayoutBuilder(
+              builder: (context, constraints) => SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: SizedBox(
+                  // ponytail: CAPTCHA retry row has an intrinsic-width button; remove when shared CAPTCHA wraps it.
+                  width: MediaQuery.textScalerOf(context)
+                      .scale(220)
+                      .clamp(constraints.maxWidth, double.infinity),
+                  child: Captcha(
+                    key: ValueKey(_captchaKey),
+                    action: 'forgot-password',
+                    onToken: (token) {
+                      if (mounted) setState(() => _token = token);
+                    },
+                  ),
+                ),
+              ),
             ),
             if (_error != null) Notice(tone: 'error', text: _error!),
             Button(

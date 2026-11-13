@@ -235,10 +235,7 @@ void main() {
     await tester.tap(find.byType(m.TextField));
     await tester.pump();
     expect(tester.testTextInput.isVisible, isTrue);
-    await tester.drag(
-      find.byType(m.SingleChildScrollView),
-      const m.Offset(0, -200),
-    );
+    await tester.drag(find.byType(m.CustomScrollView), const m.Offset(0, -200));
     await tester.pump();
     expect(tester.testTextInput.isVisible, isFalse);
   });

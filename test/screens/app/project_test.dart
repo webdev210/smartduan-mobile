@@ -10,6 +10,14 @@ import 'package:smartduan/ui/kit.dart' as kit;
 
 import 'task_h_fakes.dart';
 
+Future<void> reveal(WidgetTester tester, Finder finder) async {
+  final scrollable = find.byType(Scrollable).first;
+  tester.state<ScrollableState>(scrollable).position.jumpTo(0);
+  await tester.pump();
+  await tester.scrollUntilVisible(finder, 250, scrollable: scrollable);
+  await tester.pumpAndSettle();
+}
+
 void main() {
   testWidgets('project FAQ answers toggle from collapsed', (tester) async {
     final env = HEnv();
@@ -26,9 +34,10 @@ void main() {
         : hReply(r.path);
     await env.mount(tester, const ProjectScreen(id: 'p'));
     final question = find.text('Khi nào bàn giao?');
+    await reveal(tester, question);
     expect(question, findsOneWidget);
     expect(find.text('Năm 2027'), findsNothing);
-    await tester.ensureVisible(question);
+    await reveal(tester, question);
     final row = find.ancestor(of: question, matching: find.byType(ListTile));
     expect(tester.getSize(row).height, greaterThanOrEqualTo(48));
     await tester.tap(question);
@@ -47,12 +56,13 @@ void main() {
           ? const Reply(503, {'message': 'Documents failed'})
           : hReply(r.path);
       await env.mount(tester, const ProjectScreen(id: 'p'));
+      await reveal(tester, find.text('Documents failed'));
       expect(find.text('Documents failed'), findsOneWidget);
       final before = env.http.seen
           .where((r) => r.path.endsWith('/contacts'))
           .length;
       fail = false;
-      await tester.ensureVisible(find.text('Thử lại'));
+      await reveal(tester, find.text('Thử lại'));
       await tester.tap(find.text('Thử lại'));
       await tester.pumpAndSettle();
       expect(find.text('Documents failed'), findsNothing);
@@ -72,18 +82,15 @@ void main() {
       find.byWidgetPredicate((w) => w is kit.Muted && w.data.isEmpty),
       findsNothing,
     );
-    for (final title in [
-      'Top căn',
-      'Trình chiếu cho khách',
-      'Chia sẻ cho khách',
-    ]) {
+    for (final title in ['Top căn', 'Trình chiếu cho khách']) {
       final label = find.text(title);
+      await reveal(tester, label);
       final card = find
           .ancestor(of: label, matching: find.byType(kit.Card))
           .first;
       expect(
         tester.getTopLeft(label).dx - tester.getTopLeft(card).dx,
-        closeTo(68, 1),
+        closeTo(52, 1),
       );
     }
   });
@@ -100,19 +107,20 @@ void main() {
       final env = HEnv(roles: role.isEmpty ? [] : [role]);
       await env.mount(tester, const ProjectScreen(id: 'p'));
       expect(
-        find.text('Mở bảng hàng'),
+        find.text('Bảng hàng'),
         role.isEmpty ? findsNothing : findsOneWidget,
       );
+      await reveal(tester, find.text('400 tr'));
+      expect(find.text('400 tr'), findsOneWidget);
+      if (role.isNotEmpty) {
+        await reveal(tester, find.text('Top căn'));
+      }
       expect(
         find.text('Top căn'),
         role.isEmpty ? findsNothing : findsOneWidget,
       );
       final share = !['', 'sales_free'].contains(role);
       expect(find.text('Biến động'), findsNothing);
-      expect(
-        find.byIcon(Ionicons.gridOutline),
-        role.isEmpty ? findsNothing : findsOneWidget,
-      );
       expect(
         find.byIcon(Ionicons.trophyOutline),
         role.isEmpty ? findsNothing : findsOneWidget,
@@ -121,20 +129,13 @@ void main() {
         find.byIcon(Ionicons.tvOutline),
         share ? findsOneWidget : findsNothing,
       );
-      expect(
-        find.byIcon(Ionicons.shareSocialOutline),
-        share ? findsOneWidget : findsNothing,
-      );
+      expect(find.text('Chia sẻ'), share ? findsOneWidget : findsNothing);
+      await reveal(tester, find.text('Tư vấn dự án'));
       expect(find.byIcon(Ionicons.chatbubblesOutline), findsOneWidget);
-      expect(
-        find.text('Chia sẻ cho khách'),
-        share ? findsOneWidget : findsNothing,
-      );
       expect(
         find.text('Trình chiếu cho khách'),
         share ? findsOneWidget : findsNothing,
       );
-      expect(find.text('400 tr'), findsOneWidget);
       expect(env.http.seen.where((r) => r.path == '/activity'), hasLength(1));
     });
     testWidgets('project 404 text for $role', (tester) async {
@@ -205,15 +206,17 @@ void main() {
         _ => hReply(r.path),
       };
       await env.mount(tester, const ProjectScreen(id: 'p'));
+      await reveal(tester, find.text('Chính sách chung'));
       expect(find.text('Chính sách chung'), findsOneWidget);
       expect(find.textContaining('CSBH chung · Hiệu lực'), findsOneWidget);
       expect(find.textContaining('Quỹ đại lý · Hiệu lực'), findsNWidgets(2));
       expect(find.textContaining('Sắp áp dụng · Quỹ đại lý'), findsOneWidget);
       expect(find.text('Chính sách cũ'), findsNothing);
-      await tester.ensureVisible(find.byType(TextField));
+      await reveal(tester, find.byType(TextField));
       await tester.enterText(find.byType(TextField), 'Nguyen An');
       await tester.pumpAndSettle();
       expect(find.text('Chính sách chung'), findsNothing);
+      await reveal(tester, find.text('Nguyễn An · Quản lý'));
       expect(find.text('Nguyễn An · Quản lý'), findsOneWidget);
       env.container.invalidate(fetchProjectProvider('p'));
       await tester.pumpAndSettle();
@@ -240,7 +243,7 @@ void main() {
       _ => hReply(r.path),
     };
     final router = await env.mount(tester, const ProjectScreen(id: 'p'));
-    await tester.ensureVisible(find.text('Tải'));
+    await reveal(tester, find.text('Tải'));
     await tester.tap(find.text('Tải'));
     await tester.pumpAndSettle();
     expect(router.state.uri.path, '/xem');
@@ -263,16 +266,18 @@ void main() {
         find.text('Một số phần không tải được. Kéo xuống để thử lại.'),
         findsNothing,
       );
-      await tester.ensureVisible(find.byType(TextField));
+      await reveal(tester, find.byType(TextField));
       await tester.enterText(find.byType(TextField), 'không có');
       await tester.pumpAndSettle();
+      await reveal(tester, find.text('Không thấy “không có” trong dự án này.'));
       expect(
         find.text('Không thấy “không có” trong dự án này.'),
         findsOneWidget,
       );
-      await tester.ensureVisible(find.text('Xoá từ khoá'));
+      await reveal(tester, find.text('Xoá từ khoá'));
       await tester.tap(find.text('Xoá từ khoá'));
       await tester.pumpAndSettle();
+      await reveal(tester, find.text('Tổng quan mẫu'));
       expect(find.text('Tổng quan mẫu'), findsOneWidget);
     },
   );
@@ -289,6 +294,7 @@ void main() {
     env.http.respond = (r) => hReply(r.path);
     await tester.tap(find.text('Thử lại'));
     await tester.pumpAndSettle();
+    await reveal(tester, find.text('Tổng quan mẫu'));
     expect(find.text('Tổng quan mẫu'), findsOneWidget);
   });
   testWidgets(
@@ -335,15 +341,19 @@ void main() {
         _ => hReply(r.path),
       };
       final router = await env.mount(tester, const ProjectScreen(id: 'p'));
+      await reveal(tester, find.text('12/11/2026 — Khởi công\nĐang xây'));
       expect(find.text('12/11/2026 — Khởi công\nĐang xây'), findsOneWidget);
+      await reveal(tester, find.text('Khi nào bàn giao?'));
       expect(find.text('Khi nào bàn giao?'), findsOneWidget);
-      await tester.ensureVisible(find.text('Khi nào bàn giao?'));
+      await reveal(tester, find.text('Khi nào bàn giao?'));
       await tester.tap(find.text('Khi nào bàn giao?'));
       await tester.pumpAndSettle();
       expect(find.text('Năm 2027'), findsOneWidget);
+      await reveal(tester, find.text('Đào tạo bán hàng'));
       expect(find.text('Đào tạo bán hàng'), findsOneWidget);
+      await reveal(tester, find.text('Phân khu A'));
       expect(find.text('2 căn · 400 tr – 500 tr'), findsOneWidget);
-      await tester.ensureVisible(find.text('Phân khu A'));
+      await reveal(tester, find.text('Phân khu A'));
       await tester.tap(find.text('Phân khu A'));
       await tester.pumpAndSettle();
       expect(router.state.uri.path, '/bang-hang/p');
@@ -364,9 +374,10 @@ void main() {
       _ => hReply(r.path),
     };
     await env.mount(tester, const ProjectScreen(id: 'p'));
-    await tester.ensureVisible(find.text('Tải'));
+    await reveal(tester, find.text('Tải'));
     await tester.tap(find.text('Tải'));
     await tester.pumpAndSettle();
+    await reveal(tester, find.text('Quá nhiều yêu cầu, thử lại sau 60 giây'));
     expect(find.text('Quá nhiều yêu cầu, thử lại sau 60 giây'), findsOneWidget);
     expect(
       env.http.seen.where((r) => r.path.endsWith('download-link')),
