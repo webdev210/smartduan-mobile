@@ -425,6 +425,9 @@ void main() {
     await tester.ensureVisible(find.text('Xoá'));
     await tester.tap(find.text('Xoá'));
     await tester.pumpAndSettle();
+    expect(http.seen.where((r) => r.method == 'DELETE'), isEmpty);
+    await tester.tap(find.text('Xoá').last);
+    await tester.pumpAndSettle();
     expect(http.seen.where((r) => r.method == 'DELETE'), hasLength(1));
     expect(find.text('Đã lưu'), findsNothing);
   });
@@ -453,7 +456,7 @@ void main() {
             : emptyReply(r.path),
       ),
     );
-    expect(find.textContaining('50.5 m²'), findsOneWidget);
+    expect(find.textContaining('50,5 m²'), findsOneWidget);
     await tester.tap(find.text('A1'));
     await tester.pumpAndSettle();
     expect(find.text('unit u'), findsOneWidget);

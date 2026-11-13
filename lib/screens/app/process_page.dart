@@ -4,9 +4,11 @@ import '../../ui/network_image.dart';
 
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../api/errors.dart';
 import '../../api/sales.dart';
+import '../../config.dart' show webUrl;
 import '../../ui/format.dart';
 import '../../ui/kit.dart' hide Row;
 
@@ -19,6 +21,7 @@ class ProcessPageScreen extends ConsumerStatefulWidget {
 
 class _ProcessPageState extends ConsumerState<ProcessPageScreen> {
   bool busy = false;
+  bool webFailed = false;
   Object? failure;
   Future<void> ask() async {
     if (busy) return;
@@ -94,6 +97,37 @@ class _ProcessPageState extends ConsumerState<ProcessPageScreen> {
                   text:
                       'Xem nội dung đầy đủ của trang này trên web Smart Dự Án.',
                 ),
+                if (p.status == 'approved')
+                  Button(
+                    title: 'Mở Smart Dự Án',
+                    kind: 'secondary',
+                    onPress: () async {
+                      final uri = Uri.tryParse(webUrl);
+                      var opened = false;
+                      try {
+                        if (uri != null &&
+                            uri.scheme == 'https' &&
+                            uri.host.isNotEmpty &&
+                            uri.userInfo.isEmpty &&
+                            (uri.path.isEmpty || uri.path == '/') &&
+                            !uri.hasQuery &&
+                            !uri.hasFragment) {
+                          opened = await launchUrl(
+                            uri,
+                            mode: LaunchMode.externalApplication,
+                          );
+                        }
+                      } catch (_) {
+                        /* Show the same recovery for unavailable browsers. */
+                      }
+                      if (mounted) setState(() => webFailed = !opened);
+                    },
+                  ),
+                if (webFailed)
+                  const Notice(
+                    tone: 'error',
+                    text: 'Chưa mở được trình duyệt. Thử lại sau.',
+                  ),
               ],
             ),
           ),

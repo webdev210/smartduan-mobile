@@ -157,6 +157,14 @@ class _ProjectCompareScreenState extends ConsumerState<ProjectCompareScreen> {
                             'Không tải được ${failed.length} dự án (có thể đã ngừng công khai).',
                       ),
                       kit.Button(
+                        title: 'Thử lại dự án lỗi',
+                        onPress: () {
+                          for (final code in failed) {
+                            ref.invalidate(fetchPublicProjectProvider(code));
+                          }
+                        },
+                      ),
+                      kit.Button(
                         kind: 'secondary',
                         size: 'sm',
                         title: 'Bỏ dự án lỗi',
@@ -173,76 +181,141 @@ class _ProjectCompareScreenState extends ConsumerState<ProjectCompareScreen> {
                       const kit.Loading(),
                     kit.Card(
                       padding: const EdgeInsets.all(12),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            spacing: 12,
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: SizedBox(
+                          width:
+                              projects.length * 192.0 +
+                              (projects.length > 1
+                                  ? (projects.length - 1) * 12
+                                  : 0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
-                              for (final p in projects)
-                                Expanded(
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                spacing: 12,
+                                children: [
+                                  for (final p in projects)
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.stretch,
+                                        spacing: 8,
+                                        children: [
+                                          ClipRRect(
+                                            borderRadius: BorderRadius.circular(
+                                              12,
+                                            ),
+                                            child: AspectRatio(
+                                              aspectRatio: 16 / 10,
+                                              child: ProjectMedia(
+                                                compact: true,
+                                                name: p.name,
+                                                uri: p.coverUrl,
+                                              ),
+                                            ),
+                                          ),
+                                          Semantics(
+                                            link: true,
+                                            child: InkWell(
+                                              onTap: () => context.push(
+                                                '/cong-khai/${Uri.encodeComponent(p.code)}',
+                                              ),
+                                              child: Text(
+                                                p.name,
+                                                maxLines: 3,
+                                                style: const TextStyle(
+                                                  fontSize: 15,
+                                                  fontWeight: FontWeight.w700,
+                                                  height: 20 / 15,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                          Semantics(
+                                            button: true,
+                                            label: 'Bỏ ${p.name} khỏi so sánh',
+                                            onTap: () => ref
+                                                .read(
+                                                  projectCompareProvider
+                                                      .notifier,
+                                                )
+                                                .remove(p.code),
+                                            excludeSemantics: true,
+                                            child: InkWell(
+                                              onTap: () => ref
+                                                  .read(
+                                                    projectCompareProvider
+                                                        .notifier,
+                                                  )
+                                                  .remove(p.code),
+                                              child: const Padding(
+                                                padding: EdgeInsets.zero,
+                                                child: SizedBox(
+                                                  width: 48,
+                                                  height: 48,
+                                                  child: Center(
+                                                    child: Text(
+                                                      'Bỏ',
+                                                      style: TextStyle(
+                                                        fontSize: 13,
+                                                        fontWeight:
+                                                            FontWeight.w600,
+                                                        color: c.brand,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                ],
+                              ),
+                              for (final (label, cell) in _rows)
+                                Container(
+                                  margin: const EdgeInsets.only(top: 14),
+                                  padding: const EdgeInsets.only(top: 14),
+                                  decoration: const BoxDecoration(
+                                    border: Border(
+                                      top: BorderSide(
+                                        color: c.border,
+                                        width: .5,
+                                      ),
+                                    ),
+                                  ),
                                   child: Column(
                                     crossAxisAlignment:
                                         CrossAxisAlignment.stretch,
                                     spacing: 8,
                                     children: [
-                                      ClipRRect(
-                                        borderRadius: BorderRadius.circular(12),
-                                        child: AspectRatio(
-                                          aspectRatio: 16 / 10,
-                                          child: ProjectMedia(
-                                            compact: true,
-                                            name: p.name,
-                                            uri: p.coverUrl,
-                                          ),
+                                      Text(
+                                        label.toUpperCase(),
+                                        style: const TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w700,
+                                          color: c.muted,
+                                          letterSpacing: .3,
                                         ),
                                       ),
-                                      Semantics(
-                                        link: true,
-                                        child: InkWell(
-                                          onTap: () => context.push(
-                                            '/cong-khai/${Uri.encodeComponent(p.code)}',
-                                          ),
-                                          child: Text(
-                                            p.name,
-                                            maxLines: 3,
-                                            style: const TextStyle(
-                                              fontSize: 15,
-                                              fontWeight: FontWeight.w700,
-                                              height: 20 / 15,
-                                            ),
-                                          ),
+                                      DefaultTextStyle(
+                                        style: const TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w600,
+                                          color: c.text,
+                                          height: 20 / 14,
                                         ),
-                                      ),
-                                      Semantics(
-                                        button: true,
-                                        label: 'Bỏ ${p.name} khỏi so sánh',
-                                        onTap: () => ref
-                                            .read(
-                                              projectCompareProvider.notifier,
-                                            )
-                                            .remove(p.code),
-                                        excludeSemantics: true,
-                                        child: InkWell(
-                                          onTap: () => ref
-                                              .read(
-                                                projectCompareProvider.notifier,
-                                              )
-                                              .remove(p.code),
-                                          child: const Padding(
-                                            padding: EdgeInsets.symmetric(
-                                              vertical: 8,
-                                            ),
-                                            child: Text(
-                                              'Bỏ',
-                                              style: TextStyle(
-                                                fontSize: 13,
-                                                fontWeight: FontWeight.w600,
-                                                color: c.brand,
-                                              ),
-                                            ),
-                                          ),
+                                        child: Row(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          spacing: 12,
+                                          children: [
+                                            for (final p in projects)
+                                              Expanded(child: cell(p)),
+                                          ],
                                         ),
                                       ),
                                     ],
@@ -250,49 +323,7 @@ class _ProjectCompareScreenState extends ConsumerState<ProjectCompareScreen> {
                                 ),
                             ],
                           ),
-                          for (final (label, cell) in _rows)
-                            Container(
-                              margin: const EdgeInsets.only(top: 14),
-                              padding: const EdgeInsets.only(top: 14),
-                              decoration: const BoxDecoration(
-                                border: Border(
-                                  top: BorderSide(color: c.border, width: .5),
-                                ),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                spacing: 8,
-                                children: [
-                                  Text(
-                                    label.toUpperCase(),
-                                    style: const TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w700,
-                                      color: c.muted,
-                                      letterSpacing: .3,
-                                    ),
-                                  ),
-                                  DefaultTextStyle(
-                                    style: const TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w600,
-                                      color: c.text,
-                                      height: 20 / 14,
-                                    ),
-                                    child: Row(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      spacing: 12,
-                                      children: [
-                                        for (final p in projects)
-                                          Expanded(child: cell(p)),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                        ],
+                        ),
                       ),
                     ),
                     kit.Button(

@@ -16,9 +16,9 @@ class PostBody extends StatelessWidget {
   Widget build(BuildContext context) => Column(
     crossAxisAlignment: CrossAxisAlignment.stretch,
     spacing: 14,
-    children: [for (final block in parsePostHtml(html)) _block(block)],
+    children: [for (final block in parsePostHtml(html)) _block(context, block)],
   );
-  Widget _block(PostBlock b) {
+  Widget _block(BuildContext context, PostBlock b) {
     final type = b['type'];
     return switch (type) {
       'hr' => const Divider(),
@@ -28,11 +28,31 @@ class PostBody extends StatelessWidget {
         children: [
           ClipRRect(
             borderRadius: BorderRadius.circular(12),
-            child: AspectRatio(
-              aspectRatio: 16 / 10,
+            child: InkWell(
+              onTap: () => Navigator.of(context).push<void>(
+                MaterialPageRoute(
+                  builder: (_) => Scaffold(
+                    appBar: AppBar(title: const Text('Xem ảnh')),
+                    body: Center(
+                      child: InteractiveViewer(
+                        maxScale: 5,
+                        child: AppNetworkImage(
+                          b['src'] as String,
+                          fit: BoxFit.contain,
+                          semanticLabel:
+                              (b['alt'] ?? b['caption'] ?? 'Ảnh minh hoạ')
+                                  as String,
+                          errorBuilder: (_, _, _) =>
+                              const Icon(Ionicons.imageOutline),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
               child: AppNetworkImage(
                 b['src'] as String,
-                fit: BoxFit.cover,
+                fit: BoxFit.contain,
                 semanticLabel:
                     (b['alt'] ?? b['caption'] ?? 'Ảnh minh hoạ') as String,
                 errorBuilder: (_, _, _) => const ColoredBox(

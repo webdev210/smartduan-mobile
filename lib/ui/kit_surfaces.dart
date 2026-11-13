@@ -111,9 +111,8 @@ class Section extends StatelessWidget {
               fit: FlexFit.tight,
               child: Semantics(
                 link: true,
-                child: GestureDetector(
-                  onTap: action!.onPress,
-                  behavior: HitTestBehavior.opaque,
+                child: _Pressable(
+                  onPress: action!.onPress,
                   child: Padding(
                     padding: const EdgeInsets.only(top: 12),
                     child: m.Row(
@@ -170,34 +169,6 @@ class Hero extends StatelessWidget {
         ).copyWith(color: style?.color, gradient: style?.gradient),
         child: Stack(
           children: [
-            Positioned(
-              top: -70,
-              right: -50,
-              child: IgnorePointer(
-                child: Container(
-                  width: 200,
-                  height: 200,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: gold.withValues(alpha: 0.16),
-                  ),
-                ),
-              ),
-            ),
-            Positioned(
-              bottom: -90,
-              left: -60,
-              child: IgnorePointer(
-                child: Container(
-                  width: 190,
-                  height: 190,
-                  decoration: const BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Color.fromRGBO(255, 255, 255, 0.05),
-                  ),
-                ),
-              ),
-            ),
             Padding(
               padding: const EdgeInsets.all(20),
               child:
@@ -413,25 +384,34 @@ class TileGrid extends StatelessWidget {
   const TileGrid({super.key, required this.children});
   final List<Widget> children;
   @override
-  Widget build(BuildContext context) => Column(
-    spacing: 10,
-    children: [
-      for (var i = 0; i < children.length; i += 3)
-        IntrinsicHeight(
-          child: m.Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            spacing: 10,
-            children: [
-              for (var j = 0; j < 3; j++)
-                Expanded(
-                  child: i + j < children.length
-                      ? children[i + j]
-                      : const SizedBox.shrink(),
-                ),
-            ],
-          ),
-        ),
-    ],
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) {
+      final columns =
+          (constraints.maxWidth - 20) / 3 < 104 ||
+              MediaQuery.textScalerOf(context).scale(14) / 14 > 1.3
+          ? 2
+          : 3;
+      return Column(
+        spacing: 10,
+        children: [
+          for (var i = 0; i < children.length; i += columns)
+            IntrinsicHeight(
+              child: m.Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                spacing: 10,
+                children: [
+                  for (var j = 0; j < columns; j++)
+                    Expanded(
+                      child: i + j < children.length
+                          ? children[i + j]
+                          : const SizedBox.shrink(),
+                    ),
+                ],
+              ),
+            ),
+        ],
+      );
+    },
   );
 }
 
@@ -590,80 +570,50 @@ class _SheetContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Padding(
     padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
-    child: Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 40,
-          height: 4,
-          margin: const EdgeInsets.only(top: 10),
-          decoration: BoxDecoration(
-            color: border,
-            borderRadius: BorderRadius.circular(2),
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 14),
-          child: m.Row(
-            spacing: 12,
-            children: [
-              Expanded(child: Semantics(header: true, child: H2(sheet.title))),
-              Semantics(
-                button: true,
-                label: 'Đóng',
-                onTap: () => Navigator.of(context).pop(),
-                child: GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: () => Navigator.of(context).pop(),
-                  excludeFromSemantics: true,
-                  child: Padding(
-                    padding: const EdgeInsets.all(6),
-                    child: Container(
-                      width: 36,
-                      height: 36,
-                      decoration: const BoxDecoration(
-                        color: quiet,
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(Ionicons.close, size: 20, color: text),
-                    ),
+    child: SingleChildScrollView(
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+      child: SafeArea(
+        top: false,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 14),
+              child: m.Row(
+                spacing: 12,
+                children: [
+                  Expanded(child: H2(sheet.title)),
+                  IconButton(
+                    icon: Ionicons.close,
+                    label: 'Đóng',
+                    onPress: () => Navigator.of(context).pop(),
                   ),
-                ),
+                ],
               ),
-            ],
-          ),
-        ),
-        Flexible(
-          child: SingleChildScrollView(
-            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-            child:
-                sheet.child ??
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  mainAxisSize: MainAxisSize.min,
-                  spacing: 20,
-                  children: sheet.children!,
-                ),
-          ),
-        ),
-        SafeArea(
-          top: false,
-          child: sheet.footer == null
-              ? const SizedBox.shrink()
-              : Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 12,
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+              child:
+                  sheet.child ??
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    mainAxisSize: MainAxisSize.min,
+                    spacing: 20,
+                    children: sheet.children!,
                   ),
-                  decoration: const BoxDecoration(
-                    color: card,
-                    border: Border(top: BorderSide(color: border, width: 0)),
-                  ),
-                  child: sheet.footer,
+            ),
+            if (sheet.footer != null)
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 12,
                 ),
+                child: sheet.footer,
+              ),
+          ],
         ),
-      ],
+      ),
     ),
   );
 }

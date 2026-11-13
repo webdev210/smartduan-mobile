@@ -43,6 +43,22 @@ const list = [
 List<String> names(ProjectFilter f, [Map<String, String> aliases = const {}]) =>
     filterProjects(list, f, aliases).map((p) => p.name).toList();
 void main() {
+  test(
+    'province facets narrow by region and retain incompatible selection',
+    () {
+      expect(facets(list, const ProjectFilter(region: 'nam'), {})['province'], [
+        (key: 'Bình Dương', label: 'Bình Dương', count: 1),
+        (key: 'TP.HCM', label: 'TP.HCM', count: 1),
+      ]);
+      const incompatible = ProjectFilter(region: 'nam', province: 'Hà Nam');
+      expect(names(incompatible), isEmpty);
+      expect(facets(list, incompatible, {})['province'], [
+        (key: 'Bình Dương', label: 'Bình Dương', count: 1),
+        (key: 'Hà Nam', label: 'Hà Nam', count: 0),
+        (key: 'TP.HCM', label: 'TP.HCM', count: 1),
+      ]);
+    },
+  );
   test('empty optional filter strings behave as unselected RN values', () {
     const f = ProjectFilter(
       status: '',

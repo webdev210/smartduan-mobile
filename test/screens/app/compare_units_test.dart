@@ -36,7 +36,7 @@ void main() {
               });
       };
       await env.mount(tester, const CompareUnitsScreen());
-      expect(find.text('50.5 m²'), findsOneWidget);
+      expect(find.text('50,5 m²'), findsOneWidget);
       expect(find.text('400 tr'), findsOneWidget);
       expect(find.text('CSBH mẫu'), findsOneWidget);
       expect(

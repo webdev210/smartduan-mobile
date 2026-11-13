@@ -278,7 +278,12 @@ void main() {
               .disabled,
           isTrue,
         );
-        await tester.enterText(find.byType(TextField).last, '2026-12-31');
+        await tester.ensureVisible(
+          find.text('Chọn ngày hết hạn (tối đa 90 ngày)'),
+        );
+        await tester.tap(find.text('Chọn ngày hết hạn (tối đa 90 ngày)'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Chọn'));
         await tester.pumpAndSettle();
         await tester.ensureVisible(find.text('Cho phép tạm thời'));
         await tester.tap(find.text('Cho phép tạm thời'));
@@ -286,7 +291,15 @@ void main() {
       await tester.pumpAndSettle();
       final write = env.http.seen.where((r) => r.method == 'POST').single;
       expect(write.path, '/admin/devices/d/$action');
-      expect(write.data, body);
+      if (action == 'allow_until') {
+        final today = DateTime.now();
+        expect(write.data, {
+          'expires_at':
+              '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}',
+        });
+      } else {
+        expect(write.data, body);
+      }
       expect(env.http.seen.where((r) => r.method == 'GET'), hasLength(2));
     });
   }

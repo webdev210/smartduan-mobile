@@ -16,16 +16,19 @@ import 'project_filter.dart';
 import 'theme.dart' as c;
 
 const _full = 'Tối đa 3 dự án';
-typedef _PickerState = ({String q, bool full});
+typedef _PickerState = ({String q, bool full, int limit});
 final _pickerProvider = NotifierProvider.autoDispose
     .family<_Picker, _PickerState, Object>(_Picker.new);
 
 class _Picker extends Notifier<_PickerState> {
   _Picker(Object owner);
   @override
-  _PickerState build() => (q: '', full: false);
-  void search(String q) => state = (q: q, full: state.full);
-  void full(bool value) => state = (q: state.q, full: value);
+  _PickerState build() => (q: '', full: false, limit: 30);
+  void search(String q) => state = (q: q, full: state.full, limit: 30);
+  void full(bool value) =>
+      state = (q: state.q, full: value, limit: state.limit);
+  void more() =>
+      state = (q: state.q, full: state.full, limit: state.limit + 30);
 }
 
 class CompareChip extends ConsumerStatefulWidget {
@@ -105,7 +108,10 @@ class _CompareChipState extends ConsumerState<CompareChip> {
                 child: GestureDetector(
                   onTap: toggle,
                   child: Container(
-                    constraints: const BoxConstraints(minHeight: 34),
+                    constraints: const BoxConstraints(
+                      minWidth: 48,
+                      minHeight: 48,
+                    ),
                     padding: const EdgeInsets.symmetric(
                       horizontal: 12,
                       vertical: 6,
@@ -183,31 +189,36 @@ class _ComparePickerState extends ConsumerState<ComparePicker> {
       footer: Consumer(
         builder: (context, ref, _) {
           final picked = ref.watch(projectCompareProvider);
-          return Row(
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             spacing: 10,
             children: [
-              Expanded(
-                child: kit.Muted(
-                  'Đã chọn ${picked.length}/$maxCompareProjects',
-                  style: const TextStyle(fontSize: 14),
-                ),
+              kit.Muted(
+                'Đã chọn ${picked.length}/$maxCompareProjects',
+                style: const TextStyle(fontSize: 14),
               ),
-              kit.Button(
-                kind: 'secondary',
-                size: 'sm',
-                title: 'Xoá',
-                disabled: picked.isEmpty,
-                onPress: () =>
-                    ref.read(projectCompareProvider.notifier).clear(),
-              ),
-              kit.Button(
-                size: 'sm',
-                title: 'So sánh (${picked.length})',
-                disabled: picked.length < 2,
-                onPress: () {
-                  close();
-                  context.push('/so-sanh-du-an');
-                },
+              Wrap(
+                spacing: 10,
+                runSpacing: 8,
+                children: [
+                  kit.Button(
+                    kind: 'secondary',
+                    size: 'sm',
+                    title: 'Xoá',
+                    disabled: picked.isEmpty,
+                    onPress: () =>
+                        ref.read(projectCompareProvider.notifier).clear(),
+                  ),
+                  kit.Button(
+                    size: 'sm',
+                    title: 'So sánh (${picked.length})',
+                    disabled: picked.length < 2,
+                    onPress: () {
+                      close();
+                      context.push('/so-sanh-du-an');
+                    },
+                  ),
+                ],
               ),
             ],
           );
@@ -221,7 +232,7 @@ class _ComparePickerState extends ConsumerState<ComparePicker> {
               ? ref.watch(listAllPublicProjectsProvider)
               : const AsyncValue<List<PublicProject>>.loading();
           final all = catalog.asData?.value ?? <PublicProject>[];
-          final rows = [
+          final matches = [
             for (final code in picked)
               ...all.where((p) => p.code == code).take(1),
             ...filterProjects(
@@ -229,7 +240,8 @@ class _ComparePickerState extends ConsumerState<ComparePicker> {
               ProjectFilter(q: state.q),
               const {},
             ).where((p) => !picked.contains(p.code)),
-          ].take(30);
+          ];
+          final rows = matches.take(state.limit);
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             spacing: 8,
@@ -240,6 +252,14 @@ class _ComparePickerState extends ConsumerState<ComparePicker> {
                 placeholder: 'Tên dự án, khu vực, chủ đầu tư…',
                 maxLength: 60,
               ),
+              if (catalog.hasValue)
+                kit.Muted('Hiển thị ${rows.length}/${matches.length} dự án'),
+              if (matches.length > state.limit)
+                kit.Button(
+                  title: 'Tải thêm',
+                  kind: 'secondary',
+                  onPress: ref.read(_pickerProvider(owner).notifier).more,
+                ),
               if (state.full)
                 const kit.Notice(
                   tone: 'warn',

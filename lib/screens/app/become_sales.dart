@@ -76,7 +76,7 @@ class _BecomeFreeState extends ConsumerState<_BecomeFree> {
         if (me?['phone_verified_at'] == null)
           const Notice(
             tone: 'warn',
-            text: 'Số điện thoại chưa xác thực — máy chủ sẽ từ chối (phone_not_verified).',
+            text: 'Số điện thoại chưa xác thực. Liên hệ quản lý để được hỗ trợ xác thực trước khi đăng ký.',
           ),
         const Muted('Chi nhánh (tuỳ chọn)'),
         Chips(
@@ -97,11 +97,11 @@ class _BecomeFreeState extends ConsumerState<_BecomeFree> {
           ],
         ),
         if (branches.hasError)
-          Notice(
-            tone: 'warn',
-            text:
-                'Không tải được danh sách chi nhánh: ${errorMessage(branches.error)}',
+          ErrorBox(
+            error: branches.error,
+            onRetry: () => ref.invalidate(fetchBranchesProvider),
           ),
+        if (branches.isLoading) const Loading(),
         if (fieldError(failure, 'branch_code') case final String text)
           Notice(tone: 'error', text: 'Chi nhánh: $text'),
         Field(
@@ -209,6 +209,10 @@ class _RequestF2State extends ConsumerState<_RequestF2> {
           ErrorBox(
             error: managers.error,
             onRetry: () => ref.invalidate(fetchManagersProvider),
+          ),
+        if (managers.hasValue && managers.value!.isEmpty)
+          const Notice(
+            text: 'Chưa có quản lý đại lý để chọn. Liên hệ quản lý để được hướng dẫn đăng ký F2.',
           ),
         Chips(
           children: [

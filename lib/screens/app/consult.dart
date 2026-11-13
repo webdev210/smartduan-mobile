@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../api/errors.dart';
 import '../../api/sales.dart';
+import '../../api/public.dart' show fetchPublicStatsProvider;
+import '../../ui/in_app.dart';
 import '../../ui/kit.dart' hide Row;
 
 class ConsultScreen extends ConsumerStatefulWidget {
@@ -41,47 +43,59 @@ class _ConsultState extends ConsumerState<ConsultScreen> {
   }
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('Yêu cầu tư vấn')),
-    body: Screen(
-      children: [
-        if (widget.name != null) Muted('Dự án: ${widget.name}'),
-        Field(
-          label: 'Nội dung (tuỳ chọn, tối đa 2000 ký tự)',
-          value: message,
-          onChangeText: (v) => setState(() => message = v),
-          maxLength: 2000,
-          maxLines: 5,
-        ),
-        Row(
-          spacing: 12,
-          children: [
-            Switch(
+  Widget build(BuildContext context) {
+    final hotline = unknown
+        ? ref.watch(fetchPublicStatsProvider).value?.contact.hotline
+        : null;
+    return Scaffold(
+      appBar: AppBar(title: const Text('Yêu cầu tư vấn')),
+      body: Screen(
+        children: [
+          if (widget.name != null) Muted('Dự án: ${widget.name}'),
+          Field(
+            label: 'Nội dung (tuỳ chọn, tối đa 2000 ký tự)',
+            value: message,
+            onChangeText: (v) => setState(() => message = v),
+            maxLength: 2000,
+            maxLines: 5,
+          ),
+          Material(
+            color: Colors.transparent,
+            child: SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Tôi đồng ý để sàn liên hệ tư vấn'),
               value: consent,
               onChanged: (v) => setState(() => consent = v),
             ),
-            const Expanded(child: Body('Tôi đồng ý để sàn liên hệ tư vấn')),
-          ],
-        ),
-        if (sent)
-          const Notice(
-            tone: 'success',
-            text: 'Đã gửi yêu cầu. Sàn sẽ liên hệ bạn sớm.',
           ),
-        if (unknown)
-          const Notice(
-            tone: 'warn',
-            text: 'Chưa chắc yêu cầu đã tới sàn. Đừng gửi lại ngay — gọi hotline để xác nhận.',
-          )
-        else if (failure != null)
-          Notice(tone: 'error', text: errorMessage(failure)),
-        Button(
-          title: 'Gửi',
-          loading: busy,
-          disabled: !consent || sent || unknown,
-          onPress: submit,
-        ),
-      ],
-    ),
-  );
+          if (sent)
+            const Notice(
+              tone: 'success',
+              text: 'Đã gửi yêu cầu. Sàn sẽ liên hệ bạn sớm.',
+            ),
+          if (unknown)
+            const Notice(
+              tone: 'warn',
+              text: 'Chưa chắc yêu cầu đã tới sàn. Đừng gửi lại ngay — gọi hotline để xác nhận.',
+            )
+          else if (failure != null)
+            Notice(tone: 'error', text: errorMessage(failure)),
+          if (unknown &&
+              hotline != null &&
+              RegExp(r'^\+?[\d\s().-]{3,}$').hasMatch(hotline))
+            Button(
+              title: 'Gọi $hotline để xác nhận',
+              kind: 'secondary',
+              onPress: () => openInApp(context, 'tel:$hotline'),
+            ),
+          Button(
+            title: 'Gửi',
+            loading: busy,
+            disabled: !consent || sent || unknown,
+            onPress: submit,
+          ),
+        ],
+      ),
+    );
+  }
 }

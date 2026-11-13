@@ -12,6 +12,7 @@ import '../../ui/in_app.dart';
 import '../../ui/kit.dart' as kit;
 import '../../ui/project_card.dart';
 import '../../ui/project_filter.dart';
+import '../../ui/theme.dart' as c;
 
 class DeveloperScreen extends ConsumerStatefulWidget {
   const DeveloperScreen({super.key, required this.slug});
@@ -22,6 +23,7 @@ class DeveloperScreen extends ConsumerStatefulWidget {
 
 class _DeveloperScreenState extends ConsumerState<DeveloperScreen> {
   String query = '';
+  int pageCount = 1;
   @override
   Widget build(BuildContext context) {
     final dev = ref.watch(fetchPublicDeveloperProvider(widget.slug));
@@ -60,7 +62,23 @@ class _DeveloperScreenState extends ConsumerState<DeveloperScreen> {
                     kit.Chips(
                       children: [
                         for (final b in d.badges)
-                          kit.Chip(icon: Ionicons.ribbonOutline, label: b),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 8,
+                            ),
+                            decoration: BoxDecoration(
+                              color: c.brandSoft,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              b,
+                              style: const TextStyle(
+                                color: c.brand,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
                       ],
                     ),
                   if (d.description case final description?)
@@ -87,6 +105,13 @@ class _DeveloperScreenState extends ConsumerState<DeveloperScreen> {
       PublicFilters(developerId: id, perPage: 50),
     );
     final projects = ref.watch(provider);
+    final more = [
+      for (var page = 2; page <= pageCount; page++)
+        listPublicProjectsProvider(
+          PublicFilters(developerId: id, perPage: 50, page: page),
+        ),
+    ];
+    final queries = [for (final p in more) ref.watch(p)];
     return kit.Section(
       title: 'Dự án',
       eyebrow: projects.asData == null
@@ -96,8 +121,14 @@ class _DeveloperScreenState extends ConsumerState<DeveloperScreen> {
         value: projects,
         onRetry: () => ref.invalidate(provider),
         builder: (page) {
+          final loaded = <String, PublicProject>{
+            for (final p in page.data) p.id: p,
+            for (final q in queries)
+              for (final p in q.asData?.value.data ?? <PublicProject>[])
+                p.id: p,
+          }.values.toList();
           final rows = filterProjects(
-            page.data,
+            loaded,
             ProjectFilter(q: query),
             const {},
           );
@@ -105,11 +136,29 @@ class _DeveloperScreenState extends ConsumerState<DeveloperScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             spacing: 12,
             children: [
-              if (page.data.length > 4)
+              kit.Muted('Hiển thị ${loaded.length}/${page.total} dự án'),
+              if (loaded.length > 4)
                 kit.SearchBar(
                   value: query,
                   onChangeText: (s) => setState(() => query = s),
-                  placeholder: 'Tìm trong dự án của chủ đầu tư…',
+                  placeholder: 'Tìm trong ${loaded.length} dự án đã tải…',
+                ),
+              for (var i = 0; i < queries.length; i++)
+                if (queries[i].hasError)
+                  kit.ErrorBox(
+                    error: queries[i].error!,
+                    onRetry: () => ref.invalidate(more[i]),
+                  ),
+              if (queries.any((q) => q.isLoading)) const kit.Loading(),
+              if (loaded.length < page.total &&
+                  !queries.any((q) => q.isLoading || q.hasError) &&
+                  (queries.isEmpty
+                      ? page.data.isNotEmpty
+                      : queries.last.asData?.value.data.isNotEmpty == true))
+                kit.Button(
+                  title: 'Tải thêm',
+                  kind: 'secondary',
+                  onPress: () => setState(() => pageCount++),
                 ),
               for (final p in rows)
                 ProjectCard(

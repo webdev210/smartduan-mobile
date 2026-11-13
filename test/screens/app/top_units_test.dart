@@ -63,7 +63,7 @@ void main() {
       tester.getTopLeft(label).dx - tester.getTopLeft(card).dx,
       closeTo(16, 1),
     );
-    expect(find.textContaining('50.5 m²'), findsOneWidget);
+    expect(find.textContaining('50,5 m²'), findsOneWidget);
     await tester.enterText(find.byType(TextField), 'View song');
     await tester.pumpAndSettle();
     expect(find.text('Căn hộ · 2PN'), findsOneWidget);

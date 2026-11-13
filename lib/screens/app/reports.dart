@@ -111,9 +111,10 @@ class _ReportsState extends ConsumerState<ReportsScreen> {
                   : [
                       for (final r in found)
                         Row(
-                          label: '${r.unitCode} · ${r.project}',
+                          label:
+                              '${r.unitCode} · ${r.project} · ${r.oldValue != null && statusLabel.containsKey(r.oldValue) && statusLabel.containsKey(r.newValue) ? 'Trạng thái' : 'Thay đổi (chưa có tên trường)'}',
                           value:
-                              '${r.oldValue ?? '—'} → ${r.newValue ?? '—'}\n${fmtDate(r.changedAt, true)}${r.changedByName?.isNotEmpty == true ? ' · ${r.changedByName}' : ''}',
+                              '${statusLabel[r.oldValue] ?? r.oldValue ?? '—'} → ${statusLabel[r.newValue] ?? r.newValue ?? '—'}\n${fmtDate(r.changedAt, true)}${r.changedByName?.isNotEmpty == true ? ' · ${r.changedByName}' : ''}',
                         ),
                     ];
             },
@@ -178,7 +179,7 @@ class _ReportsState extends ConsumerState<ReportsScreen> {
                   label: 'Sẽ giới thiệu',
                   value: '${dash(s.referYes)} có / ${dash(s.referNo)} không',
                 ),
-                for (final m in s.missing.take(5)) Muted('“${m.text}”'),
+                for (final m in s.missing) Muted('“${m.text}”'),
               ],
             ),
           if (listings != null)
@@ -188,7 +189,7 @@ class _ReportsState extends ConsumerState<ReportsScreen> {
               retry: () => ref.invalidate(fetchListingsReportProvider),
               builder: (l) => [
                 Row(label: 'Tổng', value: dash(l.total)),
-                for (final u in l.byUser.take(10))
+                for (final u in l.byUser)
                   Row(
                     label: u.fullName ?? u.salesCode ?? '—',
                     value: dash(u.count),
@@ -220,7 +221,7 @@ class _ReportsState extends ConsumerState<ReportsScreen> {
   }
 }
 
-class _ReportBlock<T> extends StatelessWidget {
+class _ReportBlock<T> extends StatefulWidget {
   const _ReportBlock({
     required this.title,
     required this.value,
@@ -232,20 +233,52 @@ class _ReportBlock<T> extends StatelessWidget {
   final VoidCallback retry;
   final List<Widget> Function(T) builder;
   @override
+  State<_ReportBlock<T>> createState() => _ReportBlockState<T>();
+}
+
+class _ReportBlockState<T> extends State<_ReportBlock<T>> {
+  bool expanded = false;
+  @override
   Widget build(BuildContext context) {
-    if (value.error case ApiError(status: 403 || 404)) {
+    if (widget.value.error case ApiError(status: 403 || 404)) {
       return const SizedBox.shrink();
     }
     return Section(
-      title: title,
+      title: widget.title,
       child: Card(
         child: AsyncView(
-          value: value,
-          onRetry: retry,
-          builder: (data) => Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: builder(data),
-          ),
+          value: widget.value,
+          onRetry: widget.retry,
+          builder: (data) {
+            final rows = widget.builder(data);
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (rows.length > 5)
+                  Muted(
+                    '${rows.length} dòng · ${expanded ? 'Vuốt để xem tất cả' : 'Hiển thị 5 dòng đầu'}',
+                  ),
+                if (expanded && rows.length > 5)
+                  SizedBox(
+                    height: 360,
+                    child: ListView.builder(
+                      itemCount: rows.length,
+                      itemBuilder: (_, i) => rows[i],
+                    ),
+                  )
+                else
+                  ...rows.take(5),
+                if (rows.length > 5)
+                  Button(
+                    kind: 'link',
+                    title: expanded
+                        ? 'Thu gọn'
+                        : 'Xem thêm (${rows.length - 5})',
+                    onPress: () => setState(() => expanded = !expanded),
+                  ),
+              ],
+            );
+          },
         ),
       ),
     );

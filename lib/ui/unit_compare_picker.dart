@@ -10,18 +10,25 @@ import 'kit.dart' as kit;
 import 'search.dart';
 import 'theme.dart' as c;
 
-typedef _State = ({String q, bool busy, Object? error});
+typedef _State = ({String q, bool busy, Object? error, int limit});
 final _pickerProvider = NotifierProvider.autoDispose
     .family<_Picker, _State, Object>(_Picker.new);
 
 class _Picker extends Notifier<_State> {
   _Picker(Object owner);
   @override
-  _State build() => (q: '', busy: false, error: null);
-  void search(String q) => state = (q: q, busy: state.busy, error: state.error);
+  _State build() => (q: '', busy: false, error: null, limit: 40);
+  void search(String q) =>
+      state = (q: q, busy: state.busy, error: state.error, limit: 40);
+  void more() => state = (
+    q: state.q,
+    busy: state.busy,
+    error: state.error,
+    limit: state.limit + 40,
+  );
   Future<void> toggle(String id, bool selected) async {
     if (state.busy) return;
-    state = (q: state.q, busy: true, error: null);
+    state = (q: state.q, busy: true, error: null, limit: state.limit);
     Object? error;
     try {
       final api = ref.read(unitCompareApiProvider);
@@ -31,7 +38,7 @@ class _Picker extends Notifier<_State> {
     } finally {
       if (ref.mounted) {
         ref.invalidate(unitCompareProvider);
-        state = (q: state.q, busy: false, error: error);
+        state = (q: state.q, busy: false, error: error, limit: state.limit);
       }
     }
   }
@@ -97,7 +104,7 @@ class _UnitComparePickerState extends ConsumerState<UnitComparePicker> {
             (u) => u.status != 'hidden',
           );
           final words = fold(state.q).trim();
-          final rows = [
+          final matches = [
             ...all.where((u) => picked.contains(u.id)),
             ...all.where(
               (u) =>
@@ -107,7 +114,8 @@ class _UnitComparePickerState extends ConsumerState<UnitComparePicker> {
                         '${u.publicCode ?? ''} ${u.code} ${u.unitType ?? ''}',
                       ).contains(words)),
             ),
-          ].take(40);
+          ];
+          final rows = matches.take(state.limit);
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             spacing: 8,
@@ -119,6 +127,14 @@ class _UnitComparePickerState extends ConsumerState<UnitComparePicker> {
                 maxLength: 40,
                 autoCapitalize: TextCapitalization.characters,
               ),
+              if (units.hasValue)
+                kit.Muted('Hiển thị ${rows.length}/${matches.length} căn'),
+              if (matches.length > state.limit)
+                kit.Button(
+                  title: 'Tải thêm',
+                  kind: 'secondary',
+                  onPress: control.more,
+                ),
               if (state.error != null)
                 kit.Notice(tone: 'error', text: errorMessage(state.error!)),
               if (units.isLoading || set.isLoading)
@@ -139,7 +155,8 @@ class _UnitComparePickerState extends ConsumerState<UnitComparePicker> {
               else
                 for (final u in rows)
                   Semantics(
-                    label: 'Chọn căn ${u.publicCode ?? u.code}',
+                    label:
+                        'Chọn căn ${u.publicCode ?? u.code}, ${[u.unitType, statusLabel[u.status], fmtPrice(u.priceMin ?? u.priceList)].whereType<String>().where((s) => s.isNotEmpty).join(', ')}',
                     checked: picked.contains(u.id),
                     enabled: !state.busy,
                     onTap: state.busy

@@ -237,48 +237,63 @@ class _Detail extends ConsumerWidget {
             accessibilityLabel: 'Chủ đầu tư ${d.name}, xem các dự án khác',
             onPress: () =>
                 openDeveloper(context, id: d.id, name: d.name, slug: d.slug),
-            child: Row(
-              spacing: 12,
-              children: [
-                if (mediaUrl(d.logoUrl) case final logo?)
-                  AppNetworkImage(
-                    logo,
-                    width: 40,
-                    height: 40,
-                    fit: BoxFit.contain,
-                    errorBuilder: (_, _, _) => const Icon(
-                      Ionicons.businessOutline,
-                      size: 20,
-                      color: c.muted,
+            child: LayoutBuilder(
+              builder: (context, constraints) => Flex(
+                mainAxisSize: MainAxisSize.min,
+                direction:
+                    constraints.maxWidth /
+                            MediaQuery.textScalerOf(context).scale(1) <
+                        400
+                    ? Axis.vertical
+                    : Axis.horizontal,
+                spacing: 12,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (mediaUrl(d.logoUrl) case final logo?)
+                    AppNetworkImage(
+                      logo,
+                      width: 40,
+                      height: 40,
+                      fit: BoxFit.contain,
+                      errorBuilder: (_, _, _) => const Icon(
+                        Ionicons.businessOutline,
+                        size: 20,
+                        color: c.muted,
+                      ),
+                    )
+                  else
+                    const SizedBox(
+                      width: 40,
+                      height: 40,
+                      child: Icon(
+                        Ionicons.businessOutline,
+                        size: 20,
+                        color: c.muted,
+                      ),
                     ),
-                  )
-                else
-                  const SizedBox(
-                    width: 40,
-                    height: 40,
-                    child: Icon(
-                      Ionicons.businessOutline,
-                      size: 20,
-                      color: c.muted,
+                  Flexible(
+                    fit: FlexFit.loose,
+                    flex: 1,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const kit.Muted('Chủ đầu tư'),
+                        kit.Body(d.name),
+                      ],
                     ),
                   ),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [const kit.Muted('Chủ đầu tư'), kit.Body(d.name)],
-                  ),
-                ),
-                const Text('Dự án khác', style: TextStyle(color: c.link)),
-                const Icon(Ionicons.chevronForward, size: 16, color: c.link),
-              ],
+                  const Text('Dự án khác', style: TextStyle(color: c.link)),
+                  const Icon(Ionicons.chevronForward, size: 16, color: c.link),
+                ],
+              ),
             ),
           ),
         if (overview.summary != null || overview.usp.isNotEmpty)
           kit.Section(
             title: 'Tổng quan',
             children: [
-              if (overview.summary case final summary?)
-                kit.Body(summary, style: const TextStyle(height: 1.6)),
+              if (overview.summary case final summary?) _PreviewText(summary),
               if (overview.usp.isNotEmpty) _Bullets(items: overview.usp),
             ],
           ),
@@ -286,25 +301,43 @@ class _Detail extends ConsumerWidget {
           kit.Section(
             title: 'Thông tin dự án',
             child: LayoutBuilder(
-              builder: (_, constraints) => Wrap(
-                spacing: 10,
-                runSpacing: 10,
-                children: [
-                  for (final spec in overview.specs)
-                    SizedBox(
-                      width: (constraints.maxWidth - 10) / 2,
-                      child: kit.Card(
-                        children: [
-                          kit.Muted(
-                            spec.label,
-                            style: const TextStyle(fontSize: 12),
-                          ),
-                          kit.Body(spec.value),
-                        ],
+              builder: (context, constraints) {
+                final columns =
+                    constraints.maxWidth /
+                            MediaQuery.textScalerOf(context).scale(1) <
+                        400
+                    ? 1
+                    : 2;
+                return Column(
+                  spacing: 10,
+                  children: [
+                    for (var i = 0; i < overview.specs.length; i += columns)
+                      IntrinsicHeight(
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          spacing: 10,
+                          children: [
+                            for (final spec
+                                in overview.specs.skip(i).take(columns))
+                              Expanded(
+                                child: kit.Card(
+                                  children: [
+                                    kit.Muted(
+                                      spec.label,
+                                      style: const TextStyle(fontSize: 12),
+                                    ),
+                                    kit.Body(spec.value),
+                                  ],
+                                ),
+                              ),
+                            if (columns == 2 && i + 1 == overview.specs.length)
+                              const Expanded(child: SizedBox()),
+                          ],
+                        ),
                       ),
-                    ),
-                ],
-              ),
+                  ],
+                );
+              },
             ),
           ),
         if (amenities.isNotEmpty)
@@ -320,40 +353,37 @@ class _Detail extends ConsumerWidget {
         if (plans.isNotEmpty)
           kit.Section(
             title: 'Mặt bằng',
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                spacing: 12,
-                children: [
-                  for (final f in plans)
-                    SizedBox(
-                      width: 220,
-                      child: Semantics(
-                        button: true,
-                        label: f.name,
-                        child: GestureDetector(
-                          onTap: () => openInApp(context, f.url!, f.name),
-                          child: Column(
-                            spacing: 6,
-                            children: [
-                              AspectRatio(
-                                aspectRatio: 4 / 3,
-                                child: AppNetworkImage(
-                                  f.url!,
-                                  fit: BoxFit.cover,
-                                  semanticLabel: f.name,
-                                  errorBuilder: (_, _, _) =>
-                                      const ColoredBox(color: c.quiet),
-                                ),
+            child: _PreviewList(
+              horizontal: true,
+              children: [
+                for (final f in plans)
+                  SizedBox(
+                    width: 220,
+                    child: Semantics(
+                      button: true,
+                      label: f.name,
+                      child: GestureDetector(
+                        onTap: () => openInApp(context, f.url!, f.name),
+                        child: Column(
+                          spacing: 6,
+                          children: [
+                            AspectRatio(
+                              aspectRatio: 4 / 3,
+                              child: AppNetworkImage(
+                                f.url!,
+                                fit: BoxFit.cover,
+                                semanticLabel: f.name,
+                                errorBuilder: (_, _, _) =>
+                                    const ColoredBox(color: c.quiet),
                               ),
-                              kit.Muted(f.name, numberOfLines: 1),
-                            ],
-                          ),
+                            ),
+                            kit.Muted(f.name, numberOfLines: 1),
+                          ],
                         ),
                       ),
                     ),
-                ],
-              ),
+                  ),
+              ],
             ),
           ),
         if (p.subdivisions?.isNotEmpty == true)
@@ -363,53 +393,59 @@ class _Detail extends ConsumerWidget {
               const kit.Muted(
                 'Giá và bảng hàng từng căn hiển thị sau khi đăng nhập.',
               ),
-              for (final d in p.subdivisions!)
-                kit.Card(
-                  padding: EdgeInsets.zero,
-                  children: [
-                    if (mediaUrl(d.coverUrl) case final cover?)
-                      AspectRatio(
-                        aspectRatio: 16 / 9,
-                        child: AppNetworkImage(
-                          cover,
-                          fit: BoxFit.cover,
-                          semanticLabel: d.name,
-                          errorBuilder: (_, _, _) =>
-                              const ColoredBox(color: c.quiet),
+              _PreviewList(
+                children: [
+                  for (final d in p.subdivisions!)
+                    kit.Card(
+                      padding: EdgeInsets.zero,
+                      children: [
+                        if (mediaUrl(d.coverUrl) case final cover?)
+                          AspectRatio(
+                            aspectRatio: 16 / 9,
+                            child: AppNetworkImage(
+                              cover,
+                              fit: BoxFit.cover,
+                              semanticLabel: d.name,
+                              errorBuilder: (_, _, _) =>
+                                  const ColoredBox(color: c.quiet),
+                            ),
+                          ),
+                        Padding(
+                          padding: const EdgeInsets.all(14),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            spacing: 4,
+                            children: [
+                              kit.Body(d.name),
+                              if (d.description case final description?)
+                                _PreviewText(description),
+                            ],
+                          ),
                         ),
-                      ),
-                    Padding(
-                      padding: const EdgeInsets.all(14),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        spacing: 4,
-                        children: [
-                          kit.Body(d.name),
-                          if (d.description case final description?)
-                            kit.Muted(description),
-                        ],
-                      ),
+                      ],
                     ),
-                  ],
-                ),
+                ],
+              ),
             ],
           ),
         if (p.progress?.isNotEmpty == true)
           kit.Section(
             title: 'Tiến độ',
             child: kit.Card(
-              children: [
-                for (final e in p.progress!)
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    spacing: 2,
-                    children: [
-                      kit.Muted(fmtDate(e.occurredOn)),
-                      kit.Body(e.title),
-                      if (e.body case final body?) kit.Muted(body),
-                    ],
-                  ),
-              ],
+              child: _PreviewList(
+                children: [
+                  for (final e in p.progress!)
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      spacing: 2,
+                      children: [
+                        kit.Muted(fmtDate(e.occurredOn)),
+                        kit.Body(e.title),
+                        if (e.body case final body?) _PreviewText(body),
+                      ],
+                    ),
+                ],
+              ),
             ),
           ),
         if (docs.isNotEmpty)
@@ -417,25 +453,25 @@ class _Detail extends ConsumerWidget {
             title: 'Tài liệu',
             child: kit.Card(
               padding: EdgeInsets.zero,
-              children: [
-                for (final (i, d) in docs.indexed) ...[
-                  if (i > 0) const kit.Divider(),
-                  Material(
-                    color: Colors.transparent,
-                    child: ListTile(
-                      leading: const Icon(
-                        Ionicons.documentTextOutline,
-                        size: 20,
-                        color: c.brand,
+              child: _PreviewList(
+                children: [
+                  for (final d in docs)
+                    Material(
+                      color: Colors.transparent,
+                      child: ListTile(
+                        leading: const Icon(
+                          Ionicons.documentTextOutline,
+                          size: 20,
+                          color: c.brand,
+                        ),
+                        title: Text(d.name ?? 'Tài liệu'),
+                        trailing: const Icon(Ionicons.openOutline, size: 16),
+                        onTap: () =>
+                            openInApp(context, d.url!, d.name ?? 'Tài liệu'),
                       ),
-                      title: Text(d.name ?? 'Tài liệu'),
-                      trailing: const Icon(Ionicons.openOutline, size: 16),
-                      onTap: () =>
-                          openInApp(context, d.url!, d.name ?? 'Tài liệu'),
                     ),
-                  ),
                 ],
-              ],
+              ),
             ),
           ),
         if (p.faqs?.isNotEmpty == true)
@@ -554,8 +590,7 @@ class _Bullets extends StatelessWidget {
   const _Bullets({required this.items});
   final List<String> items;
   @override
-  Widget build(BuildContext context) => Column(
-    spacing: 9,
+  Widget build(BuildContext context) => _PreviewList(
     children: [
       for (final item in items)
         Row(
@@ -563,10 +598,89 @@ class _Bullets extends StatelessWidget {
           spacing: 10,
           children: [
             const Text('•', style: TextStyle(color: c.brand)),
-            Expanded(child: kit.Body(item)),
+            Expanded(child: _PreviewText(item)),
           ],
         ),
     ],
+  );
+}
+
+class _PreviewList extends StatefulWidget {
+  const _PreviewList({required this.children, this.horizontal = false});
+  final List<Widget> children;
+  final bool horizontal;
+  @override
+  State<_PreviewList> createState() => _PreviewListState();
+}
+
+class _PreviewListState extends State<_PreviewList> {
+  bool expanded = false;
+  @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    spacing: 9,
+    children: [
+      if (widget.horizontal)
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            spacing: 12,
+            children: widget.children
+                .take(expanded ? widget.children.length : 5)
+                .toList(),
+          ),
+        )
+      else
+        ...widget.children.take(expanded ? widget.children.length : 5),
+      if (widget.children.length > 5)
+        kit.Button(
+          kind: 'link',
+          title: expanded ? 'Thu gọn' : 'Xem thêm (${widget.children.length})',
+          onPress: () => setState(() => expanded = !expanded),
+        ),
+    ],
+  );
+}
+
+class _PreviewText extends StatefulWidget {
+  const _PreviewText(this.text);
+  final String text;
+  @override
+  State<_PreviewText> createState() => _PreviewTextState();
+}
+
+class _PreviewTextState extends State<_PreviewText> {
+  bool expanded = false;
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) {
+      const style = TextStyle(fontSize: 16, height: 1.6, color: c.text);
+      final painter = TextPainter(
+        text: TextSpan(text: widget.text, style: style),
+        maxLines: 6,
+        textDirection: Directionality.of(context),
+        textScaler: MediaQuery.textScalerOf(context),
+      )..layout(maxWidth: constraints.maxWidth);
+      final long = painter.didExceedMaxLines;
+      painter.dispose();
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            widget.text,
+            style: style,
+            maxLines: expanded ? null : 6,
+            overflow: expanded ? TextOverflow.visible : TextOverflow.ellipsis,
+          ),
+          if (long)
+            kit.Button(
+              kind: 'link',
+              title: expanded ? 'Thu gọn' : 'Xem thêm',
+              onPress: () => setState(() => expanded = !expanded),
+            ),
+        ],
+      );
+    },
   );
 }
 

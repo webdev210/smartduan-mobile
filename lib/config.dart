@@ -11,4 +11,4 @@ const webUrl = String.fromEnvironment(
   defaultValue: 'https://smartduan.vn',
 );
 final originUrl = apiUrl.replaceFirst(RegExp(r'/api/v1/?$'), '');
-const appVersion = '1.0.0';
+const appVersion = '1.0.2';

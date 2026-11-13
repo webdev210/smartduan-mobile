@@ -21,6 +21,7 @@ class ProfileScreen extends ConsumerStatefulWidget {
 }
 
 class _ProfileState extends ConsumerState<ProfileScreen> {
+  bool allDownloads = false;
   String? removing;
   Object? failure;
   Future<bool> confirm(String title, String text, String action) async =>
@@ -236,10 +237,26 @@ class _ProfileState extends ConsumerState<ProfileScreen> {
                   ? const Muted('Chưa tải tài liệu nào.')
                   : Column(
                       children: [
-                        for (final d in list.take(10))
+                        Muted(
+                          'Hiển thị ${allDownloads
+                              ? list.length
+                              : list.length > 10
+                              ? 10
+                              : list.length}/${list.length} lượt tải gần nhất',
+                        ),
+                        for (final d in allDownloads ? list : list.take(10))
                           kit.Row(
                             label: d.documentTitle,
                             value: fmtDate(d.downloadedAt ?? d.requestedAt),
+                          ),
+                        if (list.length > 10)
+                          Button(
+                            title: allDownloads
+                                ? 'Thu gọn'
+                                : 'Xem thêm (${list.length - 10})',
+                            kind: 'link',
+                            onPress: () =>
+                                setState(() => allDownloads = !allDownloads),
                           ),
                       ],
                     ),

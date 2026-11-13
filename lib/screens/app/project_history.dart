@@ -14,14 +14,23 @@ const historyFields = {
   'price_list': 'Giá niêm yết',
   'price_min': 'Giá thấp nhất',
   'price_loan': 'Giá vay',
+  'price_progress': 'Giá theo tiến độ',
+  'price_early': 'Giá thanh toán sớm',
   'fund': 'Quỹ',
   'reserved_until': 'Giữ đến',
 };
-String historyValue(String field, String? value) => value == null
-    ? '—'
-    : field == 'status'
-    ? statusLabel[value] ?? value
-    : value;
+String historyValue(
+  String field,
+  String? value, [
+  Map<String, String> funds = const {},
+]) => switch ((field, value)) {
+  (_, null || '') => '—',
+  ('status', final v?) => statusLabel[v] ?? v,
+  ('fund', final v?) => funds[v] ?? v,
+  ('reserved_until', final v?) => fmtDate(v, true),
+  (final f, final v?) when f.startsWith('price_') => fmtPrice(v),
+  (_, final v?) => v,
+};
 
 class ProjectHistoryScreen extends ConsumerStatefulWidget {
   const ProjectHistoryScreen({super.key, required this.projectId, this.name});
@@ -35,10 +44,27 @@ class ProjectHistoryScreen extends ConsumerStatefulWidget {
 class _ProjectHistoryScreenState extends ConsumerState<ProjectHistoryScreen> {
   String _query = '';
   String? _field;
+  int page = 1;
   @override
   Widget build(BuildContext context) {
-    final key = (projectId: widget.projectId, page: 1);
-    final history = ref.watch(fetchProjectHistoryProvider(key));
+    final queries = [
+      for (var i = 1; i <= page; i++)
+        fetchProjectHistoryProvider((projectId: widget.projectId, page: i)),
+    ];
+    final values = [for (final query in queries) ref.watch(query)];
+    final history = values.first;
+    final all = [for (final value in values) ...?value.value?.data];
+    final last = values.last;
+    final funds =
+        ref.watch(fetchEnumsProvider).value?.fundLabels ??
+        const <String, String>{};
+    Future<void> refresh() async {
+      for (final query in queries) {
+        ref.invalidate(query);
+      }
+      await ref.read(queries.first.future);
+    }
+
     final units = ref.watch(inventoryUnitsProvider(widget.projectId));
     final codes = {
       for (final u in units.value ?? <Unit>[]) u.id: u.publicCode ?? u.code,
@@ -63,9 +89,8 @@ class _ProjectHistoryScreenState extends ConsumerState<ProjectHistoryScreen> {
           Expanded(
             child: AsyncView(
               value: history,
-              onRetry: () => ref.invalidate(fetchProjectHistoryProvider(key)),
+              onRetry: () => ref.invalidate(queries.first),
               builder: (result) {
-                final all = result.data;
                 final fields = all.map((h) => h.field).toSet();
                 final rows = smartFilter(
                   all
@@ -75,8 +100,8 @@ class _ProjectHistoryScreenState extends ConsumerState<ProjectHistoryScreen> {
                   (h) => [
                     codes[h.unitId],
                     historyFields[h.field] ?? h.field,
-                    historyValue(h.field, h.oldValue),
-                    historyValue(h.field, h.newValue),
+                    historyValue(h.field, h.oldValue, funds),
+                    historyValue(h.field, h.newValue, funds),
                     h.source,
                   ],
                 );
@@ -138,14 +163,28 @@ class _ProjectHistoryScreenState extends ConsumerState<ProjectHistoryScreen> {
                     padding: EdgeInsets.zero,
                     child: ListItem(
                       title:
-                          '${codes[h.unitId] ?? 'Căn'} · ${historyFields[h.field] ?? h.field}: ${historyValue(h.field, h.oldValue)} → ${historyValue(h.field, h.newValue)}',
+                          '${codes[h.unitId] ?? 'Căn'} · ${historyFields[h.field] ?? h.field}: ${historyValue(h.field, h.oldValue, funds)} → ${historyValue(h.field, h.newValue, funds)}',
                       subtitle: '${fmtDate(h.changedAt, true)} · ${h.source}',
                       onPress: () =>
                           context.push('/can/${Uri.encodeComponent(h.unitId)}'),
                     ),
                   ),
-                  onRefresh: () =>
-                      ref.refresh(fetchProjectHistoryProvider(key).future),
+                  footer: last.hasError && page > 1
+                      ? ErrorBox(
+                          error: last.error,
+                          onRetry: () => ref.invalidate(queries.last),
+                        )
+                      : last.isLoading ||
+                            (last.value != null &&
+                                last.value!.data.isNotEmpty &&
+                                all.length < result.total)
+                      ? Button(
+                          title: 'Tải thêm',
+                          loading: last.isLoading,
+                          onPress: () => setState(() => page++),
+                        )
+                      : null,
+                  onRefresh: refresh,
                 );
               },
             ),

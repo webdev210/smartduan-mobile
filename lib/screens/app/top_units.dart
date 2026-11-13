@@ -38,6 +38,30 @@ class _TopUnitsScreenState extends ConsumerState<TopUnitsScreen> {
       params: ApiParams({'mode': mode}),
     ));
     final top = ref.watch(provider);
+    final groups = [
+      for (final g in top.value?.groups ?? <TopUnitGroup>[])
+        if (only == null || topGroupName(g) == only)
+          (
+            group: g,
+            units: smartFilter(
+              g.units,
+              q,
+              (u) => [
+                u.publicCode ?? u.code,
+                u.code,
+                u.blockName,
+                if (u.floor != null) 'Tầng ${u.floor}',
+                u.why.where((s) => s.isNotEmpty).join(' · '),
+              ],
+            ),
+          ),
+    ].where((g) => q.trim().isEmpty || g.units.isNotEmpty).toList();
+    final entries = <({TopUnitGroup group, TopUnit? unit})>[
+      for (final g in groups) ...[
+        (group: g.group, unit: null),
+        for (final u in g.units) (group: g.group, unit: u),
+      ],
+    ];
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -46,6 +70,56 @@ class _TopUnitsScreenState extends ConsumerState<TopUnitsScreen> {
       ),
       body: kit.Screen(
         onRefresh: () => ref.refresh(provider.future),
+        slivers: [
+          if (entries.isNotEmpty)
+            SliverPadding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              sliver: SliverList.builder(
+                itemCount: entries.length,
+                itemBuilder: (_, i) {
+                  final entry = entries[i];
+                  final u = entry.unit;
+                  return u == null
+                      ? Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              kit.H2(topGroupName(entry.group)),
+                              kit.Muted(
+                                '${entry.group.available} căn còn hàng',
+                              ),
+                              if (entry.group.units.isEmpty)
+                                const kit.Muted('Chưa có căn phù hợp.'),
+                            ],
+                          ),
+                        )
+                      : kit.Card(
+                          key: ValueKey(u.id),
+                          padding: EdgeInsets.zero,
+                          child: kit.ListItem(
+                            title:
+                                '${u.publicCode ?? u.code} · ${u.priceMinLabel ?? fmtPrice(u.priceMin)}',
+                            subtitle:
+                                [
+                                      u.blockName,
+                                      if (u.floor != null) 'Tầng ${u.floor}',
+                                      if (u.area != null && u.area != '')
+                                        fmtArea(u.area),
+                                      ...u.why,
+                                    ]
+                                    .whereType<String>()
+                                    .where((s) => s.isNotEmpty)
+                                    .join(' · '),
+                            onPress: () => context.push(
+                              '/can/${Uri.encodeComponent(u.id)}',
+                            ),
+                          ),
+                        );
+                },
+              ),
+            ),
+        ],
         children: [
           kit.Segmented(
             value: mode,
@@ -70,24 +144,6 @@ class _TopUnitsScreenState extends ConsumerState<TopUnitsScreen> {
                       : 'Dự án chưa có căn còn hàng.',
                 );
               }
-              final groups = [
-                for (final g in data.groups)
-                  if (only == null || topGroupName(g) == only)
-                    (
-                      group: g,
-                      units: smartFilter(
-                        g.units,
-                        q,
-                        (u) => [
-                          u.publicCode ?? u.code,
-                          u.code,
-                          u.blockName,
-                          if (u.floor != null) 'Tầng ${u.floor}',
-                          u.why.where((s) => s.isNotEmpty).join(' · '),
-                        ],
-                      ),
-                    ),
-              ].where((g) => q.trim().isEmpty || g.units.isNotEmpty).toList();
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 spacing: 16,
@@ -122,37 +178,6 @@ class _TopUnitsScreenState extends ConsumerState<TopUnitsScreen> {
                           q = '';
                           only = null;
                         }),
-                      ),
-                    ),
-                  for (final g in groups)
-                    kit.Section(
-                      title: topGroupName(g.group),
-                      eyebrow: '${g.group.available} căn còn hàng',
-                      child: kit.Card(
-                        children: [
-                          if (g.units.isEmpty)
-                            const kit.Muted('Chưa có căn phù hợp.'),
-                          for (final u in g.units)
-                            kit.ListItem(
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                              title:
-                                  '${u.publicCode ?? u.code} · ${u.priceMinLabel ?? fmtPrice(u.priceMin)}',
-                              subtitle:
-                                  [
-                                        u.blockName,
-                                        if (u.floor != null) 'Tầng ${u.floor}',
-                                        if (u.area != null && u.area != '')
-                                          fmtArea(u.area),
-                                        ...u.why,
-                                      ]
-                                      .whereType<String>()
-                                      .where((s) => s.isNotEmpty)
-                                      .join(' · '),
-                              onPress: () => context.push(
-                                '/can/${Uri.encodeComponent(u.id)}',
-                              ),
-                            ),
-                        ],
                       ),
                     ),
                 ],

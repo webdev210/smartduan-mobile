@@ -1,4 +1,5 @@
-import 'package:flutter/widgets.dart';
+import 'package:material_ui/material_ui.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -73,9 +74,54 @@ Future<void> openInApp(
           ).toString(),
         );
       case 'device':
-        await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+        final opened = await launchUrl(
+          Uri.parse(url),
+          mode: LaunchMode.externalApplication,
+        );
+        if (!opened && context.mounted) _launchFailure(context, url);
     }
   } catch (_) {
-    /* RN treats unavailable destinations as best-effort links. */
+    if (context.mounted) _launchFailure(context, url);
   }
+}
+
+void _launchFailure(BuildContext context, String url) {
+  if (Scaffold.maybeOf(context) == null) return;
+  final uri = Uri.tryParse(url);
+  final copyable =
+      uri != null && {'tel', 'mailto', 'http', 'https'}.contains(uri.scheme);
+  ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+    SnackBar(
+      content: const Text('Không mở được liên kết. Vui lòng thử lại.'),
+      action: copyable
+          ? SnackBarAction(
+              label: 'Sao chép',
+              onPressed: () async {
+                try {
+                  await Clipboard.setData(
+                    ClipboardData(
+                      text: uri.scheme == 'tel' || uri.scheme == 'mailto'
+                          ? uri.path
+                          : url,
+                    ),
+                  );
+                  if (context.mounted) {
+                    ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+                      const SnackBar(content: Text('Đã sao chép')),
+                    );
+                  }
+                } catch (_) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+                      const SnackBar(
+                        content: Text('Không sao chép được. Vui lòng thử lại.'),
+                      ),
+                    );
+                  }
+                }
+              },
+            )
+          : null,
+    ),
+  );
 }

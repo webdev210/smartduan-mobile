@@ -390,17 +390,41 @@ class _DeviceCardState extends ConsumerState<_DeviceCard>
           ),
         ],
         if (mode == 'allow_until' && allowException) ...[
-          Field(
-            label: 'Cho dùng đến ngày (YYYY-MM-DD, tối đa 90 ngày)',
-            value: text,
-            placeholder: '2026-12-31',
-            autocorrect: false,
-            keyboardType: TextInputType.datetime,
-            onChangeText: (v) => setState(() => text = v),
+          Button(
+            kind: 'secondary',
+            title: text.isEmpty
+                ? 'Chọn ngày hết hạn (tối đa 90 ngày)'
+                : 'Đến ${fmtDate(text)}',
+            disabled: busy,
+            onPress: () async {
+              final today = DateUtils.dateOnly(DateTime.now());
+              final last = today.add(const Duration(days: 90));
+              final previous = DateTime.tryParse(text);
+              final date = await showDatePicker(
+                context: context,
+                initialDate:
+                    previous != null &&
+                        !previous.isBefore(today) &&
+                        !previous.isAfter(last)
+                    ? previous
+                    : today,
+                firstDate: today,
+                lastDate: last,
+                helpText: 'Chọn ngày hết hạn',
+                cancelText: 'Huỷ',
+                confirmText: 'Chọn',
+              );
+              if (date != null && mounted) {
+                setState(
+                  () => text =
+                      '${date.year.toString().padLeft(4, '0')}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}',
+                );
+              }
+            },
           ),
           Button(
             title: 'Cho phép tạm thời',
-            disabled: !RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(text.trim()),
+            disabled: text.isEmpty,
             loading: busy,
             onPress: () => mutate('allow_until', {'expires_at': text.trim()}),
           ),

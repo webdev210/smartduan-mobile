@@ -18,6 +18,7 @@ import '../../ui/format.dart';
 import '../../ui/in_app.dart';
 import '../../ui/kit.dart' as kit;
 import '../../ui/unit_compare_picker.dart';
+import 'project_history.dart' show historyFields, historyValue;
 
 final unitCompareAddProvider = NotifierProvider.autoDispose
     .family<UnitCompareAdd, AsyncValue<bool>, String>(UnitCompareAdd.new);
@@ -58,10 +59,12 @@ class UnitScreen extends ConsumerStatefulWidget {
 
 class _UnitScreenState extends ConsumerState<UnitScreen> {
   bool picker = false;
+  bool allHistory = false;
   SessionState? loggedSession;
   @override
   Widget build(BuildContext context) {
     final session = ref.watch(sessionProvider);
+    final enums = ref.watch(fetchEnumsProvider).value;
     final detail = ref.watch(fetchUnitDetailProvider(widget.id));
     final u = detail.value;
     final images = u == null
@@ -197,7 +200,13 @@ class _UnitScreenState extends ConsumerState<UnitScreen> {
                       ),
                       if (u.areaLand != null && u.areaLand != '')
                         kit.Row(label: 'DT đất', value: fmtArea(u.areaLand)),
-                      kit.Row(label: 'Hướng', value: u.direction ?? '—'),
+                      kit.Row(
+                        label: 'Hướng',
+                        value:
+                            enums?.directionLabels[u.direction] ??
+                            u.direction ??
+                            '—',
+                      ),
                       kit.Row(label: 'View', value: u.view ?? '—'),
                       kit.Row(
                         label: 'Bàn giao',
@@ -367,9 +376,29 @@ class _UnitScreenState extends ConsumerState<UnitScreen> {
                           : kit.Card(
                               children: [
                                 const kit.H2('Lịch sử thay đổi'),
-                                for (final h in data.data.take(15))
+                                kit.Muted(
+                                  'Hiển thị ${allHistory
+                                      ? data.data.length
+                                      : data.data.length > 15
+                                      ? 15
+                                      : data.data.length}/${data.total > data.data.length ? data.total : data.data.length} thay đổi gần nhất',
+                                ),
+                                for (final h
+                                    in allHistory
+                                        ? data.data
+                                        : data.data.take(15))
                                   kit.Muted(
-                                    '${fmtDate(h.changedAt, true)} · ${h.field}: ${h.oldValue ?? '—'} → ${h.newValue ?? '—'}',
+                                    '${fmtDate(h.changedAt, true)} · ${historyFields[h.field] ?? h.field}: ${historyValue(h.field, h.oldValue, enums?.fundLabels ?? const {})} → ${historyValue(h.field, h.newValue, enums?.fundLabels ?? const {})}',
+                                  ),
+                                if (data.data.length > 15)
+                                  kit.Button(
+                                    title: allHistory
+                                        ? 'Thu gọn'
+                                        : 'Xem thêm (${data.data.length - 15})',
+                                    kind: 'link',
+                                    onPress: () => setState(
+                                      () => allHistory = !allHistory,
+                                    ),
                                   ),
                               ],
                             ),

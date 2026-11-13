@@ -472,7 +472,7 @@ void main() {
       UnitComparePicker(projectId: 'P', visible: true, onClose: () {}),
     );
     expect(find.text('Đã chọn 1/4 căn'), findsOneWidget);
-    await press(t, find.bySemanticsLabel('Chọn căn A-02'));
+    await press(t, find.bySemanticsLabel(RegExp('^Chọn căn A-02,')));
     expect(find.text('Đã chọn 2/4 căn'), findsOneWidget);
     await press(t, find.text('So sánh (2)'));
     expect(router.state.uri.path, '/so-sanh');
@@ -482,7 +482,7 @@ void main() {
       t,
       UnitComparePicker(projectId: 'P', visible: true, onClose: () {}),
     );
-    await press(t, find.bySemanticsLabel('Chọn căn A-01'));
+    await press(t, find.bySemanticsLabel(RegExp('^Chọn căn A-01,')));
     expect(find.text('Đã chọn 0/4 căn'), findsOneWidget);
   });
   testWidgets(
@@ -493,20 +493,20 @@ void main() {
         UnitComparePicker(projectId: 'P', visible: true, onClose: () {}),
       );
       expect(find.text('Đã chọn 1/4 căn'), findsOneWidget);
-      await press(t, find.bySemanticsLabel('Chọn căn B-01'));
+      await press(t, find.bySemanticsLabel(RegExp('^Chọn căn B-01,')));
       expect(find.text('Rổ so sánh đã đủ 4 căn.'), findsOneWidget);
       expect(find.text('Đã chọn 1/4 căn'), findsOneWidget);
       expect(picked, ['u1']);
       expect(
         t
-            .widget<Semantics>(find.bySemanticsLabel('Chọn căn A-01'))
+            .widget<Semantics>(find.bySemanticsLabel(RegExp('^Chọn căn A-01,')))
             .properties
             .checked,
         true,
       );
       expect(
         t
-            .widget<Semantics>(find.bySemanticsLabel('Chọn căn B-01'))
+            .widget<Semantics>(find.bySemanticsLabel(RegExp('^Chọn căn B-01,')))
             .properties
             .checked,
         false,

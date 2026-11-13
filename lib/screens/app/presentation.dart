@@ -3,6 +3,7 @@ import 'package:material_ui/material_ui.dart';
 
 import '../../api/errors.dart';
 import '../../api/projects.dart';
+import '../../api/units.dart' show fetchEnumsProvider;
 import '../../ui/format.dart';
 import '../../ui/kit.dart' as kit;
 import '../../ui/stack_grid.dart';
@@ -110,7 +111,10 @@ class _PresentationScreenState extends ConsumerState<PresentationScreen> {
                       kit.Chip(
                         label: block.name,
                         active: block.id == blockId,
-                        onPress: () => setState(() => picked = block.id),
+                        onPress: () => setState(() {
+                          if (block.id != blockId) unitId = null;
+                          picked = block.id;
+                        }),
                       ),
                   ],
                 ),
@@ -154,6 +158,7 @@ class _PresentationUnit extends ConsumerWidget {
   final VoidCallback onLoaded;
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final directions = ref.watch(fetchEnumsProvider).value?.directionLabels;
     final provider = fetchPresentationUnitProvider((
       projectId: projectId,
       unitId: unitId,
@@ -184,7 +189,10 @@ class _PresentationUnit extends ConsumerWidget {
                   label: 'Diện tích',
                   value: fmtArea(u.areaNet ?? u.areaGross),
                 ),
-                kit.Row(label: 'Hướng', value: u.direction ?? '—'),
+                kit.Row(
+                  label: 'Hướng',
+                  value: directions?[u.direction] ?? u.direction ?? '—',
+                ),
                 kit.Row(label: 'Giá', value: u.priceMinLabel ?? 'Liên hệ'),
               ],
             );

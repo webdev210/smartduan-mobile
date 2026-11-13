@@ -129,7 +129,7 @@ void main() {
     expect(imageCacheWidth(390, 3), 1440);
     expect(imageCacheWidth(2000, 3), 1440);
   });
-  testWidgets('section action meets the right edge and title bottom', (
+  testWidgets('section action meets the right edge with a 48dp hit area', (
     t,
   ) async {
     await mount(
@@ -146,8 +146,17 @@ void main() {
     );
     expect(t.getBottomRight(find.byIcon(Ionicons.chevronForward)).dx, 370);
     expect(
-      t.getBottomRight(find.text('Xem tất cả')).dy,
-      t.getBottomRight(find.text('Nổi bật')).dy,
+      t
+          .getSize(
+            find
+                .ancestor(
+                  of: find.text('Xem tất cả'),
+                  matching: find.byType(m.GestureDetector),
+                )
+                .first,
+          )
+          .height,
+      greaterThanOrEqualTo(48),
     );
   });
   for (final scale in [1.0, 1.3, 2.0]) {
@@ -175,7 +184,11 @@ void main() {
       );
       final tiles = find.byType(Tile);
       expect(t.getSize(tiles.at(0)).height, t.getSize(tiles.at(1)).height);
-      expect(t.getSize(tiles.at(1)).height, t.getSize(tiles.at(2)).height);
+      if (scale <= 1.3) {
+        expect(t.getSize(tiles.at(1)).height, t.getSize(tiles.at(2)).height);
+      } else {
+        expect(t.getSize(tiles.at(2)).height, t.getSize(tiles.at(3)).height);
+      }
       expect(t.getSize(tiles.at(3)).width, t.getSize(tiles.at(0)).width);
       expect(t.getTopLeft(tiles.at(1)).dx - t.getTopRight(tiles.at(0)).dx, 10);
       expect(t.takeException(), isNull);

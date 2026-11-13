@@ -37,7 +37,9 @@ class Button extends StatelessWidget {
         ? 12.0
         : 16.0;
     final button = _Pressable(
-      label: accessibilityLabel ?? title,
+      label: loading
+          ? '${accessibilityLabel ?? title}, đang xử lý'
+          : accessibilityLabel ?? title,
       disabled: off,
       onPress: onPress,
       onLongPress: onLongPress,
@@ -106,9 +108,16 @@ class Button extends StatelessWidget {
         ),
       ),
     );
-    return small
-        ? Align(alignment: Alignment.centerLeft, heightFactor: 1, child: button)
-        : button;
+    return Semantics(
+      liveRegion: true,
+      child: small
+          ? Align(
+              alignment: Alignment.centerLeft,
+              heightFactor: 1,
+              child: button,
+            )
+          : button,
+    );
   }
 }
 
@@ -442,10 +451,8 @@ class _SearchBarState extends State<SearchBar> {
                   button: true,
                   label: 'Xoá từ khoá',
                   onTap: () => widget.onChangeText(''),
-                  child: GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    excludeFromSemantics: true,
-                    onTap: () => widget.onChangeText(''),
+                  child: _Pressable(
+                    onPress: () => widget.onChangeText(''),
                     child: const SizedBox(
                       width: 48,
                       height: 48,
@@ -468,9 +475,8 @@ class _SearchBarState extends State<SearchBar> {
               ? 'Bộ lọc, đang bật ${widget.filterCount}'
               : 'Bộ lọc',
           onTap: widget.onFilter,
-          child: GestureDetector(
-            onTap: widget.onFilter,
-            excludeFromSemantics: true,
+          child: _Pressable(
+            onPress: widget.onFilter,
             child: ExcludeSemantics(
               child: SizedBox(
                 width: 52,
@@ -524,9 +530,11 @@ class Chip extends StatelessWidget {
     this.color,
     this.icon,
     this.trailing,
+    this.informational = false,
   });
   final String label;
   final bool active;
+  final bool informational;
   final VoidCallback? onPress;
   final Color? color;
   final IconData? icon, trailing;
@@ -535,15 +543,15 @@ class Chip extends StatelessWidget {
     final fg = active ? solidForeground(color ?? primary) : text;
     return MergeSemantics(
       child: Semantics(
-        button: true,
-        selected: active,
-        enabled: onPress != null,
+        button: informational ? null : true,
+        selected: informational ? null : active,
+        enabled: informational ? null : onPress != null,
         child: _Pressable(
-          onPress: onPress,
+          onPress: informational ? null : onPress,
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 5),
             child: Opacity(
-              opacity: onPress == null ? 0.45 : 1,
+              opacity: !informational && onPress == null ? 0.45 : 1,
               child: Material(
                 color: active ? color ?? primary : card,
                 shape: StadiumBorder(

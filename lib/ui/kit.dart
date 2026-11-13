@@ -40,6 +40,7 @@ class _Pressable extends StatefulWidget {
 
 class _PressableState extends State<_Pressable> {
   bool pressed = false;
+  bool showFocus = false;
   bool get enabled => !widget.disabled && widget.onPress != null;
   void _pressed(bool value) {
     if (mounted) setState(() => pressed = value);
@@ -56,6 +57,7 @@ class _PressableState extends State<_Pressable> {
           onLongPress: enabled ? widget.onLongPress : null,
           child: FocusableActionDetector(
             enabled: enabled,
+            onShowFocusHighlight: (value) => setState(() => showFocus = value),
             mouseCursor: enabled
                 ? SystemMouseCursors.click
                 : SystemMouseCursors.basic,
@@ -87,19 +89,22 @@ class _PressableState extends State<_Pressable> {
                 onTapDown: enabled ? (_) => _pressed(true) : null,
                 onTapUp: enabled ? (_) => _pressed(false) : null,
                 onTapCancel: enabled ? () => _pressed(false) : null,
-                child: _PressableHitArea(
-                  child: Transform.scale(
-                    scale:
-                        enabled &&
-                            pressed &&
-                            !MediaQuery.disableAnimationsOf(context)
-                        ? widget.pressedScale
-                        : 1,
-                    child: Opacity(
-                      opacity: enabled && pressed ? widget.pressedOpacity : 1,
-                      child: widget.label == null
-                          ? widget.child
-                          : ExcludeSemantics(child: widget.child),
+                child: CustomPaint(
+                  foregroundPainter: showFocus ? const _FocusRing() : null,
+                  child: _PressableHitArea(
+                    child: Transform.scale(
+                      scale:
+                          enabled &&
+                              pressed &&
+                              !MediaQuery.disableAnimationsOf(context)
+                          ? widget.pressedScale
+                          : 1,
+                      child: Opacity(
+                        opacity: enabled && pressed ? widget.pressedOpacity : 1,
+                        child: widget.label == null
+                            ? widget.child
+                            : ExcludeSemantics(child: widget.child),
+                      ),
                     ),
                   ),
                 ),
@@ -107,6 +112,34 @@ class _PressableState extends State<_Pressable> {
             ),
           ),
         );
+}
+
+class _FocusRing extends CustomPainter {
+  const _FocusRing();
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = RRect.fromRectAndRadius(
+      (Offset.zero & size).deflate(2),
+      const Radius.circular(8),
+    );
+    canvas.drawRRect(
+      rect,
+      Paint()
+        ..color = Colors.white
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 4,
+    );
+    canvas.drawRRect(
+      rect,
+      Paint()
+        ..color = brand
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_FocusRing oldDelegate) => false;
 }
 
 class _PressableHitArea extends SingleChildRenderObjectWidget {
@@ -215,13 +248,19 @@ class Screen extends StatelessWidget {
           );
     return ColoredBox(
       color: bg,
-      child: onRefresh == null
-          ? scroll
-          : RefreshIndicator(
-              color: brand,
-              onRefresh: () => _refresh(onRefresh!),
-              child: scroll,
-            ),
+      child: Align(
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 640),
+          child: onRefresh == null
+              ? scroll
+              : RefreshIndicator(
+                  color: brand,
+                  onRefresh: () => _refresh(onRefresh!),
+                  child: scroll,
+                ),
+        ),
+      ),
     );
   }
 }
@@ -268,23 +307,29 @@ class ListScreen<T> extends StatelessWidget {
     );
     return ColoredBox(
       color: bg,
-      child: Column(
-        children: [
-          if (top != null)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 4),
-              child: top,
-            ),
-          Expanded(
-            child: onRefresh == null
-                ? scroll
-                : RefreshIndicator(
-                    color: brand,
-                    onRefresh: () => _refresh(onRefresh!),
-                    child: scroll,
-                  ),
+      child: Align(
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 640),
+          child: Column(
+            children: [
+              if (top != null)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 12, 20, 4),
+                  child: top,
+                ),
+              Expanded(
+                child: onRefresh == null
+                    ? scroll
+                    : RefreshIndicator(
+                        color: brand,
+                        onRefresh: () => _refresh(onRefresh!),
+                        child: scroll,
+                      ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -294,13 +339,16 @@ class H1 extends StatelessWidget {
   const H1(this.data, {super.key});
   final String data;
   @override
-  Widget build(BuildContext context) => Text(
-    data,
-    style: const TextStyle(
-      fontSize: 28,
-      fontWeight: FontWeight.w800,
-      color: text,
-      letterSpacing: -0.7,
+  Widget build(BuildContext context) => Semantics(
+    header: true,
+    child: Text(
+      data,
+      style: const TextStyle(
+        fontSize: 28,
+        fontWeight: FontWeight.w800,
+        color: text,
+        letterSpacing: -0.7,
+      ),
     ),
   );
 }
@@ -309,13 +357,16 @@ class H2 extends StatelessWidget {
   const H2(this.data, {super.key});
   final String data;
   @override
-  Widget build(BuildContext context) => Text(
-    data,
-    style: const TextStyle(
-      fontSize: 19,
-      fontWeight: FontWeight.w700,
-      color: text,
-      letterSpacing: -0.3,
+  Widget build(BuildContext context) => Semantics(
+    header: true,
+    child: Text(
+      data,
+      style: const TextStyle(
+        fontSize: 19,
+        fontWeight: FontWeight.w700,
+        color: text,
+        letterSpacing: -0.3,
+      ),
     ),
   );
 }
@@ -561,10 +612,14 @@ class AsyncView<T> extends StatelessWidget {
     required this.value,
     required this.builder,
     this.onRetry,
+    this.loading,
   });
   final AsyncValue<T> value;
   final Widget Function(T) builder;
   final VoidCallback? onRetry;
+
+  /// Supply an existing skeleton when the destination layout is predictable.
+  final Widget? loading;
   @override
   Widget build(BuildContext context) {
     if (value.hasValue) {
@@ -582,7 +637,7 @@ class AsyncView<T> extends StatelessWidget {
         ),
       );
     }
-    if (value.isLoading) return const Loading();
+    if (value.isLoading) return loading ?? const Loading();
     return switch (value) {
       AsyncError(:final error) => ErrorBox(error: error, onRetry: onRetry),
       AsyncData(:final value) => builder(value),

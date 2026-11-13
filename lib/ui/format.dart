@@ -65,7 +65,7 @@ String fmtPrice(Object? value) {
   if (!n.isFinite) return '—';
   if (n >= 1e9) return '${_vi(n / 1e9, 2)} tỷ';
   if (n >= 1e6) return '${_vi(n / 1e6, 1)} tr';
-  return _vi(n);
+  return '${_vi(n)} đ';
 }
 
 String priceLabel(Object? value) {
@@ -91,8 +91,12 @@ String dash(Object? value) => value == null || value == ''
     : value is num
     ? _numberText(value)
     : '$value';
-String fmtArea(String? value) =>
-    value == null || value.isEmpty ? '—' : '$value m²';
+String fmtArea(String? value) {
+  if (value == null || value.isEmpty) return '—';
+  final n = _number(value);
+  return n.isFinite ? '${_vi(n)} m²' : '—';
+}
+
 const _priceFields = [
   ('price_list', 'Giá niêm yết'),
   ('price_loan', 'Giá vay'),

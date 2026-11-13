@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../api/sales.dart';
+import '../../api/units.dart' show fetchEnumsProvider;
 import '../../api/unit_compare.dart' show unitCompareProvider;
 import '../../auth/session.dart';
 import '../../ui/format.dart';
@@ -42,6 +43,7 @@ class _CompareUnitsScreenState extends ConsumerState<CompareUnitsScreen> {
   @override
   Widget build(BuildContext context) {
     final query = ref.watch(fetchCompareProvider);
+    final directions = ref.watch(fetchEnumsProvider).value?.directionLabels;
     ref.listen(sessionProvider, (_, _) {
       if (mounted) setState(() => error = null);
     });
@@ -68,7 +70,7 @@ class _CompareUnitsScreenState extends ConsumerState<CompareUnitsScreen> {
                 ('PN', (u) => dash(u.bedrooms)),
                 ('Thông thuỷ', (u) => fmtArea(u.areaNet)),
                 ('Tim tường', (u) => fmtArea(u.areaGross)),
-                ('Hướng', (u) => dash(u.direction)),
+                ('Hướng', (u) => directions?[u.direction] ?? dash(u.direction)),
                 ('Giá tốt nhất', (u) => fmtPrice(u.priceMin)),
                 (
                   'Đơn giá',

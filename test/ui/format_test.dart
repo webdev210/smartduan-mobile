@@ -105,11 +105,11 @@ void main() {
     expect(fmtMoney(-1.5), '-1 đ');
     expect(fmtMoney(null), '—');
     expect(fmtMoney(double.infinity), '—');
-    expect(fmtPrice('1234.5678'), '1.234,568');
+    expect(fmtPrice('1234.5678'), '1.234,568 đ');
     expect(fmtPrice('1005000000'), '1,01 tỷ');
     expect(fmtPrice('1250000'), '1,3 tr');
     expect(fmtPrice(''), '—');
-    expect(fmtArea('75.5'), '75.5 m²');
+    expect(fmtArea('75.5'), '75,5 m²');
     expect(fmtArea(null), '—');
     expect(fmtArea(''), '—');
     expect(dash(1.0), '1');

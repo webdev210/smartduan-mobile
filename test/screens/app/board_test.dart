@@ -97,7 +97,7 @@ void main() {
     (tester) async {
       await mount(tester);
       expect(find.text('A-12.05'), findsOneWidget);
-      expect(find.textContaining('50.5 m²'), findsOneWidget);
+      expect(find.textContaining('50,5 m²'), findsOneWidget);
       socket.handlers!.onSnapshot(null);
       await tester.pump();
       expect(find.text('Đang cập nhật trực tiếp'), findsOneWidget);

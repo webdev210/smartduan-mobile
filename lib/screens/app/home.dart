@@ -94,7 +94,7 @@ class _HomeState extends ConsumerState<HomeScreen> {
                     height: 32,
                     semanticLabel: 'Smartland',
                   ),
-                  const H2('Smart Dự Án'),
+                  const Expanded(child: H2('Smart Dự Án')),
                 ],
               ),
               SearchBar(
@@ -206,13 +206,19 @@ class _HomeState extends ConsumerState<HomeScreen> {
     if (rows.isEmpty) return Muted(empty);
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        spacing: 12,
-        children: [
-          for (final p in rows)
-            ProjectCard(p: p, width: width, onPress: () => open(p)),
-        ],
+      child: SizedBox(
+        // ponytail: this rail has at most eight cards with two-line names;
+        // measure content if card metadata gains unbounded text.
+        height:
+            width * 10 / 16 + 310 * MediaQuery.textScalerOf(context).scale(1),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          spacing: 12,
+          children: [
+            for (final p in rows)
+              ProjectCard(p: p, width: width, onPress: () => open(p)),
+          ],
+        ),
       ),
     );
   }

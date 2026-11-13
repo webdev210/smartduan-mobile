@@ -382,7 +382,7 @@ void main() {
             ?.map((p) => p.name),
         ['Dự án mẫu'],
       );
-      expect(find.text('1 dự án đã ngừng công khai.'), findsOneWidget);
+      expect(find.text('1 dự án hiện không còn công khai.'), findsOneWidget);
       await t.scrollUntilVisible(
         find.text('Dự án mẫu'),
         200,

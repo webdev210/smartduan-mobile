@@ -7,6 +7,7 @@ import '../../api/projects.dart';
 import '../../api/sales.dart';
 import '../../auth/roles.dart';
 import '../../auth/session.dart';
+import '../../config.dart';
 import '../../ui/format.dart';
 import '../../ui/kit.dart' hide Row;
 import '../../ui/menu.dart';
@@ -266,7 +267,7 @@ class _MenuTabState extends ConsumerState<MenuTab> {
           ),
           const Center(
             child: Muted(
-              'Smart Dự Án · phiên bản 1.0.0',
+              'Smart Dự Án · phiên bản $appVersion',
               style: TextStyle(fontSize: 12),
             ),
           ),

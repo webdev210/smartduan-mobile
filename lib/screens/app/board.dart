@@ -103,7 +103,8 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
     final live = ref.watch(inventoryChannelProvider(id)).live;
     final free = isFreeSales(ref.watch(sessionProvider).roles);
     final blocks = ref.watch(fetchBlocksProvider(id));
-    final enums = ref.watch(fetchEnumsProvider).value;
+    final enumQuery = ref.watch(fetchEnumsProvider);
+    final enums = enumQuery.value;
     final blockId = _pickedBlock ?? blocks.value?.firstOrNull?.id;
     final key = (projectId: id, blockId: blockId ?? '');
     final AsyncValue<StackPlan?> stack = blockId == null
@@ -142,6 +143,9 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
         opts.directions.length > 1 ||
         opts.funds.isNotEmpty;
     final matched = pool.where((u) => keeps(u, f, plan)).length;
+    final flatRows = flat
+        ? pool.cast<Unit>().where((u) => keeps(u, f)).toList()
+        : <Unit>[];
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -170,6 +174,15 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
               ]);
             },
             slivers: [
+              if (flat && flatRows.isNotEmpty)
+                SliverPadding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  sliver: SliverList.separated(
+                    itemCount: flatRows.length,
+                    separatorBuilder: (_, _) => const SizedBox(height: 16),
+                    itemBuilder: (_, i) => _unitCard(flatRows[i]),
+                  ),
+                ),
               if (plan != null)
                 StackGrid(
                   sliver: true,
@@ -180,6 +193,13 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
                 ),
             ],
             children: [
+              if (enumQuery.isLoading) const Loading(),
+              if (enumQuery.hasError) const Muted('Chưa tải được nhãn bộ lọc.'),
+              if (enumQuery.hasError)
+                ErrorBox(
+                  error: enumQuery.error,
+                  onRetry: () => ref.invalidate(fetchEnumsProvider),
+                ),
               m.Row(
                 spacing: 8,
                 children: [
@@ -314,9 +334,12 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
                   value: units,
                   onRetry: () =>
                       ref.invalidate(inventoryUnitsSourceProvider(id)),
-                  builder: (_) => _unitList(
-                    pool.cast<Unit>().where((u) => keeps(u, f)).toList(),
-                  ),
+                  builder: (_) => flatRows.isEmpty
+                      ? const Empty(
+                          icon: Ionicons.searchOutline,
+                          text: 'Không có căn nào khớp bộ lọc.',
+                        )
+                      : Muted('${flatRows.length} căn'),
                 ),
               ] else if (blockId != null)
                 AsyncView(
@@ -410,48 +433,29 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
     );
   }
 
-  Widget _unitList(List<Unit> units) {
-    if (units.isEmpty) {
-      return const Empty(
-        icon: Ionicons.searchOutline,
-        text: 'Không có căn nào khớp bộ lọc.',
-      );
-    }
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      spacing: 16,
-      children: [
-        for (final u in units.take(300))
-          Card(
-            onPress: () => _open(u.id),
-            children: [
-              m.Row(
-                spacing: 8,
-                children: [
-                  Expanded(
-                    child: Body(
-                      u.publicCode ?? u.code,
-                      style: const TextStyle(fontWeight: FontWeight.w600),
-                    ),
-                  ),
-                  Pill(
-                    label: statusLabel[u.status] ?? u.status,
-                    color: _color(statusColor[u.status]) ?? c.subtle,
-                  ),
-                ],
-              ),
-              Muted(
-                '${[u.unitType, if (u.bedrooms != null) '${u.bedrooms}PN', fmtArea(u.areaNet)].whereType<String>().where((s) => s.isNotEmpty).join(' · ')} · ${u.status == 'sold' ? 'Đã bán' : fmtPrice(u.priceMin ?? u.priceList)}',
-              ),
-            ],
+  Widget _unitCard(Unit u) => Card(
+    onPress: () => _open(u.id),
+    children: [
+      m.Row(
+        spacing: 8,
+        children: [
+          Expanded(
+            child: Body(
+              u.publicCode ?? u.code,
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
           ),
-        if (units.length > 300)
-          Muted(
-            'Hiển thị 300/${units.length} căn — dùng Tìm căn để lọc hẹp hơn.',
+          Pill(
+            label: statusLabel[u.status] ?? u.status,
+            color: _color(statusColor[u.status]) ?? c.subtle,
           ),
-      ],
-    );
-  }
+        ],
+      ),
+      Muted(
+        '${[u.unitType, if (u.bedrooms != null) '${u.bedrooms}PN', fmtArea(u.areaNet)].whereType<String>().where((s) => s.isNotEmpty).join(' · ')} · ${u.status == 'sold' ? 'Đã bán' : fmtPrice(u.priceMin ?? u.priceList)}',
+      ),
+    ],
+  );
 }
 
 Color? _color(String? value) =>

@@ -24,6 +24,13 @@ class _InterestsState extends ConsumerState<InterestsScreen> {
   late List<String> ids;
   String q = '';
   bool onlyPicked = false, busy = false;
+  late String? initialRegion;
+  late Set<String> initialIds;
+  bool leaving = false;
+  bool get dirty =>
+      region != initialRegion ||
+      ids.length != initialIds.length ||
+      !initialIds.containsAll(ids);
   Object? failure;
   @override
   void initState() {
@@ -31,6 +38,40 @@ class _InterestsState extends ConsumerState<InterestsScreen> {
     final me = ref.read(sessionProvider).me;
     region = me?['region'] as String?;
     ids = jsonStrings(me?['interested_project_ids']);
+    initialRegion = region;
+    initialIds = ids.toSet();
+  }
+
+  Future<void> leave() async {
+    if (leaving || busy) return;
+    leaving = true;
+    final discard = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Bỏ thay đổi chưa lưu?'),
+        content: const Text('Lựa chọn miền và dự án của bạn chưa được lưu.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Ở lại'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Bỏ thay đổi'),
+          ),
+        ],
+      ),
+    );
+    leaving = false;
+    if (discard == true && mounted) {
+      setState(() {
+        initialRegion = region;
+        initialIds = ids.toSet();
+      });
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && context.canPop()) context.pop();
+      });
+    }
   }
 
   Future<void> save() async {
@@ -45,7 +86,15 @@ class _InterestsState extends ConsumerState<InterestsScreen> {
       );
       if (!mounted) return;
       await ref.read(sessionProvider.notifier).refreshMe();
-      if (mounted && context.canPop()) context.pop();
+      if (mounted) {
+        setState(() {
+          initialRegion = region;
+          initialIds = ids.toSet();
+        });
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted && context.canPop()) context.pop();
+        });
+      }
     } catch (e) {
       if (mounted) setState(() => failure = e);
     } finally {
@@ -70,140 +119,157 @@ class _InterestsState extends ConsumerState<InterestsScreen> {
       q,
       (p) => [p.name, p.province, p.district, p.developerName],
     );
-    return Scaffold(
-      appBar: AppBar(title: const Text('Dự án quan tâm')),
-      body: Column(
-        children: [
-          Expanded(
-            child: ListScreen<Project>(
-              data: rows,
-              keyOf: (p) => p.id,
-              top: SearchBar(
-                value: q,
-                onChangeText: (v) => setState(() => q = v),
-                placeholder: 'Tìm dự án để theo dõi…',
-              ),
-              header: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                spacing: 14,
-                children: [
-                  const H2('Miền bạn phụ trách'),
-                  Segmented(
-                    value: region,
-                    onChange: (v) => setState(() => region = v),
-                    options: [
-                      for (final r in regions)
-                        (key: r.key, label: r.label, count: null),
-                    ],
-                  ),
-                  Row(
-                    spacing: 12,
-                    children: [
-                      const Expanded(child: H2('Dự án quan tâm')),
-                      Semantics(
-                        label:
-                            'Chỉ xem dự án đã chọn, đã chọn ${ids.length} trên 50',
-                        selected: onlyPicked,
-                        child: TextButton.icon(
-                          onPressed: () =>
-                              setState(() => onlyPicked = !onlyPicked),
-                          icon: Icon(
-                            onlyPicked
-                                ? Ionicons.checkbox
-                                : Ionicons.squareOutline,
-                            color: c.brand,
-                          ),
-                          label: Text(
-                            'Đã chọn ${ids.length}/50',
-                            style: TextStyle(
-                              color: ids.length > 50 ? c.danger : c.muted,
+    return PopScope(
+      canPop: !dirty && !busy,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop && dirty) leave();
+      },
+      child: Scaffold(
+        appBar: AppBar(title: const Text('Dự án quan tâm')),
+        body: Column(
+          children: [
+            Expanded(
+              child: ListScreen<Project>(
+                data: rows,
+                keyOf: (p) => p.id,
+                top: SearchBar(
+                  value: q,
+                  onChangeText: (v) => setState(() => q = v),
+                  placeholder: 'Tìm dự án để theo dõi…',
+                ),
+                header: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  spacing: 14,
+                  children: [
+                    const H2('Miền bạn phụ trách'),
+                    Segmented(
+                      value: region,
+                      onChange: (v) {
+                        if (!busy) setState(() => region = v);
+                      },
+                      options: [
+                        for (final r in regions)
+                          (key: r.key, label: r.label, count: null),
+                      ],
+                    ),
+                    Row(
+                      spacing: 12,
+                      children: [
+                        const Expanded(child: H2('Dự án quan tâm')),
+                        Semantics(
+                          label:
+                              'Chỉ xem dự án đã chọn, đã chọn ${ids.length} trên 50',
+                          selected: onlyPicked,
+                          child: TextButton.icon(
+                            onPressed: () =>
+                                setState(() => onlyPicked = !onlyPicked),
+                            icon: Icon(
+                              onlyPicked
+                                  ? Ionicons.checkbox
+                                  : Ionicons.squareOutline,
+                              color: c.brand,
                             ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              empty: AsyncView(
-                value: projects,
-                onRetry: () => ref.invalidate(fetchAllProjectsProvider),
-                builder: (_) => q.trim().isNotEmpty || onlyPicked
-                    ? Empty(
-                        icon: Ionicons.searchOutline,
-                        text: 'Không có dự án nào khớp.',
-                        action: (label: 'Xem tất cả dự án', onPress: reset),
-                      )
-                    : const Muted('Chưa có dự án để chọn.'),
-              ),
-              renderItem: (p) {
-                final on = ids.contains(p.id);
-                final subtitle = [
-                  p.district,
-                  p.province,
-                  p.developerName,
-                ].whereType<String>().where((s) => s.isNotEmpty).join(' · ');
-                return Card(
-                  accessibilityLabel: '${p.name}${on ? ', đang theo dõi' : ''}',
-                  onPress: () =>
-                      setState(() => on ? ids.remove(p.id) : ids.add(p.id)),
-                  style: on
-                      ? BoxDecoration(
-                          color: c.brandSoft,
-                          border: Border.all(color: c.brand),
-                        )
-                      : null,
-                  child: Row(
-                    spacing: 12,
-                    children: [
-                      Expanded(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              p.name,
-                              maxLines: 2,
-                              style: const TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w600,
+                            label: Text(
+                              'Đã chọn ${ids.length}/50',
+                              style: TextStyle(
+                                color: ids.length > 50 ? c.danger : c.muted,
                               ),
                             ),
-                            if (subtitle.isNotEmpty) Muted(subtitle),
-                          ],
+                          ),
                         ),
-                      ),
-                      Icon(
-                        on ? Ionicons.checkmarkCircle : Ionicons.ellipseOutline,
-                        color: on ? c.brand : c.subtle,
-                      ),
-                    ],
-                  ),
-                );
-              },
-            ),
-          ),
-          SafeArea(
-            top: false,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                spacing: 10,
-                children: [
-                  if (failure != null)
-                    Notice(tone: 'error', text: errorMessage(failure)),
-                  Button(
-                    title: 'Lưu',
-                    loading: busy,
-                    disabled: region == null || ids.length > 50,
-                    onPress: save,
-                  ),
-                ],
+                      ],
+                    ),
+                  ],
+                ),
+                empty: AsyncView(
+                  value: projects,
+                  onRetry: () => ref.invalidate(fetchAllProjectsProvider),
+                  builder: (_) => q.trim().isNotEmpty || onlyPicked
+                      ? Empty(
+                          icon: Ionicons.searchOutline,
+                          text: 'Không có dự án nào khớp.',
+                          action: (label: 'Xem tất cả dự án', onPress: reset),
+                        )
+                      : const Muted('Chưa có dự án để chọn.'),
+                ),
+                renderItem: (p) {
+                  final on = ids.contains(p.id);
+                  final subtitle = [
+                    p.district,
+                    p.province,
+                    p.developerName,
+                  ].whereType<String>().where((s) => s.isNotEmpty).join(' · ');
+                  return Card(
+                    accessibilityLabel:
+                        '${p.name}${on ? ', đang theo dõi' : ''}',
+                    onPress: busy
+                        ? null
+                        : () => setState(
+                            () => on ? ids.remove(p.id) : ids.add(p.id),
+                          ),
+                    style: on
+                        ? BoxDecoration(
+                            color: c.brandSoft,
+                            border: Border.all(color: c.brand),
+                          )
+                        : null,
+                    child: Row(
+                      spacing: 12,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                p.name,
+                                maxLines: 2,
+                                style: const TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              if (subtitle.isNotEmpty) Muted(subtitle),
+                            ],
+                          ),
+                        ),
+                        Icon(
+                          on
+                              ? Ionicons.checkmarkCircle
+                              : Ionicons.ellipseOutline,
+                          color: on ? c.brand : c.subtle,
+                        ),
+                      ],
+                    ),
+                  );
+                },
               ),
             ),
-          ),
-        ],
+            SafeArea(
+              top: false,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 12,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  spacing: 10,
+                  children: [
+                    if (failure != null)
+                      Notice(tone: 'error', text: errorMessage(failure)),
+                    Button(
+                      title: 'Lưu',
+                      loading: busy,
+                      disabled: region == null || ids.length > 50,
+                      onPress: save,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

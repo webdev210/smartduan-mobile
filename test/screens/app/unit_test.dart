@@ -57,7 +57,7 @@ void main() {
       await env.mount(tester, const UnitScreen(id: 'u'));
       expect(find.text('P-A101'), findsNWidgets(2));
       expect(find.text('400 tr'), findsNWidgets(2));
-      expect(find.text('50.5 m²'), findsOneWidget);
+      expect(find.text('50,5 m²'), findsOneWidget);
       expect(find.text('Chưa có hình ảnh.'), findsOneWidget);
       expect(find.text('Chưa có lịch sử thay đổi.'), findsOneWidget);
       expect(find.text('Tạo tin đăng'), findsNothing);
@@ -153,7 +153,10 @@ void main() {
     final router = await env.mount(tester, const UnitScreen(id: 'u'));
     expect(find.text('Thanh toán chuẩn'), findsOneWidget);
     expect(find.text('500 tr'), findsOneWidget);
-    expect(find.textContaining('reserved → available'), findsOneWidget);
+    expect(
+      find.textContaining('Trạng thái: Đang giữ → Còn hàng'),
+      findsOneWidget,
+    );
     await tester.ensureVisible(find.text('Tính lãi vay căn này'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Tính lãi vay căn này'));

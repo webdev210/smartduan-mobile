@@ -54,7 +54,7 @@ class DeveloperChip extends StatelessWidget {
           onTap: onPress,
           borderRadius: BorderRadius.circular(999),
           child: Container(
-            constraints: const BoxConstraints(minHeight: 44),
+            constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
             padding: const EdgeInsets.only(left: 6, right: 14),
             child: Row(
               mainAxisSize: MainAxisSize.min,

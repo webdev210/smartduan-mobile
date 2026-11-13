@@ -78,7 +78,11 @@ class GuestBar extends StatelessWidget {
                 child: Semantics(
                   button: true,
                   selected: item.active,
-                  label: item.accessibilityLabel ?? item.label,
+                  label:
+                      item.accessibilityLabel ??
+                      (item.badge == null
+                          ? item.label
+                          : '${item.label}, ${item.badge} chưa đọc'),
                   excludeSemantics: true,
                   onTap: item.onPress,
                   child: InkWell(

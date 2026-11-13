@@ -416,7 +416,7 @@ void main() {
         ],
       );
       await mount(tester, const DeveloperScreen(slug: 'dev'), container);
-      expect(find.byIcon(Ionicons.ribbonOutline), findsOneWidget);
+      expect(find.text('Uy tín'), findsOneWidget);
       expect(find.byType(ProjectCard), findsNWidgets(5));
       await tester.enterText(find.byType(TextField), 'ho tay');
       await tester.pumpAndSettle();
@@ -507,6 +507,10 @@ void main() {
         'annual_rate': 8.5,
       });
       expect(find.byType(LoanResultCards), findsOneWidget);
+      expect(find.text('Kỳ 12'), findsNothing);
+      await tester.ensureVisible(find.text('Xem lịch trả 12 kỳ đầu'));
+      await tester.tap(find.text('Xem lịch trả 12 kỳ đầu'));
+      await tester.pumpAndSettle();
       expect(find.text('Kỳ 12'), findsOneWidget);
       expect(find.text('Kỳ 13'), findsNothing);
       await tester.enterText(find.byType(TextField).at(1), '60');

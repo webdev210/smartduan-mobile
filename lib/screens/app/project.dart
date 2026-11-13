@@ -27,6 +27,15 @@ import '../../ui/search.dart';
 bool _hiddenWhenDenied(Object? error) =>
     error is ApiError && (error.status == 403 || error.status == 404);
 
+// Audited reads must never follow Riverpod's default automatic retry policy.
+final projectContactsProvider = AsyncNotifierProvider.autoDispose
+    .family<SessionQuery<List<Contact>>, List<Contact>, String>(
+      (id) => SessionQuery(
+        (ref) => ref.watch(projectsApiProvider).fetchContacts(id),
+      ),
+      retry: (_, _) => null,
+    );
+
 class ProjectScreen extends ConsumerStatefulWidget {
   const ProjectScreen({super.key, required this.id});
   final String id;
@@ -36,14 +45,15 @@ class ProjectScreen extends ConsumerStatefulWidget {
 
 class _ProjectScreenState extends ConsumerState<ProjectScreen> {
   String q = '';
-  bool downloading = false;
+  String? downloading;
+  final expanded = <String>{};
   Object? downloadError;
   SessionState? loggedSession;
   Future<void> download(String id) async {
-    if (downloading) return;
+    if (downloading != null) return;
     final session = ref.read(sessionProvider);
     setState(() {
-      downloading = true;
+      downloading = id;
       downloadError = null;
     });
     try {
@@ -56,7 +66,7 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
         setState(() => downloadError = e);
       }
     } finally {
-      if (mounted) setState(() => downloading = false);
+      if (mounted) setState(() => downloading = null);
     }
   }
 
@@ -133,7 +143,7 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
     final progress = ref.watch(fetchProgressProvider(p.id));
     final faqs = ref.watch(fetchFaqsProvider(p.id));
     final subdivisions = ref.watch(fetchSubdivisionsProvider(p.id));
-    final contacts = ref.watch(fetchContactsProvider(p.id));
+    final contacts = ref.watch(projectContactsProvider(p.id));
     final all = media.asData?.value ?? <MediaItem>[];
     final images = all.where(
       (m) => m.mediaType.isEmpty || m.mediaType == 'image',
@@ -207,6 +217,32 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
         );
     Widget card(String title, List<Widget> children) =>
         kit.Card(children: [kit.H2(title), ...children]);
+    Widget listCard<T>(
+      String title,
+      List<T> rows,
+      Widget Function(T) row, {
+      List<Widget> before = const [],
+    }) => card('$title (${rows.length})', [
+      ...before,
+      for (final item in rows.take(
+        searching || expanded.contains(title) ? rows.length : 5,
+      ))
+        row(item),
+      if (rows.length > 5 && !searching)
+        kit.Button(
+          kind: 'link',
+          title: expanded.contains(title)
+              ? 'Thu gọn'
+              : 'Xem thêm (${rows.length - 5})',
+          accessibilityLabel:
+              '${expanded.contains(title) ? 'Thu gọn' : 'Xem thêm'} $title',
+          onPress: () => setState(
+            () => expanded.contains(title)
+                ? expanded.remove(title)
+                : expanded.add(title),
+          ),
+        ),
+    ]);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       spacing: 16,
@@ -313,7 +349,7 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
             ),
           ),
         if (!searching && p.description != null && p.description!.isNotEmpty)
-          card('Tổng quan', [kit.Body(p.description!)]),
+          card('Tổng quan', [_PreviewText(p.description!)]),
         if (!searching && plans.isNotEmpty)
           card('Mặt bằng', [
             _Strip(
@@ -361,23 +397,24 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
             ),
           ]),
         if (blocks.isNotEmpty)
-          card('Phân khu', [
-            for (final d in blocks)
-              kit.ListItem(
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                title: d.name,
-                subtitle: [
-                  '${d.totalUnits} căn',
-                  if (d.priceMin != null && d.priceMin != '')
-                    '${fmtPrice(d.priceMin)} – ${fmtPrice(d.priceMax)}',
-                  d.description,
-                ].whereType<String>().where((s) => s.isNotEmpty).join(' · '),
-                onPress: () => push('/bang-hang/${p.id}', {
-                  'name': p.name,
-                  'blockId': d.blockId,
-                }),
-              ),
-          ]),
+          listCard(
+            'Phân khu',
+            blocks,
+            (d) => kit.ListItem(
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              title: d.name,
+              subtitle: [
+                '${d.totalUnits} căn',
+                if (d.priceMin != null && d.priceMin != '')
+                  '${fmtPrice(d.priceMin)} – ${fmtPrice(d.priceMax)}',
+                d.description,
+              ].whereType<String>().where((s) => s.isNotEmpty).join(' · '),
+              onPress: () => push('/bang-hang/${p.id}', {
+                'name': p.name,
+                'blockId': d.blockId,
+              }),
+            ),
+          ),
         if (policy.hasError && !_hiddenWhenDenied(policy.error))
           card('Chính sách bán hàng', [
             kit.ErrorBox(
@@ -393,34 +430,39 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
             ),
           ]),
         if (policies.isNotEmpty || soon.isNotEmpty)
-          card('Chính sách bán hàng', [
-            for (final x in policies)
-              _PolicyBlock(
-                policy: x,
-                scope: scope(x.fund),
-                onFile: _openPolicy,
-              ),
-            for (final x in soon)
-              _PolicyBlock(
-                policy: x,
-                scope: 'Sắp áp dụng · ${scope(x.fund)}',
-                onFile: _openPolicy,
-              ),
+          listCard(
+            'Chính sách bán hàng',
+            [...policies, ...soon],
+            (x) => _PolicyBlock(
+              policy: x,
+              scope:
+                  '${soon.contains(x) ? 'Sắp áp dụng · ' : ''}${scope(x.fund)}',
+              onFile: _openPolicy,
+            ),
+          ),
+        if (contacts.hasError && !_hiddenWhenDenied(contacts.error))
+          card('Đầu mối dự án', [
+            const kit.Muted('Chưa tải được đầu mối dự án. Bấm thử lại để tải.'),
+            kit.ErrorBox(
+              error: contacts.error,
+              onRetry: () => ref.invalidate(projectContactsProvider(p.id)),
+            ),
           ]),
         if (people.isNotEmpty)
           card('Đầu mối dự án', [
             for (final c in people)
               kit.Row(
                 label: '${c.fullName} · ${c.roleLabel}',
-                value: kit.Button(
-                  kind: 'link',
-                  title: c.phone,
-                  onPress: () {
-                    if (!c.phone.contains('★')) {
-                      openInApp(context, 'tel:${c.phone}');
-                    }
-                  },
-                ),
+                value:
+                    c.phone.contains('★') ||
+                        c.phone.contains('*') ||
+                        c.phone.isEmpty
+                    ? kit.Body(c.phone.isEmpty ? '—' : c.phone)
+                    : kit.Button(
+                        kind: 'link',
+                        title: c.phone,
+                        onPress: () => openInApp(context, 'tel:${c.phone}'),
+                      ),
               ),
           ]),
         if (docs.hasError && !_hiddenWhenDenied(docs.error))
@@ -431,19 +473,22 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
             ),
           ]),
         if (files.isNotEmpty)
-          card('Tài liệu', [
-            const kit.Muted('Link tải có hạn, tối đa 10 lần/giờ.'),
-            for (final d in files)
-              kit.Row(
-                label: d.title,
-                value: kit.Button(
-                  kind: 'link',
-                  title: 'Tải',
-                  disabled: downloading,
-                  onPress: () => download(d.id),
-                ),
+          listCard(
+            'Tài liệu',
+            files,
+            (d) => kit.Row(
+              label: d.title,
+              value: kit.Button(
+                kind: 'link',
+                title: 'Tải',
+                disabled: downloading != null,
+                loading: downloading == d.id,
+                accessibilityLabel: 'Tải ${d.title}',
+                onPress: () => download(d.id),
               ),
-          ]),
+            ),
+            before: [const kit.Muted('Link tải có hạn, tối đa 10 lần/giờ.')],
+          ),
         if (downloadError != null)
           kit.Notice(tone: 'error', text: errorMessage(downloadError)),
         if (progress.hasError && !_hiddenWhenDenied(progress.error))
@@ -454,25 +499,27 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
             ),
           ]),
         if (steps.isNotEmpty)
-          card('Tiến độ', [
-            for (final x in steps)
-              kit.Body(
-                '${fmtDate(x.occurredOn)} — ${x.title ?? ''}${x.body == null || x.body!.isEmpty ? '' : '\n${x.body}'}',
-              ),
-          ]),
+          listCard(
+            'Tiến độ',
+            steps,
+            (x) => _PreviewText(
+              '${fmtDate(x.occurredOn)} — ${x.title ?? ''}${x.body == null || x.body!.isEmpty ? '' : '\n${x.body}'}',
+            ),
+          ),
         if (lessons.isNotEmpty)
-          card('Đào tạo', [
-            for (final m in lessons)
-              kit.Row(
-                label: m.caption ?? 'Tài liệu đào tạo',
-                value: kit.Button(
-                  kind: 'link',
-                  title: 'Mở',
-                  onPress: () =>
-                      openInApp(context, m.url, m.caption ?? 'Đào tạo'),
-                ),
+          listCard(
+            'Đào tạo',
+            lessons,
+            (m) => kit.Row(
+              label: m.caption ?? 'Tài liệu đào tạo',
+              value: kit.Button(
+                kind: 'link',
+                title: 'Mở',
+                onPress: () =>
+                    openInApp(context, m.url, m.caption ?? 'Đào tạo'),
               ),
-          ]),
+            ),
+          ),
         if (faqs.hasError && !_hiddenWhenDenied(faqs.error))
           card('Hỏi đáp', [
             kit.ErrorBox(
@@ -557,7 +604,7 @@ class _PolicyBlock extends StatelessWidget {
         '$scope · Hiệu lực ${fmtDate(policy.effectiveFrom)}${policy.effectiveTo == null || policy.effectiveTo!.isEmpty ? '' : ' – ${fmtDate(policy.effectiveTo)}'}',
       ),
       if (policy.summary != null && policy.summary!.isNotEmpty)
-        kit.Body(policy.summary!),
+        _PreviewText(policy.summary!),
       if (policy.fileUrl != null && policy.fileUrl!.isNotEmpty)
         kit.Button(
           kind: 'link',
@@ -565,6 +612,55 @@ class _PolicyBlock extends StatelessWidget {
           onPress: () => onFile(policy.fileUrl!),
         ),
     ],
+  );
+}
+
+class _PreviewText extends StatefulWidget {
+  const _PreviewText(this.text);
+  final String text;
+  @override
+  State<_PreviewText> createState() => _PreviewTextState();
+}
+
+class _PreviewTextState extends State<_PreviewText> {
+  bool expanded = false;
+  @override
+  void didUpdateWidget(_PreviewText oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.text != widget.text) expanded = false;
+  }
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) {
+      final style = DefaultTextStyle.of(context).style
+          .merge(const TextStyle(fontSize: 15, height: 1.5));
+      final painter = TextPainter(
+        text: TextSpan(text: widget.text, style: style),
+        textDirection: Directionality.of(context),
+        textScaler: MediaQuery.textScalerOf(context),
+        maxLines: 6,
+      )..layout(maxWidth: constraints.maxWidth);
+      final long = painter.didExceedMaxLines;
+      painter.dispose();
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            widget.text,
+            style: style,
+            maxLines: expanded ? null : 6,
+            overflow: expanded ? null : TextOverflow.ellipsis,
+          ),
+          if (long)
+            kit.Button(
+              title: expanded ? 'Thu gọn' : 'Xem thêm',
+              kind: 'link',
+              onPress: () => setState(() => expanded = !expanded),
+            ),
+        ],
+      );
+    },
   );
 }
 

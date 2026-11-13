@@ -101,6 +101,7 @@ class _TeamState extends ConsumerState<TeamScreen> {
         renderItem: (m) => Card(
           child: Row(
             spacing: 12,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Avatar(name: m.fullName, size: 44),
               Expanded(
@@ -110,7 +111,6 @@ class _TeamState extends ConsumerState<TeamScreen> {
                   children: [
                     Text(
                       m.fullName ?? '—',
-                      maxLines: 1,
                       style: const TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
@@ -126,13 +126,13 @@ class _TeamState extends ConsumerState<TeamScreen> {
                     Muted(
                       'Đăng nhập gần nhất: ${fmtDate(m.lastLoginAt, true).replaceAll(' ', '\u00a0')}',
                     ),
+                    Pill(
+                      label: m.status == 'locked' ? 'Đã khoá' : 'Hoạt động',
+                      color: m.status == 'locked' ? c.muted : c.success,
+                      soft: true,
+                    ),
                   ],
                 ),
-              ),
-              Pill(
-                label: m.status == 'locked' ? 'Đã khoá' : 'Hoạt động',
-                color: m.status == 'locked' ? c.muted : c.success,
-                soft: true,
               ),
             ],
           ),

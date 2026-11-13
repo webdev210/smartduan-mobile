@@ -160,6 +160,11 @@ class _ShareLinksScreenState extends ConsumerState<ShareLinksScreen> {
   Widget build(BuildContext context) {
     final provider = fetchShareLinksProvider(widget.projectId);
     final links = ref.watch(provider);
+    final filtered = (links.value ?? <ShareLink>[])
+        .where(
+          (link) => only == 'all' || shareLinkIsDead(link) == (only == 'dead'),
+        )
+        .toList();
     ref.listen(sessionProvider, (_, _) {
       setState(() => error = null);
     });
@@ -173,6 +178,17 @@ class _ShareLinksScreenState extends ConsumerState<ShareLinksScreen> {
       ),
       body: kit.Screen(
         onRefresh: () => ref.refresh(provider.future),
+        slivers: [
+          if (filtered.isNotEmpty)
+            SliverPadding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              sliver: SliverList.separated(
+                itemCount: filtered.length,
+                separatorBuilder: (_, _) => const SizedBox(height: 16),
+                itemBuilder: (_, i) => _linkCard(filtered[i]),
+              ),
+            ),
+        ],
         children: [
           const kit.Muted(
             'Khách mở link trên trình duyệt, xem bảng hàng với giá làm tròn và để lại liên hệ cho bạn.',
@@ -224,59 +240,6 @@ class _ShareLinksScreenState extends ConsumerState<ShareLinksScreen> {
                           ? 'Không còn link nào hiệu lực. Tạo link mới để gửi khách.'
                           : 'Chưa có link nào hết hạn hay bị thu hồi.',
                     ),
-                  for (final link in rows)
-                    kit.Card(
-                      key: ValueKey(link.id),
-                      children: [
-                        kit.Pill(
-                          soft: true,
-                          label: link.revokedAt?.isNotEmpty == true
-                              ? 'Đã thu hồi'
-                              : shareLinkIsDead(link)
-                              ? 'Hết hạn'
-                              : 'Còn hiệu lực',
-                          color: shareLinkIsDead(link) ? c.muted : c.success,
-                        ),
-                        kit.Row(
-                          label: 'Tạo lúc',
-                          value: fmtDate(link.insertedAt, true),
-                        ),
-                        kit.Row(
-                          label: 'Hết hạn',
-                          value: link.revokedAt?.isNotEmpty == true
-                              ? 'Đã thu hồi'
-                              : fmtDate(link.expiresAt, true),
-                        ),
-                        kit.Row(
-                          label: 'Lượt xem · liên hệ',
-                          value: '${link.viewCount} · ${link.leadCount}',
-                        ),
-                        if (link.createdByName?.isNotEmpty == true)
-                          kit.Row(
-                            label: 'Người tạo',
-                            value: link.createdByName!,
-                          ),
-                        if (!shareLinkIsDead(link)) ...[
-                          kit.Button(
-                            kind: 'secondary',
-                            title: 'Gửi lại link',
-                            onPress: () => _resend(link),
-                          ),
-                          kit.Button(
-                            kind: 'link',
-                            title: 'Sao chép link',
-                            icon: copied == link.id ? Ionicons.checkmark : null,
-                            onPress: () => _copy(link),
-                          ),
-                          kit.Button(
-                            kind: 'link',
-                            title: 'Thu hồi',
-                            disabled: revoking,
-                            onPress: () => _revoke(link),
-                          ),
-                        ],
-                      ],
-                    ),
                 ],
               );
             },
@@ -285,4 +248,51 @@ class _ShareLinksScreenState extends ConsumerState<ShareLinksScreen> {
       ),
     );
   }
+
+  Widget _linkCard(ShareLink link) => kit.Card(
+    key: ValueKey(link.id),
+    children: [
+      kit.Pill(
+        soft: true,
+        label: link.revokedAt?.isNotEmpty == true
+            ? 'Đã thu hồi'
+            : shareLinkIsDead(link)
+            ? 'Hết hạn'
+            : 'Còn hiệu lực',
+        color: shareLinkIsDead(link) ? c.muted : c.success,
+      ),
+      kit.Row(label: 'Tạo lúc', value: fmtDate(link.insertedAt, true)),
+      kit.Row(
+        label: 'Hết hạn',
+        value: link.revokedAt?.isNotEmpty == true
+            ? 'Đã thu hồi'
+            : fmtDate(link.expiresAt, true),
+      ),
+      kit.Row(
+        label: 'Lượt xem · liên hệ',
+        value: '${link.viewCount} · ${link.leadCount}',
+      ),
+      if (link.createdByName?.isNotEmpty == true)
+        kit.Row(label: 'Người tạo', value: link.createdByName!),
+      if (!shareLinkIsDead(link)) ...[
+        kit.Button(
+          kind: 'secondary',
+          title: 'Gửi lại link',
+          onPress: () => _resend(link),
+        ),
+        kit.Button(
+          kind: 'link',
+          title: 'Sao chép link',
+          icon: copied == link.id ? Ionicons.checkmark : null,
+          onPress: () => _copy(link),
+        ),
+        kit.Button(
+          kind: 'link',
+          title: 'Thu hồi',
+          disabled: revoking,
+          onPress: () => _revoke(link),
+        ),
+      ],
+    ],
+  );
 }

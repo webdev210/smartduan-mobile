@@ -4,10 +4,17 @@ import '../api/models.dart';
 import 'format.dart';
 import 'kit.dart';
 
-class LoanResultCards extends StatelessWidget {
+class LoanResultCards extends StatefulWidget {
   const LoanResultCards({super.key, required this.r, this.child});
   final LoanResult r;
   final Widget? child;
+  @override
+  State<LoanResultCards> createState() => _LoanResultCardsState();
+}
+
+class _LoanResultCardsState extends State<LoanResultCards> {
+  bool expanded = false;
+  LoanResult get r => widget.r;
   @override
   Widget build(BuildContext context) => Column(
     crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -31,23 +38,31 @@ class LoanResultCards extends StatelessWidget {
           Row(
             label: 'Ưu đãi',
             value:
-                '${r.graceMonths} tháng · ${(r.supportedRate * 100).toStringAsFixed(2)}%',
+                '${r.graceMonths} tháng · ${(r.supportedRate * 100).toStringAsFixed(2).replaceAll('.', ',')}%',
           ),
           Row(
             label: 'Thả nổi',
-            value: '${(r.floatingRate * 100).toStringAsFixed(2)}%',
+            value:
+                '${(r.floatingRate * 100).toStringAsFixed(2).replaceAll('.', ',')}%',
           ),
-          ?child,
+          ?widget.child,
         ],
       ),
       Card(
         children: [
-          const H2('Lịch trả 12 kỳ đầu'),
-          for (final s in r.schedule.take(12))
-            Row(
-              label: 'Kỳ ${s.period}',
-              value: '${fmtMoney(s.total)} (gốc ${fmtMoney(s.principal)})',
-            ),
+          Button(
+            title: expanded
+                ? 'Ẩn lịch trả 12 kỳ đầu'
+                : 'Xem lịch trả 12 kỳ đầu',
+            kind: 'link',
+            onPress: () => setState(() => expanded = !expanded),
+          ),
+          if (expanded)
+            for (final s in r.schedule.take(12))
+              Row(
+                label: 'Kỳ ${s.period}',
+                value: '${fmtMoney(s.total)} (gốc ${fmtMoney(s.principal)})',
+              ),
         ],
       ),
     ],

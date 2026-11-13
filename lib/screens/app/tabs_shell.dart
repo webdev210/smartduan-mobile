@@ -78,7 +78,9 @@ class _TabsShellState extends ConsumerState<TabsShell> {
                           ? '99+'
                           : '$unread'
                     : null,
-                accessibilityLabel: i == 4
+                accessibilityLabel: i == 3
+                    ? 'Thông báo, $unread chưa đọc'
+                    : i == 4
                     ? 'Menu — bảng điều khiển của bạn'
                     : null,
                 onPress: () => widget.child.goBranch(

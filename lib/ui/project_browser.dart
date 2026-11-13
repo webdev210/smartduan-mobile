@@ -12,6 +12,7 @@ import 'project_card.dart';
 import 'project_compare.dart';
 import 'project_compare_kit.dart';
 import 'project_filter.dart';
+import 'search.dart';
 import 'theme.dart' as c;
 
 class ProjectQuickFind extends StatelessWidget {
@@ -211,6 +212,16 @@ class _ProjectBrowserState extends ConsumerState<ProjectBrowser> {
       final options = opts[key]!;
       if (options.length <= 1 && picked(key) == null) {
         return const SizedBox.shrink();
+      }
+      if ((key == 'province' || key == 'developer') && options.length > 5) {
+        return _SearchableOptions(
+          key: ValueKey(key),
+          title: title,
+          options: options,
+          selected: picked(key),
+          onPick: (value) =>
+              control.set(key, picked(key) == value ? null : value),
+        );
       }
       return FilterGroup(
         title: title,
@@ -416,6 +427,18 @@ class _ProjectBrowserState extends ConsumerState<ProjectBrowser> {
             ],
           ),
           children: [
+            SearchBar(
+              value: f.q,
+              onChangeText: (q) => control.set('q', q),
+              placeholder: 'Gõ tên dự án…',
+              maxLength: 60,
+            ),
+            group('Miền', 'region'),
+            group('Tỉnh / thành', 'province'),
+            group('Chủ đầu tư', 'developer'),
+            group('Loại hình', 'type'),
+            group('Khoảng giá', 'price'),
+            group('Giai đoạn', 'status'),
             FilterGroup(
               title: 'Sắp xếp',
               children: [
@@ -427,13 +450,73 @@ class _ProjectBrowserState extends ConsumerState<ProjectBrowser> {
                   ),
               ],
             ),
-            group('Giai đoạn', 'status'),
-            group('Loại hình', 'type'),
-            group('Khoảng giá', 'price'),
-            group('Miền', 'region'),
-            group('Tỉnh / thành', 'province'),
-            group('Chủ đầu tư', 'developer'),
           ],
+        ),
+      ],
+    );
+  }
+}
+
+class _SearchableOptions extends StatefulWidget {
+  const _SearchableOptions({
+    super.key,
+    required this.title,
+    required this.options,
+    required this.selected,
+    required this.onPick,
+  });
+  final String title;
+  final List<Option> options;
+  final String? selected;
+  final ValueChanged<String> onPick;
+  @override
+  State<_SearchableOptions> createState() => _SearchableOptionsState();
+}
+
+class _SearchableOptionsState extends State<_SearchableOptions> {
+  bool expanded = false;
+  String query = '';
+  @override
+  Widget build(BuildContext context) {
+    final matches = widget.options
+        .where(
+          (o) =>
+              o.key == widget.selected || fold(o.label).contains(fold(query)),
+        )
+        .toList();
+    final rows = expanded
+        ? matches
+        : [
+            ...matches.where((o) => o.key == widget.selected),
+            ...matches.where((o) => o.key != widget.selected).take(5),
+          ];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      spacing: 8,
+      children: [
+        if (expanded)
+          SearchBar(
+            value: query,
+            onChangeText: (value) => setState(() => query = value),
+            placeholder: 'Tìm ${widget.title.toLowerCase()}…',
+          ),
+        FilterGroup(
+          title: widget.title,
+          children: [
+            for (final o in rows)
+              Chip(
+                label: '${o.label} · ${o.count}',
+                active: widget.selected == o.key,
+                onPress: () => widget.onPick(o.key),
+              ),
+          ],
+        ),
+        Button(
+          kind: 'link',
+          title: expanded
+              ? 'Thu gọn ${widget.title.toLowerCase()}'
+              : 'Xem thêm ${widget.title.toLowerCase()} (${widget.options.length})',
+          onPress: () => setState(() => expanded = !expanded),
         ),
       ],
     );

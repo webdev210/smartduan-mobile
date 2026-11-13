@@ -55,6 +55,30 @@ class _AccountsState extends ConsumerState<ApproveAccountsScreen> {
       appBar: AppBar(title: const Text('Duyệt tài khoản')),
       body: Screen(
         onRefresh: () => ref.refresh(provider.future),
+        slivers: [
+          if (list.value?.isNotEmpty == true)
+            SliverPadding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              sliver: SliverList.separated(
+                itemCount: list.value!.length > shown
+                    ? shown + 1
+                    : list.value!.length,
+                separatorBuilder: (_, _) => const SizedBox(height: 16),
+                itemBuilder: (_, i) => i == shown
+                    ? Button(
+                        kind: 'secondary',
+                        title:
+                            'Xem thêm (${list.value!.length - shown} tài khoản)',
+                        onPress: () => setState(() => shown += 30),
+                      )
+                    : _AccountCard(
+                        key: ValueKey(list.value![i].id),
+                        user: list.value![i],
+                        canManage: canManage,
+                      ),
+              ),
+            ),
+        ],
         children: [
           SearchBar(
             value: q,
@@ -94,24 +118,7 @@ class _AccountsState extends ConsumerState<ApproveAccountsScreen> {
                     icon: Ionicons.peopleOutline,
                     text: 'Không có tài khoản.',
                   )
-                : Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    spacing: 16,
-                    children: [
-                      for (final u in rows.take(shown))
-                        _AccountCard(
-                          key: ValueKey(u.id),
-                          user: u,
-                          canManage: canManage,
-                        ),
-                      if (rows.length > shown)
-                        Button(
-                          kind: 'secondary',
-                          title: 'Xem thêm (${rows.length - shown} tài khoản)',
-                          onPress: () => setState(() => shown += 30),
-                        ),
-                    ],
-                  ),
+                : const SizedBox.shrink(),
           ),
         ],
       ),
@@ -127,7 +134,10 @@ class _AccountCard extends ConsumerStatefulWidget {
   ConsumerState<_AccountCard> createState() => _AccountCardState();
 }
 
-class _AccountCardState extends ConsumerState<_AccountCard> {
+class _AccountCardState extends ConsumerState<_AccountCard>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => busy || rejecting || failure != null;
   bool rejecting = false, busy = false;
   String reason = '';
   Object? failure;
@@ -140,6 +150,7 @@ class _AccountCardState extends ConsumerState<_AccountCard> {
       busy = true;
       failure = null;
     });
+    updateKeepAlive();
     try {
       final u = widget.user;
       await switch (action) {
@@ -157,7 +168,10 @@ class _AccountCardState extends ConsumerState<_AccountCard> {
     } catch (e) {
       if (mounted) setState(() => failure = e);
     } finally {
-      if (mounted) setState(() => busy = false);
+      if (mounted) {
+        setState(() => busy = false);
+        updateKeepAlive();
+      }
     }
   }
 
@@ -165,6 +179,7 @@ class _AccountCardState extends ConsumerState<_AccountCard> {
     if (busy) return;
     if (action == 'reject') {
       setState(() => rejecting = !rejecting);
+      updateKeepAlive();
       return;
     }
     if (action == 'unlock') {
@@ -203,6 +218,7 @@ class _AccountCardState extends ConsumerState<_AccountCard> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     final u = widget.user;
     final isSuper = ref.watch(sessionProvider).roles.contains('superadmin');
     final actions = accountActions(u, widget.canManage, isSuper);

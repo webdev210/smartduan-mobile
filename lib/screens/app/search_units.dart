@@ -123,8 +123,26 @@ class _SearchUnitsState extends ConsumerState<SearchUnitsScreen> {
     }
   }
 
-  Future<void> remove(String id) async {
+  Future<void> remove(String id, String name) async {
     if (deleting) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Xoá bộ lọc?'),
+        content: Text('Xoá bộ lọc “$name”?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Huỷ'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Xoá'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted || deleting) return;
     setState(() {
       deleting = true;
       failure = null;
@@ -196,6 +214,20 @@ class _SearchUnitsState extends ConsumerState<SearchUnitsScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               spacing: 14,
               children: [
+                if (enums.isLoading || saved.isLoading) const Loading(),
+                if (enums.hasError)
+                  const Muted('Chưa tải được lựa chọn bộ lọc.'),
+                if (enums.hasError)
+                  ErrorBox(
+                    error: enums.error,
+                    onRetry: () => ref.invalidate(fetchEnumsProvider),
+                  ),
+                if (saved.hasError) const Muted('Chưa tải được bộ lọc đã lưu.'),
+                if (saved.hasError)
+                  ErrorBox(
+                    error: saved.error,
+                    onRetry: () => ref.invalidate(fetchSavedFiltersProvider),
+                  ),
                 ChipRail(
                   children: [
                     for (final st in [
@@ -261,7 +293,7 @@ class _SearchUnitsState extends ConsumerState<SearchUnitsScreen> {
             renderItem: (u) => Card(
               onPress: () => context.push('/can/${Uri.encodeComponent(u.id)}'),
               accessibilityLabel:
-                  'Căn ${u.publicCode ?? u.code}, ${statusLabel[u.status] ?? u.status}',
+                  'Căn ${u.publicCode ?? u.code}, ${statusLabel[u.status] ?? u.status}, ${u.project?.name ?? ''}, ${u.block?.name ?? ''}, ${u.floor == null ? '' : 'Tầng ${u.floor}'}, ${u.unitType ?? ''}, ${u.bedrooms == null ? '' : '${u.bedrooms} phòng ngủ'}, ${fmtArea(u.areaNet ?? u.areaGross)}, ${enums.value?.directionLabels[u.direction] ?? u.direction ?? ''}, ${fmtPrice(u.priceMin ?? u.priceList)}, ${u.priceMinLabel ?? ''}${u.heldBy?.isNotEmpty == true ? ', Đại lý giữ: ${u.heldBy}' : ''}',
               children: [
                 Row(
                   spacing: 8,
@@ -305,7 +337,8 @@ class _SearchUnitsState extends ConsumerState<SearchUnitsScreen> {
                             u.unitType,
                             if (u.bedrooms != null) '${u.bedrooms}PN',
                             fmtArea(u.areaNet ?? u.areaGross),
-                            u.direction,
+                            enums.value?.directionLabels[u.direction] ??
+                                u.direction,
                           ]
                           .whereType<String>()
                           .where((s) => s.isNotEmpty)
@@ -436,7 +469,7 @@ class _SearchUnitsState extends ConsumerState<SearchUnitsScreen> {
                         title: 'Xoá',
                         accessibilityLabel: 'Xoá bộ lọc ${s.name}',
                         disabled: deleting,
-                        onPress: () => remove(s.id),
+                        onPress: () => remove(s.id, s.name),
                       ),
                     ],
                   ),

@@ -231,19 +231,25 @@ String _a11y(Browsable p) => [
   _placeOf(p),
   priceLabel(p.priceFrom),
 ].whereType<String>().where((s) => s.isNotEmpty).join(', ');
-Widget _line(IconData icon, String value, [Color color = muted]) => m.Row(
-  spacing: 6,
-  children: [
-    Icon(icon, size: 15, color: color),
-    Expanded(
-      child: Text(
-        value,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: TextStyle(fontSize: 14, color: color),
+Widget _line(IconData icon, String value, [Color color = muted]) => Visibility(
+  visible: value.isNotEmpty,
+  maintainSize: true,
+  maintainState: true,
+  maintainAnimation: true,
+  child: m.Row(
+    spacing: 6,
+    children: [
+      Icon(icon, size: 15, color: color),
+      Expanded(
+        child: Text(
+          value,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(fontSize: 14, color: color),
+        ),
       ),
-    ),
-  ],
+    ],
+  ),
 );
 Widget _fact(String label, String value, {bool strong = false}) => Expanded(
   child: Column(
@@ -251,14 +257,19 @@ Widget _fact(String label, String value, {bool strong = false}) => Expanded(
     spacing: 2,
     children: [
       Muted(label, style: const TextStyle(fontSize: 12)),
-      Text(
-        value,
-        maxLines: 2,
-        overflow: TextOverflow.ellipsis,
-        style: TextStyle(
-          fontSize: 15,
-          fontWeight: strong ? FontWeight.w800 : FontWeight.w700,
-          color: strong ? brand : text,
+      Builder(
+        builder: (context) => SizedBox(
+          height: MediaQuery.textScalerOf(context).scale(15) * 2 * 1.4,
+          child: Text(
+            value,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: strong ? FontWeight.w800 : FontWeight.w700,
+              color: strong ? brand : text,
+            ),
+          ),
         ),
       ),
     ],
@@ -283,22 +294,27 @@ class ProjectCard extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       spacing: 6,
       children: [
-        Text(
-          p.name,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
-            fontSize: 18,
-            height: 23 / 18,
-            fontWeight: FontWeight.w700,
-            color: text,
-            letterSpacing: -0.3,
+        SizedBox(
+          height: width == null
+              ? null
+              : MediaQuery.textScalerOf(context).scale(18) * 46 / 18,
+          child: Text(
+            p.name,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontSize: 18,
+              height: 23 / 18,
+              fontWeight: FontWeight.w700,
+              color: text,
+              letterSpacing: -0.3,
+            ),
           ),
         ),
-        if (place != null && place.isNotEmpty)
-          _line(Ionicons.locationOutline, place),
-        if (developerOf(p) != null)
-          _line(Ionicons.businessOutline, developerOf(p)!),
+        if (width != null || (place != null && place.isNotEmpty))
+          _line(Ionicons.locationOutline, place ?? ''),
+        if (width != null || developerOf(p) != null)
+          _line(Ionicons.businessOutline, developerOf(p) ?? ''),
       ],
     );
     final activity = p.inventoryUpdatedAt != null
@@ -327,7 +343,11 @@ class ProjectCard extends StatelessWidget {
             child: m.Row(
               spacing: 12,
               children: [
-                _fact('Giá từ', priceLabel(p.priceFrom), strong: true),
+                _fact(
+                  'Giá từ',
+                  priceLabel(p.priceFrom).replaceFirst('Giá từ ', ''),
+                  strong: true,
+                ),
                 const VerticalDivider(width: 1, color: border),
                 _fact(
                   'Loại hình',
@@ -337,7 +357,8 @@ class ProjectCard extends StatelessWidget {
             ),
           ),
         ),
-        if (code == null) ?activity,
+        if (code == null && (activity != null || width != null))
+          activity ?? _line(Ionicons.timeOutline, ''),
       ],
     );
     final body = Padding(
@@ -411,9 +432,8 @@ class ProjectCard extends StatelessWidget {
                                 button: true,
                                 label: _a11y(p),
                                 onTap: onPress,
-                                child: GestureDetector(
+                                child: InkWell(
                                   onTap: onPress,
-                                  excludeFromSemantics: true,
                                   child: activity ?? const SizedBox.shrink(),
                                 ),
                               ),

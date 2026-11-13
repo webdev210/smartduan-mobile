@@ -1,13 +1,38 @@
 import 'dart:collection';
 
+import 'package:flutter/foundation.dart'
+    show debugDefaultTargetPlatformOverride;
 import 'package:material_ui/material_ui.dart' hide SearchBar;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:smartduan/api/models.dart';
-import 'package:smartduan/ui/kit.dart' show SearchBar;
+import 'package:smartduan/ui/kit.dart' show SearchBar, Sheet, FilterGroup;
 import 'package:smartduan/ui/project_browser.dart';
 import 'package:smartduan/ui/project_card.dart';
 import 'package:smartduan/ui/project_filter.dart';
+
+import 'project_filter_test.dart' as fixtures;
+
+final upstreamProjects = [
+  for (final p in fixtures.list.take(3))
+    PublicProject(
+      id: p.id,
+      code: p.id,
+      name: p.name,
+      status: p.status,
+      province: p.province,
+      projectType: p.projectType,
+      priceFrom: p.priceFrom,
+      developer: ProjectDeveloper(id: p.id, name: developerOf(p)!),
+    ),
+];
+
+Finder sheetInput() => find.descendant(
+  of: find.byWidgetPredicate(
+    (w) => w is SearchBar && w.placeholder == 'Gõ tên dự án…',
+  ),
+  matching: find.byType(TextField),
+);
 
 final browserProjects = [
   PublicProject(
@@ -60,6 +85,212 @@ Future<void> pumpBrowser(
 );
 
 void main() {
+  testWidgets(
+    'RN: sheet follows name location developer type price status sort',
+    (tester) async {
+      await pumpBrowser(tester, projects: upstreamProjects);
+      await tester.tap(find.bySemanticsLabel('Bộ lọc'));
+      await tester.pumpAndSettle();
+      final sheet = tester.widget<Sheet>(
+        find.byWidgetPredicate((w) => w is Sheet && w.title == 'Lọc & sắp xếp'),
+      );
+      expect(
+        sheet.children!.map(
+          (w) => switch (w) {
+            SearchBar(:final placeholder) => placeholder,
+            FilterGroup(:final title) => title,
+            _ => null,
+          },
+        ),
+        [
+          'Gõ tên dự án…',
+          'Miền',
+          'Tỉnh / thành',
+          'Chủ đầu tư',
+          'Loại hình',
+          'Khoảng giá',
+          'Giai đoạn',
+          'Sắp xếp',
+        ],
+      );
+    },
+  );
+  testWidgets('RN: sheet name search filters results immediately', (
+    tester,
+  ) async {
+    await pumpBrowser(tester, projects: upstreamProjects);
+    await tester.tap(find.bySemanticsLabel('Bộ lọc'));
+    await tester.pumpAndSettle();
+    await tester.enterText(sheetInput(), 'emerald');
+    await tester.pumpAndSettle();
+    expect(find.text('Xem 1 dự án'), findsOneWidget);
+    await tester.ensureVisible(find.text('Xem 1 dự án'));
+    await tester.tap(find.text('Xem 1 dự án'));
+    await tester.pumpAndSettle();
+    expect(find.text('The Emerald 68'), findsOneWidget);
+    expect(tester.widget<SearchBar>(find.byType(SearchBar)).value, 'emerald');
+  });
+  testWidgets('sheet shares screen query and enforces 60 characters', (
+    tester,
+  ) async {
+    await pumpBrowser(tester, projects: upstreamProjects);
+    await tester.enterText(find.byType(TextField), 'emerald');
+    await tester.pumpAndSettle();
+    await tester.tap(find.bySemanticsLabel('Bộ lọc'));
+    await tester.pumpAndSettle();
+    expect(tester.widget<TextField>(sheetInput()).controller!.text, 'emerald');
+    expect(tester.widget<TextField>(sheetInput()).maxLength, 60);
+    await tester.enterText(sheetInput(), 'a' * 61);
+    await tester.pumpAndSettle();
+    expect(tester.widget<TextField>(sheetInput()).controller!.text, 'a' * 60);
+  });
+  testWidgets('region narrows provinces', (tester) async {
+    await pumpBrowser(tester, projects: upstreamProjects);
+    await tester.tap(find.bySemanticsLabel('Bộ lọc'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Miền Nam · 2'));
+    await tester.tap(find.text('Miền Nam · 2'));
+    await tester.pumpAndSettle();
+    expect(find.text('Hà Nam · 1'), findsNothing);
+    expect(find.text('TP.HCM · 1'), findsOneWidget);
+    expect(find.text('Bình Dương · 1'), findsOneWidget);
+    await tester.ensureVisible(find.text('Bình Dương · 1'));
+    await tester.tap(find.text('Bình Dương · 1'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Miền Nam · 1'));
+    await tester.tap(find.text('Miền Nam · 1'));
+    await tester.pumpAndSettle();
+    // RN retains the province; clear it temporarily to choose another region.
+    await tester.ensureVisible(find.text('Bình Dương · 1'));
+    await tester.tap(find.text('Bình Dương · 1'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Miền Bắc · 1'));
+    await tester.tap(find.text('Miền Bắc · 1'));
+    await tester.pumpAndSettle();
+    expect(find.text('TP.HCM · 1'), findsNothing);
+    await tester.ensureVisible(find.text('Xem 1 dự án'));
+    await tester.tap(find.text('Xem 1 dự án'));
+    await tester.pumpAndSettle();
+    expect(find.text('Sun Urban City'), findsOneWidget);
+  });
+  testWidgets('incompatible province stays removable with zero results', (
+    tester,
+  ) async {
+    await pumpBrowser(
+      tester,
+      projects: upstreamProjects,
+      initial: const ProjectFilter(region: 'nam', province: 'Hà Nam'),
+    );
+    await tester.tap(find.bySemanticsLabel('Bộ lọc, đang bật 2'));
+    await tester.pumpAndSettle();
+    expect(find.text('Xem 0 dự án'), findsOneWidget);
+    await tester.ensureVisible(find.text('Hà Nam · 0'));
+    await tester.tap(find.text('Hà Nam · 0'));
+    await tester.pumpAndSettle();
+    expect(find.text('Hà Nam · 0'), findsNothing);
+    expect(find.text('Xem 2 dự án'), findsOneWidget);
+  });
+  for (final kind in ['province', 'developer']) {
+    testWidgets(
+      'M5b $kind collapses searches and keeps selected options visible',
+      (tester) async {
+        const provinces = [
+          'Bình Dương',
+          'Đà Nẵng',
+          'Hà Nam',
+          'Hà Nội',
+          'Hải Phòng',
+          'Nghệ An',
+          'TP.HCM',
+        ];
+        final projects = [
+          for (var i = 0; i < 7; i++)
+            PublicProject(
+              id: '$i',
+              code: '$i',
+              name: 'Dự án $i',
+              status: 'selling',
+              province: provinces[i],
+              developer: ProjectDeveloper(id: '$i', name: 'Công ty $i'),
+            ),
+        ];
+        final title = kind == 'province' ? 'tỉnh / thành' : 'chủ đầu tư';
+        final selected = kind == 'province' ? 'TP.HCM' : 'Công ty 6';
+        await pumpBrowser(
+          tester,
+          projects: projects,
+          initial: kind == 'province'
+              ? ProjectFilter(province: selected)
+              : ProjectFilter(developer: selected),
+        );
+        await tester.tap(find.bySemanticsLabel('Bộ lọc, đang bật 1'));
+        await tester.pumpAndSettle();
+        Finder group() => find.byWidgetPredicate(
+          (w) => w is FilterGroup && w.title.toLowerCase() == title,
+        );
+        expect(
+          find.descendant(of: group(), matching: find.byType(Text)),
+          findsNWidgets(7),
+        ); // heading, selected, first five
+        expect(find.text('$selected · 1'), findsOneWidget);
+        await tester.ensureVisible(find.text('Xem thêm $title (7)'));
+        await tester.tap(find.text('Xem thêm $title (7)'));
+        await tester.pumpAndSettle();
+        final input = find.descendant(
+          of: find.byWidgetPredicate(
+            (w) => w is SearchBar && w.placeholder == 'Tìm $title…',
+          ),
+          matching: find.byType(TextField),
+        );
+        await tester.ensureVisible(input);
+        await tester.enterText(input, 'không khớp');
+        await tester.pumpAndSettle();
+        expect(find.text('$selected · 1'), findsOneWidget);
+        expect(
+          find.descendant(of: group(), matching: find.byType(Text)),
+          findsNWidgets(2),
+        );
+        await tester.ensureVisible(find.text('Thu gọn $title'));
+        await tester.tap(find.text('Thu gọn $title'));
+        await tester.pumpAndSettle();
+        expect(input, findsNothing);
+        expect(find.text('$selected · 1'), findsOneWidget);
+      },
+    );
+  }
+  for (final platform in [TargetPlatform.iOS, TargetPlatform.android]) {
+    testWidgets('sheet search and results stay above keyboard on $platform', (
+      tester,
+    ) async {
+      debugDefaultTargetPlatformOverride = platform;
+      addTearDown(() => debugDefaultTargetPlatformOverride = null);
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      addTearDown(tester.view.resetViewInsets);
+      await pumpBrowser(tester, projects: upstreamProjects);
+      await tester.tap(find.bySemanticsLabel('Bộ lọc'));
+      await tester.pumpAndSettle();
+      await tester.tap(sheetInput());
+      tester.view.viewInsets = const FakeViewPadding(bottom: 300);
+      await tester.pumpAndSettle();
+      final keyboardTop = 844.0 - 300;
+      expect(
+        tester.getBottomLeft(sheetInput()).dy,
+        lessThanOrEqualTo(keyboardTop),
+      );
+      await tester.enterText(sheetInput(), 'emerald');
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text('Xem 1 dự án'));
+      await tester.pumpAndSettle();
+      expect(
+        tester.getBottomLeft(find.text('Xem 1 dự án')).dy,
+        lessThanOrEqualTo(keyboardTop),
+      );
+      expect(tester.takeException(), isNull);
+    });
+  }
   testWidgets('presentation changes reuse cached catalogue derivations', (
     tester,
   ) async {
@@ -149,6 +380,7 @@ void main() {
     await tester.tap(find.bySemanticsLabel('Bộ lọc'));
     await tester.pumpAndSettle();
     expect(find.text('Lọc & sắp xếp'), findsOneWidget);
+    await tester.ensureVisible(find.text('Giá thấp → cao'));
     await tester.tap(find.text('Giá thấp → cao'));
     await tester.pumpAndSettle();
     await tester.ensureVisible(find.text('Hà Nội · 1'));

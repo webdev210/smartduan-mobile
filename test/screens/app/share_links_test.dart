@@ -139,6 +139,7 @@ void main() {
     );
     await mount(tester, env, []);
     await tester.ensureVisible(find.text('Sao chép link'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Sao chép link'));
     await tester.pumpAndSettle();
     expect(clipboard, 'https://smartduan.vn/s/ticket');
@@ -146,6 +147,7 @@ void main() {
     await tester.pump(const Duration(seconds: 2));
     expect(find.byIcon(Ionicons.checkmark), findsNothing);
     await tester.ensureVisible(find.text('Thu hồi'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Thu hồi'));
     await tester.pumpAndSettle();
     expect(
@@ -194,6 +196,7 @@ void main() {
           });
     await mount(tester, env, []);
     await tester.ensureVisible(find.text('Thu hồi'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Thu hồi'));
     await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(TextButton, 'Thu hồi'));
