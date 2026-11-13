@@ -112,7 +112,7 @@ class _DeveloperScreenState extends ConsumerState<DeveloperScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 spacing: 12,
                 children: [
-                  const kit.H1('Dự án'),
+                  const kit.H2('Dự án'),
                   kit.Muted('Hiển thị ${loaded.length}/${page.total} dự án'),
                   if (loaded.length > 4)
                     kit.SearchBar(

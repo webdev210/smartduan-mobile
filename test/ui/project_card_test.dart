@@ -163,7 +163,7 @@ void main() {
         ),
       ),
     );
-    expect(find.text('Rổ hàng cập nhật 07:00 12/11/2026'), findsOneWidget);
+    expect(find.text('Bảng hàng cập nhật 07:00 12/11/2026'), findsOneWidget);
     expect(find.text('9 giao dịch trong 7 ngày qua'), findsNothing);
   });
   testWidgets(

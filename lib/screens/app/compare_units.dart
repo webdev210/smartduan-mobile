@@ -11,6 +11,7 @@ import '../../auth/session.dart';
 import '../../ui/format.dart';
 import '../../ui/kit.dart' as kit;
 import '../../ui/in_app.dart';
+import '../../ui/theme.dart' as c;
 
 class CompareUnitsScreen extends ConsumerStatefulWidget {
   const CompareUnitsScreen({super.key});
@@ -98,12 +99,31 @@ class _CompareUnitsScreenState extends ConsumerState<CompareUnitsScreen> {
             ].reduce(math.max) +
             32,
     ];
-    Widget cell(String text, double width, double height) => SizedBox(
+    Widget cell(
+      String text,
+      double width,
+      double height, {
+      bool label = false,
+      bool price = false,
+    }) => Container(
       width: width,
       height: height,
+      decoration: const BoxDecoration(
+        border: Border(bottom: BorderSide(color: c.border)),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(8),
-        child: Text(text, style: style),
+        child: Text(
+          text,
+          style: style.copyWith(
+            color: label
+                ? c.muted
+                : price
+                ? c.brand
+                : c.text,
+            fontWeight: price && !label ? FontWeight.w700 : FontWeight.w400,
+          ),
+        ),
       ),
     );
     final headerHeight =
@@ -174,7 +194,7 @@ class _CompareUnitsScreenState extends ConsumerState<CompareUnitsScreen> {
                   Column(
                     children: [
                       for (var i = 0; i < rows.length; i++)
-                        cell(rows[i].$1, labelWidth, heights[i]),
+                        cell(rows[i].$1, labelWidth, heights[i], label: true),
                     ],
                   ),
                   Expanded(
@@ -190,9 +210,14 @@ class _CompareUnitsScreenState extends ConsumerState<CompareUnitsScreen> {
                                 for (var i = 0; i < rows.length; i++)
                                   if (rows[i].$1 == 'CSBH' &&
                                       u.policy?.url?.isNotEmpty == true)
-                                    SizedBox(
+                                    Container(
                                       width: unitWidth,
                                       height: heights[i],
+                                      decoration: const BoxDecoration(
+                                        border: Border(
+                                          bottom: BorderSide(color: c.border),
+                                        ),
+                                      ),
                                       child: TextButton(
                                         onPressed: () => openInApp(
                                           context,
@@ -206,7 +231,12 @@ class _CompareUnitsScreenState extends ConsumerState<CompareUnitsScreen> {
                                       ),
                                     )
                                   else
-                                    cell(rows[i].$2(u), unitWidth, heights[i]),
+                                    cell(
+                                      rows[i].$2(u),
+                                      unitWidth,
+                                      heights[i],
+                                      price: i == 0,
+                                    ),
                               ],
                             ),
                         ],

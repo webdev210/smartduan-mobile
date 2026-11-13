@@ -13,6 +13,7 @@ import '../../api/public.dart';
 import '../../auth/messages.dart';
 import '../../auth/session.dart';
 import '../../ui/catalog.dart';
+import '../../ui/bottom_bar.dart' as bars;
 import '../../ui/developer_chip.dart';
 import '../../ui/format.dart';
 import '../../ui/kit.dart' hide Row;
@@ -209,7 +210,7 @@ class PublicHome extends ConsumerWidget {
                                       ],
                                     ),
                                   ),
-                                projects.isLoading
+                                projects.isLoading && !projects.hasValue
                                     ? _pad(
                                         Skeleton(
                                           height: math.min(
@@ -307,7 +308,9 @@ class PublicHome extends ConsumerWidget {
                                     _Rail(
                                       items: featured,
                                       cardW: cardW,
-                                      loading: projects.isLoading,
+                                      loading:
+                                          projects.isLoading &&
+                                          !projects.hasValue,
                                       empty: 'Chưa có dự án nào đang mở bán.',
                                     ),
                                   ],
@@ -335,7 +338,9 @@ class PublicHome extends ConsumerWidget {
                                     _Rail(
                                       items: byRegion,
                                       cardW: cardW,
-                                      loading: projects.isLoading,
+                                      loading:
+                                          projects.isLoading &&
+                                          !projects.hasValue,
                                       empty: 'Chưa có dự án tại khu vực này.',
                                     ),
                                   ],
@@ -343,6 +348,7 @@ class PublicHome extends ConsumerWidget {
                                 _PostBand(
                                   title: 'Tin mới',
                                   posts: news.value ?? [],
+                                  loading: news.isLoading && !news.hasValue,
                                   error: news.error,
                                   onRetry: () => ref.invalidate(
                                     listPublicPostsProvider((
@@ -354,6 +360,7 @@ class PublicHome extends ConsumerWidget {
                                 _PostBand(
                                   title: 'Sự kiện',
                                   posts: events.value ?? [],
+                                  loading: events.isLoading && !events.hasValue,
                                   error: events.error,
                                   onRetry: () => ref.invalidate(
                                     listPublicPostsProvider((
@@ -466,7 +473,17 @@ class PublicHome extends ConsumerWidget {
                                         CrossAxisAlignment.stretch,
                                     spacing: 14,
                                     children: [
-                                      Hero(
+                                      Card(
+                                        padding: const EdgeInsets.all(20),
+                                        style: const BoxDecoration(
+                                          color: c.brandDeep,
+                                          border: Border(
+                                            left: BorderSide(
+                                              color: c.gold,
+                                              width: 3,
+                                            ),
+                                          ),
+                                        ),
                                         children: [
                                           const Text(
                                             'Dành cho chuyên viên kinh doanh',
@@ -486,7 +503,7 @@ class PublicHome extends ConsumerWidget {
                                             ),
                                           ),
                                           const Text(
-                                            'Đăng nhập tài khoản sale để xem rổ hàng được phân bổ, tài liệu và chính sách dự án.',
+                                            'Đăng nhập tài khoản sale để xem quỹ hàng được phân bổ, tài liệu và chính sách dự án.',
                                             style: TextStyle(
                                               color: c.onBrandMuted,
                                               fontSize: 14,
@@ -528,13 +545,51 @@ class PublicHome extends ConsumerWidget {
                 ],
               ),
             ),
-            _GuestBar(menu: state.menu, onMenu: () => control.menu(true)),
+            bars.GuestBar(
+              items: [
+                bars.BarItem(
+                  key: 'home',
+                  label: 'Trang chủ',
+                  icon: Ionicons.homeOutline,
+                  iconOn: Ionicons.home,
+                  active: true,
+                  onPress: () {},
+                ),
+                bars.BarItem(
+                  key: 'projects',
+                  label: 'Dự án',
+                  icon: Ionicons.businessOutline,
+                  iconOn: Ionicons.business,
+                  onPress: () => _explore(context),
+                ),
+                bars.BarItem(
+                  key: 'loan',
+                  label: 'Lãi vay',
+                  icon: Ionicons.calculatorOutline,
+                  iconOn: Ionicons.calculator,
+                  onPress: () => context.push('/tinh-lai-vay'),
+                ),
+                bars.BarItem(
+                  key: 'menu',
+                  label: 'Menu',
+                  icon: Ionicons.menuOutline,
+                  iconOn: Ionicons.menu,
+                  active: state.menu,
+                  onPress: () => control.menu(true),
+                ),
+              ],
+            ),
             Sheet(
               visible: state.menu,
               onClose: () => control.menu(false),
               title: 'Menu',
               children: [
-                Hero(
+                Card(
+                  padding: const EdgeInsets.all(20),
+                  style: const BoxDecoration(
+                    color: c.brandDeep,
+                    border: Border(left: BorderSide(color: c.gold, width: 3)),
+                  ),
                   children: [
                     const Text(
                       'Đăng nhập để xem bảng hàng, giá từng căn và thông báo',
@@ -738,7 +793,7 @@ class _HeroSlidesState extends State<_HeroSlides> {
                                       ),
                                     ),
                                     Text(
-                                      '${[p.district, p.province].whereType<String>().where((s) => s.isNotEmpty).join(', ')}${p.priceFrom != null && p.priceFrom!.isNotEmpty ? ' · Giá từ ${fmtPrice(p.priceFrom)}' : ''}',
+                                      '${[p.district, p.province].whereType<String>().where((s) => s.isNotEmpty).join(', ')} · ${priceLabel(p.priceFrom)}',
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                       style: const TextStyle(
@@ -824,8 +879,8 @@ class _Rail extends StatelessWidget {
       return SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-        child: Row(
-          spacing: 12,
+        child: ProjectRailRow(
+          cardWidth: cardW,
           children: [
             SizedBox(
               width: cardW,
@@ -842,22 +897,16 @@ class _Rail extends StatelessWidget {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-      // ponytail: current card fields and two-line titles; remeasure if the card gains fields.
-      child: SizedBox(
-        height:
-            cardW * 10 / 16 + MediaQuery.textScalerOf(context).scale(280) + 64,
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          spacing: 12,
-          children: [
-            for (final p in items)
-              ProjectCard(
-                width: cardW,
-                p: p,
-                onPress: () => _openProject(context, p),
-              ),
-          ],
-        ),
+      child: ProjectRailRow(
+        cardWidth: cardW,
+        children: [
+          for (final p in items)
+            ProjectCard(
+              width: cardW,
+              p: p,
+              onPress: () => _openProject(context, p),
+            ),
+        ],
       ),
     );
   }
@@ -867,15 +916,36 @@ class _PostBand extends StatelessWidget {
   const _PostBand({
     required this.title,
     required this.posts,
+    required this.loading,
     this.error,
     required this.onRetry,
   });
   final String title;
+  final bool loading;
   final Object? error;
   final VoidCallback onRetry;
   final List<PublicPost> posts;
   @override
   Widget build(BuildContext context) {
+    if (loading) {
+      return _pad(
+        Section(
+          title: title,
+          child: Column(
+            spacing: 12,
+            children: [
+              for (var i = 0; i < 3; i++)
+                const Skeleton(
+                  height: 96,
+                  style: BoxDecoration(
+                    borderRadius: BorderRadius.all(Radius.circular(12)),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      );
+    }
     if (error != null) {
       return _pad(
         Section(
@@ -999,98 +1069,5 @@ class _Contact extends StatelessWidget {
           onPress: () => _launch(contact!.zaloUrl!),
         ),
     ],
-  );
-}
-
-class _GuestBar extends StatelessWidget {
-  const _GuestBar({required this.menu, required this.onMenu});
-  final bool menu;
-  final VoidCallback onMenu;
-  @override
-  Widget build(BuildContext context) => Container(
-    decoration: const BoxDecoration(
-      color: c.card,
-      border: Border(top: BorderSide(color: c.border)),
-    ),
-    child: SafeArea(
-      top: false,
-      child: Row(
-        children: [
-          for (final item in [
-            (
-              label: 'Trang chủ',
-              icon: Ionicons.home,
-              active: true,
-              onPress: () {},
-            ),
-            (
-              label: 'Dự án',
-              icon: Ionicons.businessOutline,
-              active: false,
-              onPress: () => _explore(context),
-            ),
-            (
-              label: 'Lãi vay',
-              icon: Ionicons.calculatorOutline,
-              active: false,
-              onPress: () {
-                context.push('/tinh-lai-vay');
-              },
-            ),
-            (
-              label: 'Menu',
-              icon: menu ? Ionicons.menu : Ionicons.menuOutline,
-              active: menu,
-              onPress: onMenu,
-            ),
-          ])
-            Expanded(
-              child: Semantics(
-                button: true,
-                selected: item.active,
-                label: item.label,
-                child: Pressable(
-                  onPress: item.onPress,
-                  child: Container(
-                    constraints: const BoxConstraints(minHeight: 62),
-                    padding: const EdgeInsets.symmetric(vertical: 4),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      spacing: 3,
-                      children: [
-                        Container(
-                          width: 56,
-                          height: 30,
-                          decoration: BoxDecoration(
-                            color: item.active
-                                ? c.brandSoft
-                                : Colors.transparent,
-                            borderRadius: BorderRadius.circular(15),
-                          ),
-                          child: Icon(
-                            item.icon,
-                            size: 22,
-                            color: item.active ? c.primary : c.subtle,
-                          ),
-                        ),
-                        Text(
-                          item.label,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: item.active ? c.primary : c.subtle,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-        ],
-      ),
-    ),
   );
 }

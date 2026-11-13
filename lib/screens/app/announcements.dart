@@ -1,6 +1,6 @@
 import 'package:ionicons/ionicons.dart';
 
-import 'package:material_ui/material_ui.dart' hide Card, SearchBar;
+import 'package:material_ui/material_ui.dart' hide Card, SearchBar, Divider;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -95,10 +95,16 @@ class _AnnouncementsState extends ConsumerState<AnnouncementsScreen> {
                   text: 'Chưa có tin.',
                 ),
         ),
-        renderItem: (a) => ListItem(
-          title: a.title,
-          subtitle: fmtDate(a.publishedAt, true),
-          onPress: () => context.push('/bang-tin/${Uri.encodeComponent(a.id)}'),
+        renderItem: (a) => Column(
+          children: [
+            if (a.id != rows.first.id) const Divider(),
+            ListItem(
+              title: a.title,
+              subtitle: fmtDate(a.publishedAt, true),
+              onPress: () =>
+                  context.push('/bang-tin/${Uri.encodeComponent(a.id)}'),
+            ),
+          ],
         ),
         footer: list.hasError && all.isNotEmpty
             ? ErrorBox(

@@ -255,17 +255,18 @@ class _AccountCardState extends ConsumerState<_AccountCard>
               ),
             ),
             Flexible(
-              child: Pill(
-                label: statusLabel(u),
-                soft: true,
-                color: unverified(u)
-                    ? c.muted
-                    : switch (u.status) {
-                        'pending' => c.warn,
-                        'active' => c.success,
-                        'rejected' => c.danger,
-                        _ => c.muted,
-                      },
+              child: Body(
+                statusLabel(u),
+                style: TextStyle(
+                  color: unverified(u)
+                      ? c.muted
+                      : switch (u.status) {
+                          'pending' => c.warn,
+                          'active' => c.success,
+                          'rejected' => c.danger,
+                          _ => c.muted,
+                        },
+                ),
               ),
             ),
           ],
@@ -285,7 +286,11 @@ class _AccountCardState extends ConsumerState<_AccountCard>
         ),
         if (u.roles.contains('superadmin') && !isSuper)
           const Muted('Chỉ quản trị sàn sửa được.'),
-        if (busy) const LinearProgressIndicator(),
+        if (busy)
+          if (MediaQuery.disableAnimationsOf(context))
+            const Muted('Đang lưu…')
+          else
+            const LinearProgressIndicator(),
         if (actions.isNotEmpty)
           Chips(
             children: [

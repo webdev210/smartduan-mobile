@@ -261,24 +261,30 @@ class _InterestsState extends ConsumerState<InterestsScreen> {
             if (MediaQuery.viewInsetsOf(context).bottom == 0)
               SafeArea(
                 top: false,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 12,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    spacing: 10,
-                    children: [
-                      if (failure != null)
-                        Notice(tone: 'error', text: errorMessage(failure)),
-                      Button(
-                        title: 'Lưu',
-                        loading: busy,
-                        disabled: region == null || ids.length > 50,
-                        onPress: save,
+                child: Center(
+                  heightFactor: 1,
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 640),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 12,
                       ),
-                    ],
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        spacing: 10,
+                        children: [
+                          if (failure != null)
+                            Notice(tone: 'error', text: errorMessage(failure)),
+                          Button(
+                            title: 'Lưu',
+                            loading: busy,
+                            disabled: region == null || ids.length > 50,
+                            onPress: save,
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
               ),

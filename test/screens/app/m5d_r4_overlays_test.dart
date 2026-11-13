@@ -28,7 +28,7 @@ void main() {
       'presentation readable list',
       const PresentationScreen(projectId: 'p'),
       (t) async {
-        await pressR4(t, 'Danh sách giá');
+        await pressR4(t, 'Danh sách');
         await scrollR4(t);
       },
     ),
@@ -65,9 +65,7 @@ void main() {
       (t) async {
         t.widget<kit.SearchBar>(find.byType(kit.SearchBar)).onFilter!();
         await t.pumpAndSettle();
-        await t.ensureVisible(
-          find.byWidgetPredicate((w) => w is kit.Section && w.title == 'Hướng'),
-        );
+        await t.ensureVisible(find.text('Hướng'));
       },
     ),
     (

@@ -94,27 +94,30 @@ class _TopUnitsScreenState extends ConsumerState<TopUnitsScreen> {
                             ],
                           ),
                         )
-                      : kit.Card(
+                      : Column(
                           key: ValueKey(u.id),
-                          padding: EdgeInsets.zero,
-                          child: kit.ListItem(
-                            title:
-                                '${u.publicCode ?? u.code} · ${u.priceMinLabel ?? fmtPrice(u.priceMin)}',
-                            subtitle:
-                                [
-                                      u.blockName,
-                                      if (u.floor != null) 'Tầng ${u.floor}',
-                                      if (u.area != null && u.area != '')
-                                        fmtArea(u.area),
-                                      ...u.why,
-                                    ]
-                                    .whereType<String>()
-                                    .where((s) => s.isNotEmpty)
-                                    .join(' · '),
-                            onPress: () => context.push(
-                              '/can/${Uri.encodeComponent(u.id)}',
+                          children: [
+                            if (i > 0 && entries[i - 1].unit != null)
+                              const kit.Divider(),
+                            kit.ListItem(
+                              title:
+                                  '${u.publicCode ?? u.code} · ${u.priceMinLabel ?? fmtPrice(u.priceMin)}',
+                              subtitle:
+                                  [
+                                        u.blockName,
+                                        if (u.floor != null) 'Tầng ${u.floor}',
+                                        if (u.area != null && u.area != '')
+                                          fmtArea(u.area),
+                                        ...u.why,
+                                      ]
+                                      .whereType<String>()
+                                      .where((s) => s.isNotEmpty)
+                                      .join(' · '),
+                              onPress: () => context.push(
+                                '/can/${Uri.encodeComponent(u.id)}',
+                              ),
                             ),
-                          ),
+                          ],
                         );
                 },
               ),

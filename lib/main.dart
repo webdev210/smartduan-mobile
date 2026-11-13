@@ -18,6 +18,8 @@ class MyApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return MaterialApp.router(
       title: 'Smart Dự Án',
+      localizationsDelegates: GlobalMaterialLocalizations.delegates,
+      supportedLocales: const [Locale('vi')],
       theme: lightTheme,
       themeMode: ThemeMode.light,
       builder: (context, child) => AnnotatedRegion<SystemUiOverlayStyle>(

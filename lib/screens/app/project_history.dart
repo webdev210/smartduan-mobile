@@ -1,4 +1,5 @@
-import 'package:material_ui/material_ui.dart' hide Card, Chip, SearchBar;
+import 'package:material_ui/material_ui.dart'
+    hide Card, Chip, Divider, SearchBar;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ionicons/ionicons.dart';
@@ -184,17 +185,19 @@ class _ProjectHistoryScreenState extends ConsumerState<ProjectHistoryScreen> {
                               }),
                             ),
                           ),
-                    renderItem: (h) => Card(
-                      padding: EdgeInsets.zero,
-                      child: ListItem(
-                        title:
-                            '${codes[h.unitId] ?? (units.isLoading ? 'Đang tải mã căn…' : 'Chưa có mã căn')} · ${historyFields[h.field] ?? h.field}: ${historyValue(h.field, h.oldValue, funds)} → ${historyValue(h.field, h.newValue, funds)}',
-                        subtitle:
-                            '${fmtDate(h.changedAt, true)} · ${historySource(h.source)}',
-                        onPress: () => context.push(
-                          '/can/${Uri.encodeComponent(h.unitId)}',
+                    renderItem: (h) => Column(
+                      children: [
+                        if (h.id != rows.first.id) const Divider(),
+                        ListItem(
+                          title:
+                              '${codes[h.unitId] ?? (units.isLoading ? 'Đang tải mã căn…' : 'Chưa có mã căn')} · ${historyFields[h.field] ?? h.field}: ${historyValue(h.field, h.oldValue, funds)} → ${historyValue(h.field, h.newValue, funds)}',
+                          subtitle:
+                              '${fmtDate(h.changedAt, true)} · ${historySource(h.source)}',
+                          onPress: () => context.push(
+                            '/can/${Uri.encodeComponent(h.unitId)}',
+                          ),
                         ),
-                      ),
+                      ],
                     ),
                     footer: last.hasError && page > 1
                         ? ErrorBox(

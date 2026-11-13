@@ -57,7 +57,7 @@ void main() {
     expect(find.textContaining('Giá tốt · View sông'), findsOneWidget);
     final label = find.text('A101 · 400 tr');
     final card = find
-        .ancestor(of: label, matching: find.byType(kit.Card))
+        .ancestor(of: label, matching: find.byType(kit.ListItem))
         .first;
     expect(
       tester.getTopLeft(label).dx - tester.getTopLeft(card).dx,

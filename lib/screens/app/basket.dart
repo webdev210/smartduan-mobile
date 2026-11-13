@@ -245,7 +245,7 @@ class _BasketState extends State<_Basket> {
       if (!_current(ticket)) return;
       timer = Timer(const Duration(seconds: 15), () {
         if (!ready && error == null) {
-          _fail(ticket, 'Không nhúng được rổ hàng. Kiểm tra mạng rồi thử lại.');
+          _fail(ticket, 'Không mở được rổ hàng. Kiểm tra mạng rồi thử lại.');
         }
       });
       await next.loadHtmlString(

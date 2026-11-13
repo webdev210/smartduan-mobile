@@ -442,7 +442,7 @@ class _CompareDockState extends ConsumerState<CompareDock> {
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             style: BoxDecoration(
               border: Border.all(color: c.gold),
-              borderRadius: BorderRadius.circular(18),
+              borderRadius: BorderRadius.circular(16),
               boxShadow: c.floatShadow,
             ),
             child: Row(

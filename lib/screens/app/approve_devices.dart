@@ -322,16 +322,17 @@ class _DeviceCardState extends ConsumerState<_DeviceCard>
               ),
             ),
             Flexible(
-              child: Pill(
-                label: d.rejected
+              child: Body(
+                d.rejected
                     ? 'Đã từ chối'
                     : deviceStatusLabel[d.status] ?? d.status,
-                soft: true,
-                color: switch (d.status) {
-                  'pending' => c.warn,
-                  'approved' => c.success,
-                  _ => c.muted,
-                },
+                style: TextStyle(
+                  color: switch (d.status) {
+                    'pending' => c.warn,
+                    'approved' => c.success,
+                    _ => c.muted,
+                  },
+                ),
               ),
             ),
           ],
@@ -346,7 +347,11 @@ class _DeviceCardState extends ConsumerState<_DeviceCard>
           Muted('Tạm thời đến ${fmtDate(d.expiresAt, true)}'),
         if (d.revokedReason?.isNotEmpty == true)
           Muted('Lý do: ${d.revokedReason}'),
-        if (busy) const LinearProgressIndicator(),
+        if (busy)
+          if (MediaQuery.disableAnimationsOf(context))
+            const Muted('Đang lưu…')
+          else
+            const LinearProgressIndicator(),
         Chips(
           children: [
             for (final a in actions)

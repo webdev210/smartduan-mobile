@@ -157,7 +157,7 @@ void main() {
     expect(find.byType(Visibility), findsNothing);
     expect(find.text('Liên hệ'), findsOneWidget);
     expect(
-      tester.getRect(find.text('Giá từ')).top -
+      tester.getRect(find.text('Liên hệ')).top -
           tester.getRect(find.text('A').last).bottom,
       12,
     );

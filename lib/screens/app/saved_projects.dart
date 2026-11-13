@@ -25,10 +25,6 @@ class SavedProjectsScreen extends ConsumerWidget {
         ? ref.watch(fetchAllProjectsProvider)
         : null;
     final allowed = {for (final p in working?.value ?? []) p.id};
-    final shortcuts = [
-      for (final p in projects)
-        if (p.value != null && allowed.contains(p.value!.id)) p.value!,
-    ];
     bool unavailable(Object? error) =>
         error is ApiError && (error.status == 403 || error.status == 404);
     final gone = projects.where((p) => unavailable(p.error)).length;
@@ -62,17 +58,18 @@ class SavedProjectsScreen extends ConsumerWidget {
         },
         onOpen: (p) =>
             context.push('/cong-khai/${Uri.encodeComponent(p.code)}'),
+        actionBuilder: (p) => allowed.contains(p.id)
+            ? Button(
+                title: 'Bảng hàng',
+                kind: 'secondary',
+                onPress: () =>
+                    context.push('/bang-hang/${Uri.encodeComponent(p.id)}'),
+              )
+            : null,
         emptyText: 'Chưa có dự án yêu thích. Bấm trái tim trên thẻ hoặc trang dự án để thêm.',
         banner: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            for (final p in shortcuts)
-              Button(
-                title: 'Bảng hàng · ${p.name}',
-                kind: 'secondary',
-                onPress: () =>
-                    context.push('/bang-hang/${Uri.encodeComponent(p.id)}'),
-              ),
             if (working?.hasError == true) ...[
               const Notice(text: 'Chưa kiểm tra được quyền mở bảng hàng.'),
               Button(

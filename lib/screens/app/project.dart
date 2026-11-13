@@ -103,7 +103,7 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
       );
     }
     return Scaffold(
-      appBar: AppBar(title: Text(query.asData?.value.name ?? 'Dự án')),
+      appBar: AppBar(title: Text(query.value?.name ?? 'Dự án')),
       bottomNavigationBar:
           p == null || MediaQuery.viewInsetsOf(context).bottom > 0
           ? null
@@ -261,7 +261,9 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
     final faqs = ref.watch(fetchFaqsProvider(p.id));
     final subdivisions = ref.watch(fetchSubdivisionsProvider(p.id));
     final contacts = ref.watch(projectContactsProvider(p.id));
-    final all = media.asData?.value ?? <MediaItem>[];
+    List<T> visible<T>(AsyncValue<List<T>> value) =>
+        _hiddenWhenDenied(value.error) ? [] : value.value ?? [];
+    final all = visible(media);
     final images = all.where(
       (m) => m.mediaType.isEmpty || m.mediaType == 'image',
     );
@@ -274,42 +276,35 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
         .toList();
     final plans = floorPlansOf(p.overviewJson).where((f) => isHttp(f.url));
     final searching = q.trim().isNotEmpty;
+    final price = priceLabel(p.priceFrom);
     String scope(String? fund) => fund == null || fund.isEmpty
         ? 'CSBH chung'
-        : enums.asData?.value.fundLabels[fund] ?? fund;
+        : enums.value?.fundLabels[fund] ?? fund;
     final blocks = smartFilter(
-      subdivisions.asData?.value ?? <Subdivision>[],
+      visible(subdivisions),
       q,
       (d) => [d.name, d.code, d.description],
     );
     final policies = smartFilter(
-      policy.asData?.value ?? <Policy>[],
+      visible(policy),
       q,
       (x) => [x.title, x.summary, scope(x.fund)],
     );
     final soon = smartFilter(
-      upcomingPolicies(policy.asData?.value ?? [], history.asData?.value ?? []),
+      upcomingPolicies(visible(policy), visible(history)),
       q,
       (x) => [x.title, x.summary, scope(x.fund)],
     );
     final people = smartFilter(
-      contacts.asData?.value ?? <Contact>[],
+      visible(contacts),
       q,
       (c) => [c.fullName, c.roleLabel],
     );
-    final files = smartFilter(
-      docs.asData?.value ?? <Doc>[],
-      q,
-      (d) => [d.title],
-    );
-    final steps = smartFilter(
-      progress.asData?.value ?? <ProgressItem>[],
-      q,
-      (x) => [x.title, x.body],
-    );
+    final files = smartFilter(visible(docs), q, (d) => [d.title]);
+    final steps = smartFilter(visible(progress), q, (x) => [x.title, x.body]);
     final lessons = smartFilter(training, q, (m) => [m.caption]);
     final answers = smartFilter(
-      faqs.asData?.value ?? <Faq>[],
+      visible(faqs),
       q,
       (f) => [f.question, f.answer],
     );
@@ -360,36 +355,52 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
           ),
         ),
     ]);
+    Widget loadingSection(String title) => kit.Section(
+      title: title,
+      children: [
+        for (var i = 0; i < 2; i++)
+          kit.Skeleton(height: MediaQuery.textScalerOf(context).scale(60)),
+      ],
+    );
     return [
-      if (projectStatus[p.status] case final st?)
-        Text(
-          st.label,
-          style: TextStyle(
-            color: Color(
-              int.parse(st.color.replaceFirst('#', 'ff'), radix: 16),
+      Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        spacing: 6,
+        children: [
+          if (projectStatus[p.status] case final st?)
+            Text(
+              st.label,
+              style: TextStyle(
+                color: Color(
+                  int.parse(st.color.replaceFirst('#', 'ff'), radix: 16),
+                ),
+              ),
             ),
-          ),
-        ),
-      kit.H1(p.name),
-      if ([
-        p.address,
-        p.ward,
-        p.district,
-        p.province,
-      ].any((s) => s?.isNotEmpty == true))
-        kit.Muted(
-          [
+          kit.H1(p.name),
+          if ([
             p.address,
             p.ward,
             p.district,
             p.province,
-          ].whereType<String>().where((s) => s.isNotEmpty).join(', '),
-        ),
+          ].any((s) => s?.isNotEmpty == true))
+            kit.Muted(
+              [
+                p.address,
+                p.ward,
+                p.district,
+                p.province,
+              ].whereType<String>().where((s) => s.isNotEmpty).join(', '),
+            ),
+        ],
+      ),
       ProjectFacts(
         entries: [
           ('Chủ đầu tư', p.developerName ?? '—'),
-          ('Giá từ', fmtPrice(p.priceFrom)),
-          ('Cập nhật rổ hàng', fmtDate(p.inventoryUpdatedAt, true)),
+          (
+            price == 'Liên hệ' ? 'Giá bán' : 'Giá từ',
+            price.replaceFirst('Giá từ ', ''),
+          ),
+          ('Cập nhật bảng hàng', fmtDate(p.inventoryUpdatedAt, true)),
         ],
       ),
       if (policy.hasError && !_hiddenWhenDenied(policy.error))
@@ -406,6 +417,10 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
             onRetry: () => ref.invalidate(fetchPolicyHistoryProvider(p.id)),
           ),
         ]),
+      if (policies.isEmpty &&
+          soon.isEmpty &&
+          (policy.isLoading || history.isLoading))
+        loadingSection('Chính sách bán hàng'),
       if (policies.isNotEmpty || soon.isNotEmpty)
         listCard(
           'Chính sách bán hàng',
@@ -526,6 +541,7 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
             onRetry: () => ref.invalidate(fetchSubdivisionsProvider(p.id)),
           ),
         ]),
+      if (blocks.isEmpty && subdivisions.isLoading) loadingSection('Phân khu'),
       if (blocks.isNotEmpty)
         listCard(
           'Phân khu',
@@ -553,6 +569,7 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
             onRetry: () => ref.invalidate(projectContactsProvider(p.id)),
           ),
         ]),
+      if (people.isEmpty && contacts.isLoading) loadingSection('Đầu mối dự án'),
       if (people.isNotEmpty)
         card('Đầu mối dự án', [
           for (final c in people)
@@ -578,6 +595,7 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
             onRetry: () => ref.invalidate(fetchDocumentsProvider(p.id)),
           ),
         ]),
+      if (files.isEmpty && docs.isLoading) loadingSection('Tài liệu'),
       if (files.isNotEmpty)
         listCard(
           'Tài liệu',
@@ -605,6 +623,7 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
             onRetry: () => ref.invalidate(fetchProgressProvider(p.id)),
           ),
         ]),
+      if (steps.isEmpty && progress.isLoading) loadingSection('Tiến độ'),
       if (steps.isNotEmpty)
         listCard(
           'Tiến độ',
@@ -634,6 +653,7 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
             onRetry: () => ref.invalidate(fetchFaqsProvider(p.id)),
           ),
         ]),
+      if (answers.isEmpty && faqs.isLoading) loadingSection('Hỏi đáp'),
       if (answers.isNotEmpty)
         kit.Section(
           title: 'Hỏi đáp',
@@ -662,17 +682,6 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
           tone: 'warn',
           text: 'Một số phần không tải được. Kéo xuống để thử lại.',
         ),
-      if ([
-        media,
-        policy,
-        history,
-        docs,
-        progress,
-        faqs,
-        subdivisions,
-        contacts,
-      ].any((value) => value.isLoading))
-        const kit.Loading(),
     ];
   }
 

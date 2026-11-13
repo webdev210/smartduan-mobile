@@ -324,8 +324,8 @@ void main() {
         tester.getSize(find.byType(ProjectCard).at(1)),
       );
       expect(
-        tester.getTopLeft(find.text('Giá từ').at(0)).dy,
-        tester.getTopLeft(find.text('Giá từ').at(1)).dy,
+        tester.getTopLeft(find.text('Liên hệ').at(0)).dy,
+        tester.getTopLeft(find.text('Liên hệ').at(1)).dy,
       );
       expect(tester.takeException(), isNull);
     },

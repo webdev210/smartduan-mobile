@@ -163,7 +163,7 @@ List<MenuGroup> menuGroups(Roles roles) {
             label: hasNoRole(roles) ? "Đăng ký làm sale" : "Xin xác nhận F2",
             hint: hasNoRole(roles)
                 ? "Trở thành sale tự do để xem danh mục dự án"
-                : "Gửi yêu cầu lên F2 để xem rổ hàng đại lý",
+                : "Gửi yêu cầu lên F2 để xem bảng hàng đại lý",
             icon: "rocket-outline",
             href: "/len-sale",
           ),

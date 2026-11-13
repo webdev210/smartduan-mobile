@@ -393,9 +393,9 @@ class _SearchUnitsState extends ConsumerState<SearchUnitsScreen> {
                         fontWeight: FontWeight.w800,
                       ),
                     ),
-                    Pill(
-                      label: statusLabel[u.status] ?? u.status,
-                      color: _statusColor(u.status),
+                    Text(
+                      statusLabel[u.status] ?? u.status,
+                      style: TextStyle(color: _statusColor(u.status)),
                     ),
                   ],
                 ),
@@ -491,18 +491,16 @@ class _SearchUnitsState extends ConsumerState<SearchUnitsScreen> {
               ],
             ),
             children: [
-              Section(
+              FilterGroup(
                 title: 'Phòng ngủ',
-                child: Chips(
-                  children: [
-                    for (final count in ['0', '1', '2', '3', '4', '5'])
-                      Chip(
-                        label: count == '0' ? 'Studio' : '$count PN',
-                        active: f.bedrooms == count,
-                        onPress: () => toggle('bedrooms', count),
-                      ),
-                  ],
-                ),
+                children: [
+                  for (final count in ['0', '1', '2', '3', '4', '5'])
+                    Chip(
+                      label: count == '0' ? 'Studio' : '$count PN',
+                      active: f.bedrooms == count,
+                      onPress: () => toggle('bedrooms', count),
+                    ),
+                ],
               ),
               Field(
                 label: 'Giá tối đa (tỷ đồng)',
@@ -516,48 +514,42 @@ class _SearchUnitsState extends ConsumerState<SearchUnitsScreen> {
                     : null,
               ),
               const Muted(
-                'Phòng ngủ và ngân sách lọc trên các căn đã tải, không gửi lên máy chủ.',
+                'Chỉ lọc các căn đã tải theo phòng ngủ và ngân sách.',
               ),
-              Section(
+              FilterGroup(
                 title: 'Sắp xếp',
-                child: Chips(
+                children: [
+                  for (final (v, label) in searchSorts)
+                    Chip(
+                      label: label,
+                      active: f.sort == v,
+                      onPress: () => filters(f.set('sort', v)),
+                    ),
+                ],
+              ),
+              if (enums.value?.unitType.isNotEmpty == true)
+                FilterGroup(
+                  title: 'Loại căn',
                   children: [
-                    for (final (v, label) in searchSorts)
+                    for (final t in enums.value!.unitType)
                       Chip(
-                        label: label,
-                        active: f.sort == v,
-                        onPress: () => filters(f.set('sort', v)),
+                        label: t,
+                        active: f.unitType == t,
+                        onPress: () => toggle('unit_type', t),
                       ),
                   ],
                 ),
-              ),
-              if (enums.value?.unitType.isNotEmpty == true)
-                Section(
-                  title: 'Loại căn',
-                  child: Chips(
-                    children: [
-                      for (final t in enums.value!.unitType)
-                        Chip(
-                          label: t,
-                          active: f.unitType == t,
-                          onPress: () => toggle('unit_type', t),
-                        ),
-                    ],
-                  ),
-                ),
               if (enums.value?.direction.isNotEmpty == true)
-                Section(
+                FilterGroup(
                   title: 'Hướng',
-                  child: Chips(
-                    children: [
-                      for (final d in enums.value!.direction)
-                        Chip(
-                          label: enums.value!.directionLabels[d] ?? d,
-                          active: f.direction == d,
-                          onPress: () => toggle('direction', d),
-                        ),
-                    ],
-                  ),
+                  children: [
+                    for (final d in enums.value!.direction)
+                      Chip(
+                        label: enums.value!.directionLabels[d] ?? d,
+                        active: f.direction == d,
+                        onPress: () => toggle('direction', d),
+                      ),
+                  ],
                 ),
             ],
           ),
@@ -568,7 +560,7 @@ class _SearchUnitsState extends ConsumerState<SearchUnitsScreen> {
             children: [
               if (f.local)
                 const Notice(
-                  text: 'Máy chủ chưa hỗ trợ lưu phòng ngủ và ngân sách. Xoá hai tiêu chí này trước khi lưu.',
+                  text: 'Chưa lưu được phòng ngủ và ngân sách. Xoá hai tiêu chí này trước khi lưu.',
                 ),
               Field(
                 label: 'Lưu bộ lọc đang dùng',

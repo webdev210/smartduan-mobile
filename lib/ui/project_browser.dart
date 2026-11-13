@@ -150,6 +150,7 @@ class ProjectBrowser extends ConsumerStatefulWidget {
     this.resetKey,
     this.autoFocus = false,
     this.banner,
+    this.actionBuilder,
     required this.emptyText,
   });
   final List<PublicProject>? projects;
@@ -162,6 +163,7 @@ class ProjectBrowser extends ConsumerStatefulWidget {
   final ProjectFilter initial;
   final String? resetKey;
   final Widget? banner;
+  final Widget? Function(PublicProject)? actionBuilder;
   final String emptyText;
   @override
   ConsumerState<ProjectBrowser> createState() => _ProjectBrowserState();
@@ -394,8 +396,16 @@ class _ProjectBrowserState extends ConsumerState<ProjectBrowser> {
           ),
           empty: empty,
           renderItem: (p) => compact
-              ? ProjectRow(p: p, onPress: () => widget.onOpen(p))
-              : ProjectCard(p: p, onPress: () => widget.onOpen(p)),
+              ? ProjectRow(
+                  p: p,
+                  onPress: () => widget.onOpen(p),
+                  action: widget.actionBuilder?.call(p),
+                )
+              : ProjectCard(
+                  p: p,
+                  onPress: () => widget.onOpen(p),
+                  action: widget.actionBuilder?.call(p),
+                ),
           onRefresh: widget.onRefresh,
           footer: ref.watch(projectCompareProvider).isNotEmpty
               ? const SizedBox(height: 72)
@@ -510,7 +520,7 @@ class _SearchableOptionsState extends State<_SearchableOptions> {
           kind: 'link',
           title: expanded
               ? 'Thu gọn ${widget.title.toLowerCase()}'
-              : 'Xem thêm ${widget.title.toLowerCase()} (${widget.options.length})',
+              : 'Xem thêm ${widget.title.toLowerCase()} (${matches.length - rows.length})',
           onPress: () => setState(() => expanded = !expanded),
         ),
       ],

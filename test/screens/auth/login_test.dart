@@ -39,7 +39,7 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      final action = find.bySemanticsLabel('Kiểm tra kết nối máy chủ');
+      final action = find.bySemanticsLabel('Kiểm tra kết nối');
       await tester.ensureVisible(action);
       await tester.pump();
       await tester.tap(action);

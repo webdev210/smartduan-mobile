@@ -325,15 +325,9 @@ class _FileOpenState extends ConsumerState<_FileOpen> {
                   text: 'Đã tải file; chưa mở được chia sẻ. Thử lại bằng file đã tải.',
                 ),
               kit.Button(
-                title: 'Chia sẻ tài liệu',
+                title: 'Mở hoặc chia sẻ tài liệu',
                 icon: Ionicons.shareSocialOutline,
                 loading: sharing,
-                onPress: () => _share(path),
-              ),
-              kit.Button(
-                kind: 'link',
-                icon: Ionicons.openOutline,
-                title: 'Mở file',
                 onPress: () => _share(path),
               ),
             ],

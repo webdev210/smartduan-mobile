@@ -148,7 +148,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             style: TextStyle(fontSize: 15),
           ),
           Padding(
-            padding: const EdgeInsets.all(20),
+            padding: EdgeInsets.zero,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               spacing: 14,

@@ -233,8 +233,8 @@ void main() {
           findsNWidgets(7),
         ); // heading, selected, first five
         expect(find.text('$selected · 1'), findsOneWidget);
-        await tester.ensureVisible(find.text('Xem thêm $title (7)'));
-        await tester.tap(find.text('Xem thêm $title (7)'));
+        await tester.ensureVisible(find.text('Xem thêm $title (1)'));
+        await tester.tap(find.text('Xem thêm $title (1)'));
         await tester.pumpAndSettle();
         final input = find.descendant(
           of: find.byWidgetPredicate(

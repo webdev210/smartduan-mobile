@@ -273,7 +273,7 @@ void main() {
     );
     expect(calls, hasLength(1));
     expect((calls.single.arguments as Map)['paths'], ['/tmp/brochure.pdf']);
-    await tester.tap(find.text('Mở file'));
+    await tester.tap(find.text('Mở hoặc chia sẻ tài liệu'));
     await tester.pumpAndSettle();
     expect(calls, hasLength(2));
   });
@@ -310,7 +310,7 @@ void main() {
       NavigationDecision.prevent,
     );
     await tester.pumpAndSettle();
-    expect(find.text('Mở file'), findsOneWidget);
+    expect(find.text('Mở hoặc chia sẻ tài liệu'), findsOneWidget);
   });
   testWidgets('failed file download exposes explicit retry', (tester) async {
     var calls = 0;

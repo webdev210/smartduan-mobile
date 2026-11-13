@@ -117,25 +117,10 @@ class _ProfileState extends ConsumerState<ProfileScreen> {
                       ),
                     ],
                   ),
-                  Wrap(
-                    spacing: 6,
-                    runSpacing: 6,
-                    children: p.roles.isEmpty
-                        ? [
-                            const Pill(
-                              label: 'Chưa có vai trò',
-                              color: c.muted,
-                              soft: true,
-                            ),
-                          ]
-                        : [
-                            for (final r in p.roles)
-                              Pill(
-                                label: roleName(r),
-                                color: c.brand,
-                                soft: true,
-                              ),
-                          ],
+                  Muted(
+                    p.roles.isEmpty
+                        ? 'Chưa có vai trò'
+                        : p.roles.map(roleName).join(' · '),
                   ),
                 ],
               ),
@@ -171,7 +156,7 @@ class _ProfileState extends ConsumerState<ProfileScreen> {
           padding: EdgeInsets.zero,
           children: [
             ListItem(
-              icon: Ionicons.heartOutline,
+              icon: Ionicons.notificationsOutline,
               title: 'Dự án quan tâm',
               subtitle: 'Chọn miền và dự án để nhận thông báo',
               onPress: () => context.push('/quan-tam'),
@@ -197,7 +182,7 @@ class _ProfileState extends ConsumerState<ProfileScreen> {
                     ? const Padding(
                         padding: EdgeInsets.all(16),
                         child: Muted(
-                          'Không có thiết bị nào được ghi nhận (máy chủ chưa bật kiểm soát thiết bị).',
+                          'Chưa có thiết bị đăng nhập nào được ghi nhận.',
                         ),
                       )
                     : Column(

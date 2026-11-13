@@ -150,7 +150,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         if (widget.notice?.isNotEmpty == true)
           Notice(tone: 'success', text: widget.notice!),
         Padding(
-          padding: const EdgeInsets.all(20),
+          padding: EdgeInsets.zero,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             spacing: 14,
@@ -229,6 +229,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             spacing: 6,
             children: [
+              const Muted('Chi tiết kết nối'),
               Wrap(
                 spacing: 8,
                 crossAxisAlignment: WrapCrossAlignment.center,
@@ -246,7 +247,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     ),
                   ),
                   Text(
-                    _diag?.text ?? 'Máy chủ',
+                    _diag?.text ?? 'Chưa kiểm tra',
                     style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
@@ -258,7 +259,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       title: _diag?.state == 'checking' ? '…' : 'Kiểm tra',
                       kind: 'link',
                       size: 'sm',
-                      accessibilityLabel: 'Kiểm tra kết nối máy chủ',
+                      accessibilityLabel: 'Kiểm tra kết nối',
                       onPress: _checkConnection,
                       disabled: _diag?.state == 'checking',
                     ),

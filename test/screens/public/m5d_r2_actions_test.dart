@@ -38,7 +38,7 @@ void main() {
           ),
         );
         await tester.pumpAndSettle();
-        final action = find.bySemanticsLabel('Kiểm tra kết nối máy chủ');
+        final action = find.bySemanticsLabel('Kiểm tra kết nối');
         await tester.ensureVisible(action);
         await tester.pumpAndSettle();
         await tester.tap(action);
@@ -156,7 +156,7 @@ void main() {
           ),
           findsOneWidget,
         );
-        await tester.tap(find.text('Chia sẻ tài liệu'));
+        await tester.tap(find.text('Mở hoặc chia sẻ tài liệu'));
         await tester.pumpAndSettle();
         expect(downloads, 1);
         expect(shares, 2);

@@ -178,7 +178,7 @@ void main() {
       const BoardScreen(projectId: 'p'),
       'data',
       interact: () async {
-        await tester.tap(find.text('Danh sách dự án'));
+        await tester.tap(find.text('Toàn dự án'));
         await tester.pumpAndSettle();
         final field = find.descendant(
           of: find.widgetWithText(kit.Field, 'Giá tối đa (đồng)'),

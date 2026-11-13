@@ -11,7 +11,8 @@ import 'package:smartduan/screens/app/project_history.dart';
 import 'package:smartduan/screens/app/saved_projects.dart';
 import 'package:smartduan/ui/kit.dart' as kit;
 
-import 'm5d_r4_responsive_test.dart' show mountR4, r4Reply, verticalR4;
+import 'm5d_r4_responsive_test.dart'
+    show mountR4, r4Reply, verticalR4, longName;
 import 'task_h_fakes.dart';
 
 void main() {
@@ -55,10 +56,17 @@ void main() {
       e.http.respond = (r) => r4Reply(r.path);
       final router = await mountR4(t, e, const SavedProjectsScreen());
       addTearDown(router.dispose);
-      expect(
-        find.textContaining('Bảng hàng ·'),
-        allowed ? findsOneWidget : findsNothing,
-      );
+      expect(find.textContaining('Bảng hàng ·'), findsNothing);
+      if (allowed) {
+        await t.scrollUntilVisible(
+          find.text(longName),
+          200,
+          scrollable: verticalR4.first,
+        );
+        await t.ensureVisible(find.text(longName));
+        await t.pumpAndSettle();
+      }
+      expect(find.text('Bảng hàng'), allowed ? findsOneWidget : findsNothing);
       expect(
         e.http.seen.where((r) => r.path == '/projects').length,
         allowed ? 1 : 0,
@@ -320,10 +328,7 @@ void main() {
     final search = t.widget<kit.SearchBar>(find.byType(kit.SearchBar));
     search.onFilter!();
     await t.pumpAndSettle();
-    expect(
-      find.byWidgetPredicate((w) => w is kit.Section && w.title == 'Phòng ngủ'),
-      findsOneWidget,
-    );
+    expect(find.text('Phòng ngủ'), findsOneWidget);
     await t.ensureVisible(find.text('Giá tối đa (tỷ đồng)'));
     expect(find.text('Giá tối đa (tỷ đồng)'), findsOneWidget);
   });

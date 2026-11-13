@@ -82,7 +82,9 @@ class _ButtonState extends State<Button> {
               alignment: Alignment.center,
               children: [
                 Opacity(
-                  opacity: loading ? 0 : 1,
+                  opacity: loading && !MediaQuery.disableAnimationsOf(context)
+                      ? 0
+                      : 1,
                   child: m.Row(
                     mainAxisSize: MainAxisSize.min,
                     spacing: 8,
@@ -90,7 +92,9 @@ class _ButtonState extends State<Button> {
                       if (icon != null) Icon(icon, size: 20, color: fg),
                       Flexible(
                         child: Text(
-                          title,
+                          loading && MediaQuery.disableAnimationsOf(context)
+                              ? 'Đang xử lý…'
+                              : title,
                           style: TextStyle(
                             color: fg,
                             fontWeight: kind == 'primary'
@@ -104,7 +108,7 @@ class _ButtonState extends State<Button> {
                     ],
                   ),
                 ),
-                if (loading)
+                if (loading && !MediaQuery.disableAnimationsOf(context))
                   SizedBox(
                     width: 20,
                     height: 20,
@@ -460,7 +464,7 @@ class _SearchBarState extends State<SearchBar> {
           padding: const EdgeInsets.symmetric(horizontal: 14),
           decoration: BoxDecoration(
             color: card,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(14),
             border: Border.all(color: focused ? primary : line),
           ),
           child: m.Row(
@@ -540,7 +544,7 @@ class _SearchBarState extends State<SearchBar> {
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
                         color: widget.filterCount != 0 ? primary : card,
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(14),
                         border: Border.all(
                           color: widget.filterCount != 0
                               ? Colors.transparent
@@ -787,12 +791,11 @@ class FilterGroup extends StatelessWidget {
     spacing: 10,
     children: [
       Text(
-        title.toUpperCase(),
+        title,
         style: const TextStyle(
-          fontSize: 13,
-          fontWeight: FontWeight.w700,
+          fontSize: 15,
+          fontWeight: FontWeight.w600,
           color: muted,
-          letterSpacing: 0.3,
         ),
       ),
       Chips(children: children),

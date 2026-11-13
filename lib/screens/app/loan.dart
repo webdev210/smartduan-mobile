@@ -123,14 +123,21 @@ class _LoanScreenState extends ConsumerState<LoanScreen> {
       appBar: AppBar(title: const Text('Tính lãi vay')),
       bottomNavigationBar: SafeArea(
         top: false,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-          child: kit.Button(
-            title: 'Tính',
-            loading: result?.isLoading == true,
-            disabled:
-                widget.unitId == null && (projectId == null || price.isEmpty),
-            onPress: calculate,
+        child: Center(
+          heightFactor: 1,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 640),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              child: kit.Button(
+                title: 'Tính',
+                loading: result?.isLoading == true,
+                disabled:
+                    widget.unitId == null &&
+                    (projectId == null || price.isEmpty),
+                onPress: calculate,
+              ),
+            ),
           ),
         ),
       ),

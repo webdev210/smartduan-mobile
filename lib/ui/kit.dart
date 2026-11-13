@@ -565,11 +565,13 @@ class Loading extends StatelessWidget {
       child: Align(
         alignment: Alignment.topCenter,
         heightFactor: 1,
-        child: SizedBox(
-          width: 20,
-          height: 20,
-          child: CircularProgressIndicator(color: brand, strokeWidth: 2),
-        ),
+        child: MediaQuery.disableAnimationsOf(context)
+            ? const Text('Đang tải…')
+            : SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(color: brand, strokeWidth: 2),
+              ),
       ),
     );
   }
@@ -635,7 +637,10 @@ class AsyncView<T> extends StatelessWidget {
               Expanded(child: builder(value.requireValue))
             else
               builder(value.requireValue),
-            if (value.isLoading) const LinearProgressIndicator(),
+            if (value.isLoading)
+              MediaQuery.disableAnimationsOf(context)
+                  ? const Text('Đang cập nhật…')
+                  : const LinearProgressIndicator(),
             if (value.hasError) ErrorBox(error: value.error, onRetry: onRetry),
           ],
         ),

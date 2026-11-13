@@ -215,6 +215,7 @@ Future<GoRouter> mountR4(
   Widget screen, {
   bool shell = false,
   bool loading = false,
+  List<RouteBase> destinations = const [],
 }) async {
   final router = GoRouter(
     routes: shell
@@ -234,7 +235,7 @@ Future<GoRouter> mountR4(
               ],
             ),
           ]
-        : [GoRoute(path: '/', builder: (_, _) => screen)],
+        : [GoRoute(path: '/', builder: (_, _) => screen), ...destinations],
   );
   await t.pumpWidget(
     UncontrolledProviderScope(

@@ -151,64 +151,71 @@ class _UnitScreenState extends ConsumerState<UnitScreen> {
                             },
                           ),
                         ),
-                        kit.Button(
-                          kind: 'secondary',
-                          title: 'Tính lãi vay căn này',
-                          onPress: () => context.push(
-                            Uri(
-                              path: '/lai-vay',
-                              queryParameters: {
-                                'unitId': u.id,
-                                'code': u.publicCode ?? u.code,
-                              },
-                            ).toString(),
-                          ),
+                        kit.ButtonGroup(
+                          spacing: 8,
+                          children: [
+                            kit.Button(
+                              title: 'Tính lãi vay căn này',
+                              onPress: () => context.push(
+                                Uri(
+                                  path: '/lai-vay',
+                                  queryParameters: {
+                                    'unitId': u.id,
+                                    'code': u.publicCode ?? u.code,
+                                  },
+                                ).toString(),
+                              ),
+                            ),
+                            if (screens['compare']!(session.roles))
+                              kit.Button(
+                                kind: 'secondary',
+                                icon: compare.asData?.value == true
+                                    ? Ionicons.checkmarkCircle
+                                    : Ionicons.gitCompareOutline,
+                                title: compare.asData?.value == true
+                                    ? 'Đã thêm · chọn thêm căn'
+                                    : 'Thêm vào so sánh',
+                                loading: compare.isLoading,
+                                onPress: () async {
+                                  if (compare.asData?.value == true) {
+                                    setState(() => picker = true);
+                                  } else {
+                                    await ref
+                                        .read(
+                                          unitCompareAddProvider(widget.id)
+                                              .notifier,
+                                        )
+                                        .add();
+                                    if (mounted &&
+                                        ref
+                                                .read(
+                                                  unitCompareAddProvider(
+                                                    widget.id,
+                                                  ),
+                                                )
+                                                .asData
+                                                ?.value ==
+                                            true) {
+                                      setState(() => picker = true);
+                                    }
+                                  }
+                                },
+                                onLongPress: () {
+                                  if (compare.asData?.value != true &&
+                                      !compare.isLoading) {
+                                    ref
+                                        .read(
+                                          unitCompareAddProvider(widget.id)
+                                              .notifier,
+                                        )
+                                        .add();
+                                  }
+                                  setState(() => picker = true);
+                                },
+                              ),
+                          ],
                         ),
                         if (screens['compare']!(session.roles)) ...[
-                          kit.Button(
-                            kind: 'secondary',
-                            icon: compare.asData?.value == true
-                                ? Ionicons.checkmarkCircle
-                                : Ionicons.gitCompareOutline,
-                            title: compare.asData?.value == true
-                                ? 'Đã thêm · chọn thêm căn'
-                                : 'Thêm vào so sánh',
-                            loading: compare.isLoading,
-                            onPress: () async {
-                              if (compare.asData?.value == true) {
-                                setState(() => picker = true);
-                              } else {
-                                await ref
-                                    .read(
-                                      unitCompareAddProvider(widget.id)
-                                          .notifier,
-                                    )
-                                    .add();
-                                if (mounted &&
-                                    ref
-                                            .read(
-                                              unitCompareAddProvider(widget.id),
-                                            )
-                                            .asData
-                                            ?.value ==
-                                        true) {
-                                  setState(() => picker = true);
-                                }
-                              }
-                            },
-                            onLongPress: () {
-                              if (compare.asData?.value != true &&
-                                  !compare.isLoading) {
-                                ref
-                                    .read(
-                                      unitCompareAddProvider(widget.id)
-                                          .notifier,
-                                    )
-                                    .add();
-                              }
-                              setState(() => picker = true);
-                            },
-                          ),
                           if (compare.hasError)
                             kit.Notice(
                               tone: 'error',
@@ -260,7 +267,7 @@ class _UnitScreenState extends ConsumerState<UnitScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 spacing: 16,
                 children: [
-                  if (detail.isLoading) const LinearProgressIndicator(),
+                  if (detail.isLoading) const kit.Loading(),
                   if (detail.hasError)
                     kit.ErrorBox(
                       error: detail.error,
@@ -279,15 +286,17 @@ class _UnitScreenState extends ConsumerState<UnitScreen> {
                     runSpacing: 8,
                     children: [
                       kit.H1(u.publicCode ?? u.code),
-                      kit.Pill(
-                        label: statusLabel[u.status] ?? u.status,
-                        color: Color(
-                          int.parse(
-                            (statusColor[u.status] ?? '#9ca3af').replaceFirst(
-                              '#',
-                              'ff',
+                      Text(
+                        statusLabel[u.status] ?? u.status,
+                        style: TextStyle(
+                          color: Color(
+                            int.parse(
+                              (statusColor[u.status] ?? '#9ca3af').replaceFirst(
+                                '#',
+                                'ff',
+                              ),
+                              radix: 16,
                             ),
-                            radix: 16,
                           ),
                         ),
                       ),

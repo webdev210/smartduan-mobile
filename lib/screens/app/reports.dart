@@ -120,7 +120,7 @@ class _ReportsState extends ConsumerState<ReportsScreen> {
             },
           ),
           _ReportBlock(
-            title: 'Cập nhật rổ hàng',
+            title: 'Cập nhật bảng hàng',
             value: updates,
             retry: () => ref.invalidate(fetchInventoryUpdatesProvider),
             builder: (u) => [

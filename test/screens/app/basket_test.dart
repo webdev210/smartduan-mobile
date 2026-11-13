@@ -97,7 +97,7 @@ void main() {
     final old = platform.last;
     await tester.pump(const Duration(seconds: 15));
     expect(
-      find.text('Không nhúng được rổ hàng. Kiểm tra mạng rồi thử lại.'),
+      find.text('Không mở được rổ hàng. Kiểm tra mạng rồi thử lại.'),
       findsOneWidget,
     );
     await tester.tap(find.text('Thử lại'));
@@ -162,7 +162,7 @@ void main() {
       expect(find.textContaining('secret-1'), findsNothing);
       await tester.pump(const Duration(seconds: 16));
       expect(
-        find.text('Không nhúng được rổ hàng. Kiểm tra mạng rồi thử lại.'),
+        find.text('Không mở được rổ hàng. Kiểm tra mạng rồi thử lại.'),
         findsNothing,
       );
     });

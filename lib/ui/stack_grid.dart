@@ -2,7 +2,7 @@ import 'package:material_ui/material_ui.dart';
 
 import '../api/models.dart';
 import 'format.dart';
-import 'kit.dart' show Empty, Segmented;
+import 'kit.dart' show Empty, Segmented, ListItem;
 import 'theme.dart' as c;
 
 class StackGrid extends StatefulWidget {
@@ -14,13 +14,17 @@ class StackGrid extends StatefulWidget {
     this.priceLabel = false,
     this.fundColors,
     this.sliver = false,
-  });
+    this.viewMode,
+  }) : assert(viewMode == null || viewMode == 'grid' || viewMode == 'list');
   final StackPlan plan;
   final bool Function(StackCell)? keep;
   final ValueChanged<String> onOpen;
   final bool priceLabel;
   final Map<String, String?>? fundColors;
   final bool sliver;
+
+  /// When set, the parent owns the single view selector.
+  final String? viewMode;
 
   @override
   State<StackGrid> createState() => _StackGridState();
@@ -96,7 +100,9 @@ class _StackGridState extends State<StackGrid> {
         ],
       ),
     );
-    Widget withMode(Widget content) => widget.sliver
+    Widget withMode(Widget content) => widget.viewMode != null
+        ? content
+        : widget.sliver
         ? SliverMainAxisGroup(
             slivers: [
               SliverPadding(
@@ -110,7 +116,7 @@ class _StackGridState extends State<StackGrid> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [modes, content],
           );
-    if (_list) {
+    if (widget.viewMode == 'list' || (widget.viewMode == null && _list)) {
       final matches = _rows
           .expand((row) => row.cells)
           .whereType<StackCell>()
@@ -120,21 +126,16 @@ class _StackGridState extends State<StackGrid> {
         final cell = matches[index];
         return Material(
           color: c.card,
-          child: ListTile(
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 20,
-              vertical: 8,
-            ),
-            title: Text(cell.code),
-            subtitle: Text(
-              [
-                statusLabel[cell.status] ?? cell.status,
-                _prices[cell]!,
-                if (cell.areaNet != null) '${cell.areaNet} m²',
-                if (cell.direction != null) cell.direction!,
-              ].join(' · '),
-            ),
-            onTap: () => widget.onOpen(cell.id),
+          child: ListItem(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+            title: cell.code,
+            subtitle: [
+              statusLabel[cell.status] ?? cell.status,
+              _prices[cell]!,
+              if (cell.areaNet != null) fmtArea(cell.areaNet),
+              if (cell.direction != null) cell.direction!,
+            ].join(' · '),
+            onPress: () => widget.onOpen(cell.id),
           ),
         );
       }
@@ -147,12 +148,19 @@ class _StackGridState extends State<StackGrid> {
       }
       return withMode(
         widget.sliver
-            ? SliverList.builder(itemCount: matches.length, itemBuilder: item)
-            : ListView.builder(
+            ? SliverList.separated(
+                itemCount: matches.length,
+                itemBuilder: item,
+                separatorBuilder: (_, _) =>
+                    const Divider(height: 1, color: c.line),
+              )
+            : ListView.separated(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 itemCount: matches.length,
                 itemBuilder: item,
+                separatorBuilder: (_, _) =>
+                    const Divider(height: 1, color: c.line),
               ),
       );
     }

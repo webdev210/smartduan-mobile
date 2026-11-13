@@ -141,7 +141,7 @@ void main() {
   });
 
   testWidgets(
-    '13 comparison columns remain readable and scroll in one aligned table',
+    '13 comparison columns remain readable with pinned headings and labels',
     (tester) async {
       final container = ProviderContainer.test(
         overrides: [
@@ -154,9 +154,7 @@ void main() {
         container.read(projectCompareProvider.notifier).add('P$i');
       }
       await mount(tester, const ProjectCompareScreen(), container, scale: 1.6);
-      final columns = find
-          .ancestor(of: find.text('Dự án 0'), matching: find.byType(Expanded))
-          .first;
+      final columns = find.byKey(const ValueKey('compare-P0'));
       expect(tester.getSize(columns).width, greaterThanOrEqualTo(180));
       expect(
         find.byWidgetPredicate(
@@ -164,7 +162,7 @@ void main() {
               w is SingleChildScrollView &&
               w.scrollDirection == Axis.horizontal,
         ),
-        findsOneWidget,
+        findsNWidgets(2),
       );
       expect(tester.takeException(), isNull);
     },
@@ -478,9 +476,9 @@ void main() {
     );
     expect(tester.widget<Text>(find.text(text)).maxLines, 6);
     expect(find.text('Tiện ích 5'), findsNothing);
-    await tester.ensureVisible(find.text('Xem thêm (6)'));
+    await tester.ensureVisible(find.text('Xem thêm (1)'));
     await tester.pump();
-    await tester.tap(find.text('Xem thêm (6)'));
+    await tester.tap(find.text('Xem thêm (1)'));
     await tester.pumpAndSettle();
     expect(find.text('Tiện ích 5'), findsOneWidget);
     await tester.ensureVisible(find.text('Xem thêm'));
@@ -520,9 +518,10 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Chủ đầu tư 7 · 1'), findsOneWidget);
       expect(find.text('Chủ đầu tư 6 · 1'), findsNothing);
-      await tester.ensureVisible(find.text('Xem thêm chủ đầu tư (8)'));
+      // Selected developer plus five options are visible: two remain hidden.
+      await tester.ensureVisible(find.text('Xem thêm chủ đầu tư (2)'));
       await tester.pump();
-      await tester.tap(find.text('Xem thêm chủ đầu tư (8)'));
+      await tester.tap(find.text('Xem thêm chủ đầu tư (2)'));
       await tester.pumpAndSettle();
       final search = find.byWidgetPredicate(
         (w) => w is kit.SearchBar && w.placeholder == 'Tìm chủ đầu tư…',
@@ -588,7 +587,7 @@ void main() {
         expect(find.text('$name 5'), findsNothing);
       }
       for (var i = 0; i < 3; i++) {
-        final action = find.text('Xem thêm (6)').first;
+        final action = find.text('Xem thêm (1)').first;
         await tester.ensureVisible(action);
         await tester.pump();
         await tester.tap(action);
@@ -613,7 +612,7 @@ void main() {
       ..add('P1');
     await mount(tester, const ProjectCompareScreen(), container);
     final action = find
-        .ancestor(of: find.text('Bỏ').first, matching: find.byType(InkWell))
+        .ancestor(of: find.text('Bỏ').first, matching: find.byType(kit.Button))
         .first;
     expect(tester.getSize(action).height, greaterThanOrEqualTo(48));
     expect(tester.getSize(action).width, greaterThanOrEqualTo(48));

@@ -123,6 +123,12 @@ class _HomeState extends ConsumerState<HomeScreen> {
                   ),
                   child: AsyncView(
                     value: announcements,
+                    loading: Column(
+                      spacing: 1,
+                      children: [
+                        for (var i = 0; i < 3; i++) const Skeleton(height: 72),
+                      ],
+                    ),
                     onRetry: () =>
                         ref.invalidate(fetchAnnouncementsProvider(1)),
                     builder: (data) => Column(
@@ -154,6 +160,16 @@ class _HomeState extends ConsumerState<HomeScreen> {
                 child: showPublic
                     ? AsyncView(
                         value: hot!,
+                        loading: SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: ProjectRailRow(
+                            cardWidth: cardWidth,
+                            children: [
+                              for (var i = 0; i < 2; i++)
+                                ProjectCardSkeleton(width: cardWidth),
+                            ],
+                          ),
+                        ),
                         onRetry: () => ref.invalidate(
                           listPublicProjectsProvider(_hotFilters),
                         ),
@@ -166,6 +182,13 @@ class _HomeState extends ConsumerState<HomeScreen> {
                       )
                     : AsyncView(
                         value: projects!,
+                        loading: Column(
+                          spacing: 16,
+                          children: [
+                            for (var i = 0; i < 3; i++)
+                              const Skeleton(height: 132),
+                          ],
+                        ),
                         onRetry: () => ref.invalidate(fetchAllProjectsProvider),
                         builder: (_) => Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -278,19 +301,12 @@ class _HomeState extends ConsumerState<HomeScreen> {
     if (rows.isEmpty) return Muted(empty);
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
-      child: SizedBox(
-        // ponytail: this rail has at most eight cards with two-line names;
-        // measure content if card metadata gains unbounded text.
-        height:
-            width * 10 / 16 + 310 * MediaQuery.textScalerOf(context).scale(1),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          spacing: 12,
-          children: [
-            for (final p in rows)
-              ProjectCard(p: p, width: width, onPress: () => open(p)),
-          ],
-        ),
+      child: ProjectRailRow(
+        cardWidth: width,
+        children: [
+          for (final p in rows)
+            ProjectCard(p: p, width: width, onPress: () => open(p)),
+        ],
       ),
     );
   }

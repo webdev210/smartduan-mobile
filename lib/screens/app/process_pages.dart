@@ -1,6 +1,7 @@
 import 'package:ionicons/ionicons.dart';
 
-import 'package:material_ui/material_ui.dart' hide Card, Chip, SearchBar;
+import 'package:material_ui/material_ui.dart'
+    hide Card, Chip, Divider, SearchBar;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -98,14 +99,17 @@ class _ProcessPagesState extends ConsumerState<ProcessPagesScreen> {
                   text: 'Chưa có trang quy trình.',
                 ),
         ),
-        renderItem: (p) => Card(
-          onPress: () =>
-              context.push('/quy-trinh/${Uri.encodeComponent(p.slug)}'),
+        renderItem: (p) => Column(
           children: [
-            Body(p.title, style: const TextStyle(fontWeight: FontWeight.w600)),
-            if (p.summary?.isNotEmpty == true) Muted(p.summary!),
-            Muted(
-              '${p.projectName != null ? '${p.projectName} · ' : ''}Cập nhật ${fmtDate(p.updatedAt)}',
+            if (p.id != rows.first.id) const Divider(),
+            ListItem(
+              title: p.title,
+              subtitle: [
+                if (p.summary?.isNotEmpty == true) p.summary!,
+                '${p.projectName != null ? '${p.projectName} · ' : ''}Cập nhật ${fmtDate(p.updatedAt)}',
+              ].join('\n'),
+              onPress: () =>
+                  context.push('/quy-trinh/${Uri.encodeComponent(p.slug)}'),
             ),
           ],
         ),

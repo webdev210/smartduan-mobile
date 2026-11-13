@@ -1,4 +1,5 @@
-import 'package:material_ui/material_ui.dart' hide Card, Chip, SearchBar, Row;
+import 'package:material_ui/material_ui.dart'
+    hide Card, Chip, SearchBar, Row, Divider;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ionicons/ionicons.dart';
@@ -53,6 +54,7 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
   late String? _pickedBlock = widget.blockId;
   BoardFilter _filter = emptyFilter;
   bool _list = false;
+  String _viewMode = 'grid';
   String _budget = '';
   bool _sheet = false, _exporting = false;
   Object? _exportError;
@@ -199,13 +201,14 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   sliver: SliverList.separated(
                     itemCount: flatRows.length,
-                    separatorBuilder: (_, _) => const SizedBox(height: 16),
+                    separatorBuilder: (_, _) => const Divider(),
                     itemBuilder: (_, i) => _unitCard(flatRows[i]),
                   ),
                 ),
               if (plan != null)
                 StackGrid(
                   sliver: true,
+                  viewMode: _viewMode,
                   plan: plan,
                   keep: (cell) => keeps(cell, f, plan),
                   onOpen: _open,
@@ -233,9 +236,7 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
                   ),
                   Expanded(
                     child: Muted(
-                      live
-                          ? 'Đang cập nhật trực tiếp'
-                          : 'Chưa kết nối realtime — kéo xuống để làm mới',
+                      live ? 'Đang cập nhật trực tiếp' : 'Chưa kết nối cập nhật trực tiếp — kéo xuống để làm mới',
                       style: const TextStyle(fontSize: 13),
                     ),
                   ),
@@ -273,15 +274,19 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
                   text:
                       'Không tải được file Excel: ${errorMessage(_exportError)}',
                 ),
+              const Body(
+                'Phạm vi',
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
               Chips(
                 children: [
                   Chip(
-                    label: 'Lưới theo toà',
+                    label: 'Theo toà',
                     active: !_list,
                     onPress: () => setState(() => _list = false),
                   ),
                   Chip(
-                    label: 'Danh sách dự án',
+                    label: 'Toàn dự án',
                     active: _list,
                     onPress: () => setState(() => _list = true),
                   ),
@@ -303,25 +308,26 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
                 const Muted(
                   'Phạm vi: toàn dự án. Danh sách hiển thị sau khi tải đủ các trang.',
                 ),
-              AsyncView(
-                value: blocks,
-                onRetry: () => ref.invalidate(fetchBlocksProvider(id)),
-                builder: (list) => list.isEmpty
-                    ? const SizedBox.shrink()
-                    : ChipRail(
-                        children: [
-                          for (final b in list)
-                            Chip(
-                              icon: Ionicons.businessOutline,
-                              label: b.name,
-                              active: b.id == blockId,
-                              onPress: () {
-                                setState(() => _pickedBlock = b.id);
-                              },
-                            ),
-                        ],
-                      ),
-              ),
+              if (!_list)
+                AsyncView(
+                  value: blocks,
+                  onRetry: () => ref.invalidate(fetchBlocksProvider(id)),
+                  builder: (list) => list.isEmpty
+                      ? const SizedBox.shrink()
+                      : ChipRail(
+                          children: [
+                            for (final b in list)
+                              Chip(
+                                icon: Ionicons.businessOutline,
+                                label: b.name,
+                                active: b.id == blockId,
+                                onPress: () {
+                                  setState(() => _pickedBlock = b.id);
+                                },
+                              ),
+                          ],
+                        ),
+                ),
               SearchBar(
                 value: f.code,
                 onChangeText: (v) => _set('code', v),
@@ -330,6 +336,15 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
                 onFilter: hasExtra ? () => setState(() => _sheet = true) : null,
                 filterCount: extra.length,
               ),
+              if (!flat)
+                Segmented(
+                  value: _viewMode,
+                  onChange: (value) => setState(() => _viewMode = value),
+                  options: const [
+                    (key: 'grid', label: 'Sơ đồ', count: null),
+                    (key: 'list', label: 'Danh sách', count: null),
+                  ],
+                ),
               ChipRail(
                 children: [
                   Chip(
@@ -482,25 +497,29 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
     );
   }
 
-  Widget _unitCard(Unit u) => Card(
+  Widget _unitCard(Unit u) => ListItem(
     onPress: () => _open(u.id),
-    children: [
-      m.Row(
+    title: u.publicCode ?? u.code,
+    subtitle:
+        '${[u.unitType, if (u.bedrooms != null) '${u.bedrooms}PN', fmtArea(u.areaNet)].whereType<String>().where((s) => s.isNotEmpty).join(' · ')} · ${u.status == 'sold' ? 'Đã bán' : fmtPrice(u.priceMin ?? u.priceList)}',
+    right: ConstrainedBox(
+      constraints: BoxConstraints(
+        maxWidth: MediaQuery.sizeOf(context).width * .3,
+      ),
+      child: m.Row(
+        mainAxisSize: MainAxisSize.min,
         spacing: 8,
         children: [
-          Expanded(
+          Flexible(
             child: Body(
-              u.publicCode ?? u.code,
-              style: const TextStyle(fontWeight: FontWeight.w600),
+              statusLabel[u.status] ?? u.status,
+              style: TextStyle(color: _color(statusColor[u.status])),
             ),
           ),
-          Flexible(child: Body(statusLabel[u.status] ?? u.status)),
+          const Icon(Ionicons.chevronForward, size: 18, color: c.subtle),
         ],
       ),
-      Muted(
-        '${[u.unitType, if (u.bedrooms != null) '${u.bedrooms}PN', fmtArea(u.areaNet)].whereType<String>().where((s) => s.isNotEmpty).join(' · ')} · ${u.status == 'sold' ? 'Đã bán' : fmtPrice(u.priceMin ?? u.priceList)}',
-      ),
-    ],
+    ),
   );
 }
 

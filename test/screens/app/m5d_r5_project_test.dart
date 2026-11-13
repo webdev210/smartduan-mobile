@@ -170,9 +170,13 @@ void main() {
         if (state == 'populated') {
           final faq = find.byType(kit.FaqItem);
           await tester.ensureVisible(faq);
-          await tester.tap(
-            find.descendant(of: faq, matching: find.byType(ListTile)),
+          await tester.pumpAndSettle();
+          final tile = find.descendant(
+            of: faq,
+            matching: find.byType(ListTile),
           );
+          // A long question can exceed the visible body above the pinned actions.
+          await tester.tapAt(tester.getTopLeft(tile) + const Offset(24, 16));
           await tester.pumpAndSettle();
           await scrollToEnd(tester);
         }
@@ -269,9 +273,13 @@ void main() {
         if (state == 'populated') {
           final faq = find.byType(kit.FaqItem);
           await tester.ensureVisible(faq);
-          await tester.tap(
-            find.descendant(of: faq, matching: find.byType(ListTile)),
+          await tester.pumpAndSettle();
+          final tile = find.descendant(
+            of: faq,
+            matching: find.byType(ListTile),
           );
+          // A long question can exceed the visible body above the pinned actions.
+          await tester.tapAt(tester.getTopLeft(tile) + const Offset(24, 16));
           await tester.pumpAndSettle();
           await scrollToEnd(tester);
         }

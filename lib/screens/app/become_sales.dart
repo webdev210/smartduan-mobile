@@ -1,4 +1,5 @@
-import 'package:material_ui/material_ui.dart' hide Card, Chip, SearchBar;
+import 'package:material_ui/material_ui.dart'
+    hide Card, Chip, SearchBar, Divider;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../api/errors.dart';
@@ -151,6 +152,8 @@ class _RequestF2 extends ConsumerStatefulWidget {
 
 class _RequestF2State extends ConsumerState<_RequestF2> {
   String? picked;
+  bool choosingManager = false;
+  String managerQuery = '';
   late String fullName, address;
   String company = '';
   late String initialName, initialAddress;
@@ -203,69 +206,6 @@ class _RequestF2State extends ConsumerState<_RequestF2> {
         }
       });
     }
-  }
-
-  Future<void> pickManager(List<ManagerOption> managers) async {
-    var query = '';
-    final id = await showModalBottomSheet<String>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      sheetAnimationStyle: MediaQuery.disableAnimationsOf(context)
-          ? AnimationStyle.noAnimation
-          : null,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, update) {
-          final rows = smartFilter(
-            managers,
-            query,
-            (m) => [m.fullName, m.salesUnit?.name],
-          );
-          return Padding(
-            padding: EdgeInsets.only(
-              bottom: MediaQuery.viewInsetsOf(ctx).bottom,
-            ),
-            child: SizedBox(
-              height: MediaQuery.sizeOf(ctx).height * .7,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: SearchBar(
-                      value: query,
-                      placeholder: 'Tìm quản lý, đại lý…',
-                      onChangeText: (value) => update(() => query = value),
-                    ),
-                  ),
-                  Expanded(
-                    child: rows.isEmpty
-                        ? const Padding(
-                            padding: EdgeInsets.all(16),
-                            child: Muted('Không tìm thấy quản lý phù hợp.'),
-                          )
-                        : ListView.builder(
-                            itemCount: rows.length,
-                            itemBuilder: (_, i) => ListItem(
-                              title: rows[i].fullName,
-                              subtitle: rows[i].salesUnit?.name,
-                              onPress: () => Navigator.pop(ctx, rows[i].id),
-                            ),
-                          ),
-                  ),
-                  Button(
-                    kind: 'secondary',
-                    title: 'Đóng',
-                    onPress: () => Navigator.pop(ctx),
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
-      ),
-    );
-    if (mounted && id != null) setState(() => picked = id);
   }
 
   String? get managerId =>
@@ -356,7 +296,56 @@ class _RequestF2State extends ConsumerState<_RequestF2> {
             kind: 'secondary',
             title: managerId == null ? 'Chọn quản lý' : 'Đổi quản lý',
             disabled: managers.value?.isNotEmpty != true,
-            onPress: () => pickManager(managers.value ?? []),
+            onPress: () => setState(() {
+              managerQuery = '';
+              choosingManager = true;
+            }),
+          ),
+          Sheet(
+            visible: choosingManager,
+            onClose: () => setState(() => choosingManager = false),
+            title: 'Chọn quản lý',
+            scrollBody: false,
+            child: StatefulBuilder(
+              builder: (context, update) {
+                final rows = smartFilter(
+                  managers.value ?? <ManagerOption>[],
+                  managerQuery,
+                  (m) => [m.fullName, m.salesUnit?.name],
+                );
+                return Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    SearchBar(
+                      value: managerQuery,
+                      placeholder: 'Tìm quản lý, đại lý…',
+                      onChangeText: (value) =>
+                          update(() => managerQuery = value),
+                    ),
+                    Flexible(
+                      child: rows.isEmpty
+                          ? const Padding(
+                              padding: EdgeInsets.symmetric(vertical: 20),
+                              child: Muted('Không tìm thấy quản lý phù hợp.'),
+                            )
+                          : ListView.separated(
+                              shrinkWrap: true,
+                              itemCount: rows.length,
+                              separatorBuilder: (_, _) => const Divider(),
+                              itemBuilder: (_, i) => ListItem(
+                                title: rows[i].fullName,
+                                subtitle: rows[i].salesUnit?.name,
+                                onPress: () => setState(() {
+                                  picked = rows[i].id;
+                                  choosingManager = false;
+                                }),
+                              ),
+                            ),
+                    ),
+                  ],
+                );
+              },
+            ),
           ),
           if (fieldError(failure, 'manager_id') case final String text)
             Notice(tone: 'error', text: 'Quản lý: $text'),

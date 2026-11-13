@@ -245,8 +245,10 @@ class _Detail extends ConsumerWidget {
       if (typeLabel[p.projectType] case final label?) ('Loại hình', label),
       if (projectStatus[p.status] case final status?)
         ('Giai đoạn', status.label),
-      if (p.priceFrom != null && p.priceFrom!.isNotEmpty)
-        ('Giá từ', fmtPrice(p.priceFrom)),
+      (
+        priceLabel(p.priceFrom) == 'Liên hệ' ? 'Giá' : 'Giá từ',
+        priceLabel(p.priceFrom).replaceFirst('Giá từ ', ''),
+      ),
     ];
     final docs = p.documents.where((d) => isHttp(d.url)).toList();
     return Column(
@@ -562,7 +564,7 @@ class _Detail extends ConsumerWidget {
           children: [
             if (signedIn) ...[
               const kit.Muted(
-                'Xem rổ hàng, quỹ căn và tài liệu nội bộ nếu dự án đã phân bổ cho bạn.',
+                'Xem bảng hàng, quỹ hàng và tài liệu nội bộ nếu dự án đã phân bổ cho bạn.',
               ),
               kit.Button(
                 kind: 'secondary',
@@ -571,7 +573,7 @@ class _Detail extends ConsumerWidget {
               ),
             ] else ...[
               const kit.Muted(
-                'Dành cho chuyên viên kinh doanh. Đăng nhập để xem rổ hàng, quỹ căn và tài liệu nội bộ của dự án.',
+                'Dành cho chuyên viên kinh doanh. Đăng nhập để xem bảng hàng, quỹ hàng và tài liệu nội bộ của dự án.',
               ),
               kit.ButtonGroup(
                 spacing: 10,
@@ -729,7 +731,9 @@ class _PreviewListState extends State<_PreviewList> {
       if (widget.children.length > 5)
         kit.Button(
           kind: 'link',
-          title: expanded ? 'Thu gọn' : 'Xem thêm (${widget.children.length})',
+          title: expanded
+              ? 'Thu gọn'
+              : 'Xem thêm (${widget.children.length - 5})',
           onPress: () => setState(() => expanded = !expanded),
         ),
     ],

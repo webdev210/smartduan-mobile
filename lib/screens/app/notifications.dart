@@ -1,5 +1,5 @@
 import 'package:material_ui/material_ui.dart'
-    hide Card, SearchBar, Notification;
+    hide Card, Divider, SearchBar, Notification;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ionicons/ionicons.dart';
@@ -49,18 +49,17 @@ class _NotificationsState extends ConsumerState<NotificationsScreen> {
   @override
   Widget build(BuildContext context) {
     final list = ref.watch(fetchNotificationsProvider);
+    final rows = smartFilter(
+      (list.value?.data ?? [])
+          .where((n) => only == 'all' || n.readAt == null || n.readAt!.isEmpty)
+          .toList(),
+      q,
+      (n) => [n.title],
+    );
     return Scaffold(
       appBar: AppBar(title: const Text('Thông báo')),
       body: ListScreen<Notification>(
-        data: smartFilter(
-          (list.value?.data ?? [])
-              .where(
-                (n) => only == 'all' || n.readAt == null || n.readAt!.isEmpty,
-              )
-              .toList(),
-          q,
-          (n) => [n.title],
-        ),
+        data: rows,
         keyOf: (n) => n.id,
         top: SearchBar(
           value: q,
@@ -125,47 +124,40 @@ class _NotificationsState extends ConsumerState<NotificationsScreen> {
         renderItem: (n) {
           final unread = n.readAt == null || n.readAt!.isEmpty;
           final route = notificationRoute(n.href);
-          return Card(
-            onPress: route == null && !unread
-                ? null
-                : () {
-                    if (unread) mark([n.id]);
-                    if (route != null) context.push(route);
-                  },
-            accessibilityLabel: '${unread ? 'Chưa đọc. ' : ''}${n.title}',
-            style: BoxDecoration(color: unread ? c.brandSoft : c.card),
-            child: Row(
-              spacing: 12,
-              children: [
-                Icon(
-                  unread
-                      ? Ionicons.notifications
-                      : Ionicons.notificationsOutline,
-                  color: unread ? c.brand : c.muted,
-                ),
-                Expanded(
+          return Column(
+            children: [
+              if (n.id != rows.first.id) const Divider(),
+              Semantics(
+                label: unread ? 'Chưa đọc' : 'Đã đọc',
+                child: ColoredBox(
+                  color: unread ? c.brandSoft : c.card,
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    spacing: 4,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Text(
-                        n.title,
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: unread
-                              ? FontWeight.w700
-                              : FontWeight.w400,
-                        ),
+                      ListItem(
+                        icon: unread
+                            ? Ionicons.notifications
+                            : Ionicons.notificationsOutline,
+                        title: n.title,
+                        subtitle: fmtDate(n.insertedAt, true),
+                        right: route == null ? const SizedBox.shrink() : null,
+                        onPress: route == null && !unread
+                            ? null
+                            : () {
+                                if (unread) mark([n.id]);
+                                if (route != null) context.push(route);
+                              },
                       ),
-                      Muted(fmtDate(n.insertedAt, true)),
-                      if (route == null) const Muted('Chỉ thông báo'),
+                      if (route == null)
+                        const Padding(
+                          padding: EdgeInsets.fromLTRB(52, 0, 16, 14),
+                          child: Muted('Chỉ thông báo'),
+                        ),
                     ],
                   ),
                 ),
-                if (route != null)
-                  const Icon(Ionicons.chevronForward, size: 18),
-              ],
-            ),
+              ),
+            ],
           );
         },
         onRefresh: () => ref.refresh(fetchNotificationsProvider.future),

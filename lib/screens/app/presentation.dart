@@ -36,7 +36,7 @@ class PresentationScreen extends ConsumerStatefulWidget {
 
 class _PresentationScreenState extends ConsumerState<PresentationScreen> {
   String? picked, unitId;
-  String mode = 'grid';
+  String viewMode = 'grid';
   bool confirmingExit = false;
   Future<void> exit() async {
     if (confirmingExit) return;
@@ -82,9 +82,6 @@ class _PresentationScreenState extends ConsumerState<PresentationScreen> {
             blockId: blockId,
           ));
     final stack = stackProvider == null ? null : ref.watch(stackProvider);
-    final cells = mode == 'list'
-        ? stack?.value?.floors.expand((f) => f.cells).toList() ?? <StackCell>[]
-        : <StackCell>[];
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, _) {
@@ -119,28 +116,15 @@ class _PresentationScreenState extends ConsumerState<PresentationScreen> {
           slivers: [
             const SliverToBoxAdapter(child: SizedBox.shrink()),
             if (stack?.value case final plan?)
-              if (mode == 'list')
-                SliverList.builder(
-                  itemCount: cells.length,
-                  itemBuilder: (context, i) {
-                    final cell = cells[i];
-                    return kit.ListItem(
-                      title:
-                          '${cell.code} · ${cell.priceMinLabel ?? 'Liên hệ'}',
-                      subtitle: statusLabel[cell.status] ?? cell.status,
-                      onPress: () => setState(() => unitId = cell.id),
-                    );
-                  },
-                )
-              else
-                StackGrid(
-                  sliver: true,
-                  plan: plan,
-                  priceLabel: true,
-                  onOpen: (id) {
-                    setState(() => unitId = id);
-                  },
-                ),
+              StackGrid(
+                sliver: true,
+                viewMode: viewMode,
+                plan: plan,
+                priceLabel: true,
+                onOpen: (id) {
+                  setState(() => unitId = id);
+                },
+              ),
           ],
           children: [
             kit.AsyncView(
@@ -150,14 +134,6 @@ class _PresentationScreenState extends ConsumerState<PresentationScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 spacing: 16,
                 children: [
-                  kit.Segmented(
-                    value: mode,
-                    options: const [
-                      (key: 'grid', label: 'Sơ đồ', count: null),
-                      (key: 'list', label: 'Danh sách giá', count: null),
-                    ],
-                    onChange: (v) => setState(() => mode = v),
-                  ),
                   if ([
                     b.project?.developerName,
                     b.project?.district,
@@ -184,6 +160,14 @@ class _PresentationScreenState extends ConsumerState<PresentationScreen> {
                             picked = block.id;
                           }),
                         ),
+                    ],
+                  ),
+                  kit.Segmented(
+                    value: viewMode,
+                    onChange: (value) => setState(() => viewMode = value),
+                    options: const [
+                      (key: 'grid', label: 'Sơ đồ', count: null),
+                      (key: 'list', label: 'Danh sách', count: null),
                     ],
                   ),
                 ],

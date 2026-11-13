@@ -11,6 +11,9 @@ class _FaqItemState extends State<FaqItem> {
   bool open = false;
   @override
   Widget build(BuildContext context) => ExpansionTile(
+    expansionAnimationStyle: MediaQuery.disableAnimationsOf(context)
+        ? AnimationStyle.noAnimation
+        : null,
     title: Text(widget.question),
     onExpansionChanged: (value) => setState(() => open = value),
     trailing: Icon(
@@ -94,32 +97,53 @@ class Section extends StatelessWidget {
     crossAxisAlignment: CrossAxisAlignment.stretch,
     spacing: 12,
     children: [
-      m.Row(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        spacing: 12,
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              spacing: 2,
-              children: [if (eyebrow != null) Eyebrow(eyebrow!), H2(title)],
-            ),
-          ),
-          if (action != null)
-            Flexible(
-              fit: FlexFit.tight,
-              child: Align(
-                alignment: Alignment.centerRight,
-                child: Button(
-                  title: action!.label,
-                  kind: 'link',
-                  size: 'sm',
-                  icon: Ionicons.chevronForward,
-                  onPress: action!.onPress,
-                ),
+      LayoutBuilder(
+        builder: (context, constraints) {
+          final heading = Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            spacing: 2,
+            children: [if (eyebrow != null) Eyebrow(eyebrow!), H2(title)],
+          );
+          if (action == null) return heading;
+          double measure(String value, double size, FontWeight weight) {
+            final painter = TextPainter(
+              text: TextSpan(
+                text: value,
+                style: TextStyle(fontSize: size, fontWeight: weight),
               ),
-            ),
-        ],
+              textDirection: Directionality.of(context),
+              textScaler: MediaQuery.textScalerOf(context),
+            )..layout();
+            final width = painter.width;
+            painter.dispose();
+            return width;
+          }
+
+          final button = Button(
+            title: action!.label,
+            kind: 'link',
+            size: 'sm',
+            icon: Ionicons.chevronForward,
+            onPress: action!.onPress,
+          );
+          final needed =
+              measure(title, 19, FontWeight.w700) +
+              measure(action!.label, 15, FontWeight.w600) +
+              48;
+          return needed > constraints.maxWidth
+              ? Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [heading, button],
+                )
+              : m.Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  spacing: 12,
+                  children: [
+                    Expanded(child: heading),
+                    button,
+                  ],
+                );
+        },
       ),
       if (child != null) child! else ...children!,
     ],
@@ -140,7 +164,7 @@ class Hero extends StatelessWidget {
       child: Container(
         decoration: BoxDecoration(
           color: brandDeep,
-          gradient: wineGradient,
+          border: Border.all(color: gold),
         ).copyWith(color: style?.color, gradient: style?.gradient),
         child: Stack(
           children: [
@@ -660,7 +684,7 @@ class Skeleton extends StatelessWidget {
     height: height,
     decoration: BoxDecoration(
       color: quiet,
-      borderRadius: BorderRadius.circular(20),
+      borderRadius: BorderRadius.circular(16),
     ).copyWith(color: style?.color, borderRadius: style?.borderRadius),
   );
 }

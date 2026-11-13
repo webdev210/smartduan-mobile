@@ -31,6 +31,7 @@ class LoanScreen extends ConsumerStatefulWidget {
 }
 
 class _LoanScreenState extends ConsumerState<LoanScreen> {
+  final resultKey = GlobalKey();
   String price = '', ratio = '70', term = '240', rate = '', grace = '';
   Object? validation;
   Object? submitted;
@@ -60,6 +61,7 @@ class _LoanScreenState extends ConsumerState<LoanScreen> {
       validation = null;
       submitted = inputs;
     });
+    FocusScope.of(context).unfocus();
     ref
         .read(publicLoanResultProvider.notifier)
         .calculate(
@@ -76,9 +78,35 @@ class _LoanScreenState extends ConsumerState<LoanScreen> {
   @override
   Widget build(BuildContext context) {
     final result = ref.watch(publicLoanResultProvider);
+    ref.listen(publicLoanResultProvider, (_, next) {
+      if (next?.hasValue == true && submitted == inputs) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          final target = resultKey.currentContext;
+          if (mounted && target != null) Scrollable.ensureVisible(target);
+        });
+      }
+    });
     final error = validation ?? result?.error;
     return Scaffold(
       appBar: AppBar(title: const Text('Tính lãi vay')),
+      bottomNavigationBar: SafeArea(
+        top: false,
+        child: Center(
+          heightFactor: 1,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 640),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              child: kit.Button(
+                title: 'Tính',
+                loading: result?.isLoading == true,
+                disabled: price.isEmpty,
+                onPress: _calculate,
+              ),
+            ),
+          ),
+        ),
+      ),
       body: SafeArea(
         top: false,
         child: kit.Screen(
@@ -110,6 +138,16 @@ class _LoanScreenState extends ConsumerState<LoanScreen> {
               onChangeText: (s) => setState(() => term = s),
               keyboardType: TextInputType.number,
             ),
+            kit.Chips(
+              children: [
+                for (final years in [10, 15, 20, 25, 30])
+                  kit.Chip(
+                    label: '$years năm',
+                    active: term == '${years * 12}',
+                    onPress: () => setState(() => term = '${years * 12}'),
+                  ),
+              ],
+            ),
             kit.Field(
               label: 'Lãi suất (%/năm) — bỏ trống = mặc định',
               textInputAction: TextInputAction.next,
@@ -129,14 +167,11 @@ class _LoanScreenState extends ConsumerState<LoanScreen> {
             ),
             if (error != null)
               kit.Notice(tone: 'error', text: errorMessage(error)),
-            kit.Button(
-              title: 'Tính',
-              loading: result?.isLoading == true,
-              disabled: price.isEmpty,
-              onPress: _calculate,
-            ),
             if (result?.asData?.value case final r? when submitted == inputs)
-              LoanResultCards(r: r),
+              SizedBox(
+                key: resultKey,
+                child: LoanResultCards(r: r),
+              ),
           ],
         ),
       ),
