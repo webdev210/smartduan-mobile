@@ -70,6 +70,7 @@ class Card extends StatelessWidget {
             Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
               spacing: 8,
               children: children!,
             ),
@@ -128,8 +129,7 @@ class Section extends StatelessWidget {
                 heightFactor: 1,
                 child: m.Row(
                   mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.baseline,
-                  textBaseline: TextBaseline.alphabetic,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   spacing: 4,
                   children: [
                     Flexible(
@@ -364,22 +364,18 @@ class Tile extends StatelessWidget {
       constraints: const BoxConstraints(minHeight: 76),
       child: Column(
         mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
         spacing: 10,
         children: [
           Icon(icon, size: 24, color: tone == 'gold' ? goldDeep : brand),
-          ConstrainedBox(
-            constraints: BoxConstraints(
-              minHeight: MediaQuery.textScalerOf(context).scale(13) * 34 / 13,
-            ),
-            child: Text(
-              label,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 13,
-                height: 17 / 13,
-                fontWeight: FontWeight.w600,
-                color: text,
-              ),
+          Text(
+            label,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontSize: 13,
+              height: 17 / 13,
+              fontWeight: FontWeight.w600,
+              color: text,
             ),
           ),
         ],
@@ -399,25 +395,11 @@ class TileGrid extends StatelessWidget {
               MediaQuery.textScalerOf(context).scale(14) / 14 > 1.3
           ? 2
           : 3;
-      return Column(
+      return EqualHeightGrid(
+        columns: columns,
+        cellWidth: (constraints.maxWidth - 10 * (columns - 1)) / columns,
         spacing: 10,
-        children: [
-          for (var i = 0; i < children.length; i += columns)
-            IntrinsicHeight(
-              child: m.Row(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                spacing: 10,
-                children: [
-                  for (var j = 0; j < columns; j++)
-                    Expanded(
-                      child: i + j < children.length
-                          ? children[i + j]
-                          : const SizedBox.shrink(),
-                    ),
-                ],
-              ),
-            ),
-        ],
+        children: children,
       );
     },
   );
@@ -599,7 +581,7 @@ class _SheetContent extends StatelessWidget {
                   20,
                   keyboard ? 4 : 12,
                   20,
-                  keyboard ? 4 : 14,
+                  keyboard ? 4 : 12,
                 ),
                 child: m.Row(
                   spacing: 12,
@@ -728,4 +710,96 @@ class Skeleton extends StatelessWidget {
       borderRadius: BorderRadius.circular(16),
     ).copyWith(color: style?.color, borderRadius: style?.borderRadius),
   );
+}
+
+/// Measures each cell before giving every cell the tallest natural height.
+/// Shared by quick-access tiles and horizontal project rails.
+class EqualHeightGrid extends MultiChildRenderObjectWidget {
+  const EqualHeightGrid({
+    super.key,
+    required this.cellWidth,
+    required this.columns,
+    required this.spacing,
+    required super.children,
+  }) : assert(columns > 0);
+  final double cellWidth, spacing;
+  final int columns;
+  @override
+  RenderObject createRenderObject(BuildContext context) =>
+      _RenderEqualHeightGrid(cellWidth, columns, spacing);
+  @override
+  void updateRenderObject(
+    BuildContext context,
+    covariant RenderBox renderObject,
+  ) {
+    (renderObject as _RenderEqualHeightGrid)
+      ..cardWidth = cellWidth
+      ..columns = columns
+      ..spacing = spacing
+      ..markNeedsLayout();
+  }
+}
+
+class _RenderEqualHeightGrid extends RenderBox
+    with
+        ContainerRenderObjectMixin<RenderBox, FlexParentData>,
+        RenderBoxContainerDefaultsMixin<RenderBox, FlexParentData> {
+  _RenderEqualHeightGrid(this._cardWidth, this.columns, this.spacing);
+  int columns;
+  double spacing;
+  double _cardWidth;
+  set cardWidth(double value) {
+    if (_cardWidth == value) return;
+    _cardWidth = value;
+    markNeedsLayout();
+  }
+
+  @override
+  void setupParentData(RenderBox child) {
+    if (child.parentData is! FlexParentData) {
+      child.parentData = FlexParentData();
+    }
+  }
+
+  @override
+  void performLayout() {
+    var height = 0.0;
+    var child = firstChild;
+    while (child != null) {
+      child.layout(
+        BoxConstraints.tightFor(width: _cardWidth),
+        parentUsesSize: true,
+      );
+      height = math.max(height, child.size.height);
+      child = childAfter(child);
+    }
+    var index = 0;
+    child = firstChild;
+    while (child != null) {
+      child.layout(
+        BoxConstraints.tight(Size(_cardWidth, height)),
+        parentUsesSize: true,
+      );
+      (child.parentData! as FlexParentData).offset = Offset(
+        (index % columns) * (_cardWidth + spacing),
+        (index ~/ columns) * (height + spacing),
+      );
+      index++;
+      child = childAfter(child);
+    }
+    final rows = (childCount / columns).ceil();
+    size = constraints.constrain(
+      Size(
+        childCount == 0 ? 0 : columns * _cardWidth + (columns - 1) * spacing,
+        rows == 0 ? 0 : rows * height + (rows - 1) * spacing,
+      ),
+    );
+  }
+
+  @override
+  void paint(PaintingContext context, Offset offset) =>
+      defaultPaint(context, offset);
+  @override
+  bool hitTestChildren(BoxHitTestResult result, {required Offset position}) =>
+      defaultHitTestChildren(result, position: position);
 }

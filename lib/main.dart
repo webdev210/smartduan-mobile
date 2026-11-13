@@ -24,7 +24,12 @@ class MyApp extends ConsumerWidget {
       themeMode: ThemeMode.light,
       builder: (context, child) => AnnotatedRegion<SystemUiOverlayStyle>(
         value: SystemUiOverlayStyle.dark,
-        child: child!,
+        child: DefaultTextHeightBehavior(
+          textHeightBehavior: const TextHeightBehavior(
+            leadingDistribution: TextLeadingDistribution.even,
+          ),
+          child: child!,
+        ),
       ),
       routerConfig: ref.watch(routerProvider),
     );

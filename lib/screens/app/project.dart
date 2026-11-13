@@ -1,5 +1,4 @@
 import '../../api/public.dart';
-import '../../ui/catalog.dart';
 import '../../ui/developer_chip.dart';
 import '../../ui/gallery_viewer.dart';
 
@@ -796,30 +795,7 @@ class _ProjectDeveloper extends ConsumerWidget {
               name: name,
               slug: developer?.slug,
             ),
-      child: Row(
-        spacing: 8,
-        children: [
-          SizedBox(
-            width: 40,
-            height: 40,
-            child: developer == null
-                ? null
-                : switch (mediaUrl(developer.logoUrl)) {
-                    final logo? => AppNetworkImage(
-                      logo,
-                      width: 40,
-                      height: 40,
-                      fit: BoxFit.contain,
-                      semanticLabel: 'Logo $name',
-                      errorBuilder: (_, _, _) =>
-                          const Icon(Ionicons.businessOutline),
-                    ),
-                    null => const Icon(Ionicons.businessOutline),
-                  },
-          ),
-          Expanded(child: kit.Body(name)),
-        ],
-      ),
+      child: DeveloperIdentity(name: name, logo: developer?.logoUrl),
     );
   }
 }

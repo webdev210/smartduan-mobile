@@ -199,7 +199,7 @@ void main() {
     }
   }
   testWidgets(
-    'signed-in default uses first populated region with counts and section order',
+    'signed-in default uses first populated region with labels and section order',
     (t) async {
       final fixture = HomeFixture(
         signedIn: true,
@@ -208,9 +208,9 @@ void main() {
       addTearDown(fixture.dispose);
       await fixture.mount(t);
       expect(railIds(t), ['p1']);
-      expect(find.text('Miền Bắc · 0'), findsOneWidget);
-      expect(find.text('Miền Trung · 1'), findsOneWidget);
-      expect(find.text('Miền Nam · 1'), findsOneWidget);
+      expect(find.text('Miền Bắc'), findsOneWidget);
+      expect(find.text('Miền Trung'), findsOneWidget);
+      expect(find.text('Miền Nam'), findsOneWidget);
       final sections = [
         'Dự án của bạn',
         'Dự án theo khu vực',

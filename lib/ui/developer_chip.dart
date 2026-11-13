@@ -5,7 +5,42 @@ import 'package:go_router/go_router.dart';
 import 'package:ionicons/ionicons.dart';
 
 import 'catalog.dart';
+import 'kit.dart' as kit;
 import 'theme.dart' as c;
+
+/// The logo and name share a value row; captions belong above this row.
+class DeveloperIdentity extends StatelessWidget {
+  const DeveloperIdentity({super.key, required this.name, this.logo});
+  final String name;
+  final String? logo;
+
+  @override
+  Widget build(BuildContext context) => Row(
+    crossAxisAlignment: CrossAxisAlignment.center,
+    spacing: 8,
+    children: [
+      SizedBox(
+        width: 40,
+        height: 40,
+        child: switch (mediaUrl(logo)) {
+          final uri? => AppNetworkImage(
+            uri,
+            fit: BoxFit.contain,
+            semanticLabel: 'Logo $name',
+            errorBuilder: (_, _, _) => const Icon(Ionicons.businessOutline),
+          ),
+          null => const Icon(Ionicons.businessOutline),
+        },
+      ),
+      Expanded(
+        child: kit.Body(
+          name,
+          style: const TextStyle(fontWeight: FontWeight.w600),
+        ),
+      ),
+    ],
+  );
+}
 
 String developerPath({
   required String id,

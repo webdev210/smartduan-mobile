@@ -1,7 +1,5 @@
 import 'dart:math' as math;
 
-import 'package:flutter/rendering.dart';
-
 import 'network_image.dart';
 
 import 'package:material_ui/material_ui.dart' hide Card, Divider, Row;
@@ -10,7 +8,7 @@ import 'package:ionicons/ionicons.dart';
 
 import 'catalog.dart';
 import 'format.dart';
-import 'kit.dart' show Card, Muted, Pill, Skeleton, initials;
+import 'kit.dart' show Card, Muted, Pill, Skeleton, initials, EqualHeightGrid;
 import 'project_filter.dart';
 import 'theme.dart';
 import 'favorite_button.dart';
@@ -539,72 +537,20 @@ class _ProjectHit extends StatelessWidget {
   );
 }
 
-// Measure natural card heights before stretching the rail to its tallest card.
-class ProjectRailRow extends MultiChildRenderObjectWidget {
+// Keep project rails on the same measured-height layout as quick-access tiles.
+class ProjectRailRow extends StatelessWidget {
   const ProjectRailRow({
     super.key,
     required this.cardWidth,
-    required super.children,
+    required this.children,
   });
   final double cardWidth;
+  final List<Widget> children;
   @override
-  RenderObject createRenderObject(BuildContext context) =>
-      _RenderRail(cardWidth);
-  @override
-  void updateRenderObject(BuildContext context, RenderBox renderObject) {
-    (renderObject as _RenderRail).cardWidth = cardWidth;
-  }
-}
-
-class _RenderRail extends RenderBox
-    with
-        ContainerRenderObjectMixin<RenderBox, FlexParentData>,
-        RenderBoxContainerDefaultsMixin<RenderBox, FlexParentData> {
-  _RenderRail(this._cardWidth);
-  double _cardWidth;
-  set cardWidth(double value) {
-    if (_cardWidth == value) return;
-    _cardWidth = value;
-    markNeedsLayout();
-  }
-
-  @override
-  void setupParentData(RenderBox child) {
-    if (child.parentData is! FlexParentData) {
-      child.parentData = FlexParentData();
-    }
-  }
-
-  @override
-  void performLayout() {
-    var height = 0.0;
-    var child = firstChild;
-    while (child != null) {
-      child.layout(
-        BoxConstraints.tightFor(width: _cardWidth),
-        parentUsesSize: true,
-      );
-      height = math.max(height, child.size.height);
-      child = childAfter(child);
-    }
-    var x = 0.0;
-    child = firstChild;
-    while (child != null) {
-      child.layout(
-        BoxConstraints.tight(Size(_cardWidth, height)),
-        parentUsesSize: true,
-      );
-      (child.parentData! as FlexParentData).offset = Offset(x, 0);
-      x += _cardWidth + 12;
-      child = childAfter(child);
-    }
-    size = constraints.constrain(Size(math.max(0, x - 12), height));
-  }
-
-  @override
-  void paint(PaintingContext context, Offset offset) =>
-      defaultPaint(context, offset);
-  @override
-  bool hitTestChildren(BoxHitTestResult result, {required Offset position}) =>
-      defaultHitTestChildren(result, position: position);
+  Widget build(BuildContext context) => EqualHeightGrid(
+    cellWidth: cardWidth,
+    columns: math.max(1, children.length),
+    spacing: 12,
+    children: children,
+  );
 }

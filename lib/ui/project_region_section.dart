@@ -22,7 +22,6 @@ class ProjectRegionSection extends StatelessWidget {
     required this.cardWidth,
     required this.loading,
     this.limit,
-    this.showCounts = false,
     this.inset = 20,
   });
 
@@ -31,7 +30,7 @@ class ProjectRegionSection extends StatelessWidget {
   final ValueChanged<String> onRegionChanged;
   final ValueChanged<PublicProject> onOpen;
   final double cardWidth, inset;
-  final bool loading, showCounts;
+  final bool loading;
   final int? limit;
 
   @override
@@ -49,15 +48,7 @@ class ProjectRegionSection extends StatelessWidget {
               onChange: onRegionChanged,
               options: [
                 for (final r in regions)
-                  (
-                    key: r.key,
-                    label: r.label,
-                    count: showCounts
-                        ? projects
-                              .where((p) => inRegion(p.province, r.key))
-                              .length
-                        : null,
-                  ),
+                  (key: r.key, label: r.label, count: null),
               ],
             ),
           ),

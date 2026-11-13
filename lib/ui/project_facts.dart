@@ -28,35 +28,43 @@ class ProjectFacts extends StatelessWidget {
               if (i > 0) const Divider(height: 1, thickness: 0, color: c.line),
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 12),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  spacing: 16,
+                child: Column(
+                  spacing: 4,
                   children: [
-                    for (final (label, value) in entries.skip(i).take(columns))
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          spacing: 4,
-                          children: [
-                            Text(
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      spacing: 16,
+                      children: [
+                        for (final (label, _) in entries.skip(i).take(columns))
+                          Expanded(
+                            child: Text(
                               label,
                               style: const TextStyle(
                                 color: c.muted,
                                 fontSize: 13,
                               ),
                             ),
-                            valueWidgets[label] ??
-                                Text(
+                          ),
+                      ],
+                    ),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      spacing: 16,
+                      children: [
+                        for (final (label, value)
+                            in entries.skip(i).take(columns))
+                          Expanded(
+                            child:
+                                valueWidgets[label] ??
+                                kit.Body(
                                   value,
                                   style: const TextStyle(
-                                    color: c.text,
-                                    fontSize: 15,
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
-                          ],
-                        ),
-                      ),
+                          ),
+                      ],
+                    ),
                   ],
                 ),
               ),

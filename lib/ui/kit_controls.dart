@@ -617,6 +617,7 @@ class Chip extends StatelessWidget {
                   ),
                   child: m.Row(
                     mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
                     spacing: 6,
                     children: [
                       if (color != null && !active)

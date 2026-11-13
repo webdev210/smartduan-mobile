@@ -204,7 +204,6 @@ class _HomeState extends ConsumerState<HomeScreen> {
                           projects != null &&
                           projects.isLoading &&
                           !projects.hasValue,
-                      showCounts: true,
                       inset: 0,
                     ),
                     if (survey.value == true) const _SurveyCard(),

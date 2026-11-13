@@ -510,13 +510,10 @@ class Notice extends StatelessWidget {
           borderRadius: BorderRadius.circular(14),
         ),
         child: m.Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.center,
           spacing: 10,
           children: [
-            Padding(
-              padding: const EdgeInsets.only(top: 1),
-              child: Icon(icon, size: 18, color: fg),
-            ),
+            Icon(icon, size: 18, color: fg),
             Expanded(
               child: Text(
                 text,

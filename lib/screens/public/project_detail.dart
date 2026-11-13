@@ -136,8 +136,9 @@ class ProjectDetailScreen extends ConsumerWidget {
                         width: stacked
                             ? constraints.maxWidth
                             : (constraints.maxWidth - 16) * 2 / 3,
-                        child: kit.Pressable(
-                          label: directBoard ? 'Bảng hàng' : 'Xem bảng hàng',
+                        child: kit.Button(
+                          title: directBoard ? 'Bảng hàng' : 'Xem bảng hàng',
+                          icon: Ionicons.lockOpenOutline,
                           disabled: p == null,
                           onPress: () => directBoard
                               ? context.push(
@@ -148,40 +149,6 @@ class ProjectDetailScreen extends ConsumerWidget {
                                   ).toString(),
                                 )
                               : _openBoard(context, ref, signedIn, p?.id),
-                          // ponytail: kit.Button is single-line, reuse Pressable
-                          // until the shared button allows scaled labels to wrap.
-                          child: Container(
-                            constraints: const BoxConstraints(minHeight: 52),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 20,
-                              vertical: 12,
-                            ),
-                            decoration: BoxDecoration(
-                              color: c.primary,
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                            child: Row(
-                              spacing: 8,
-                              children: [
-                                const Icon(
-                                  Ionicons.lockOpenOutline,
-                                  size: 20,
-                                  color: c.card,
-                                ),
-                                Expanded(
-                                  child: Text(
-                                    directBoard ? 'Bảng hàng' : 'Xem bảng hàng',
-                                    textAlign: TextAlign.center,
-                                    style: const TextStyle(
-                                      color: c.card,
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
                         ),
                       ),
                     ],
@@ -322,31 +289,14 @@ class _Detail extends ConsumerWidget {
             child: Row(
               spacing: 12,
               children: [
-                if (mediaUrl(d.logoUrl) case final logo?)
-                  AppNetworkImage(
-                    logo,
-                    width: 40,
-                    height: 40,
-                    fit: BoxFit.contain,
-                    errorBuilder: (_, _, _) => const Icon(
-                      Ionicons.businessOutline,
-                      size: 20,
-                      color: c.muted,
-                    ),
-                  )
-                else
-                  const Icon(
-                    Ionicons.businessOutline,
-                    size: 24,
-                    color: c.muted,
-                  ),
                 Expanded(
                   child: Column(
+                    mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     spacing: 4,
                     children: [
                       const kit.Muted('Chủ đầu tư'),
-                      kit.Body(d.name),
+                      DeveloperIdentity(name: d.name, logo: d.logoUrl),
                       const Text('Dự án khác', style: TextStyle(color: c.link)),
                     ],
                   ),

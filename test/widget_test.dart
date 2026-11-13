@@ -34,6 +34,10 @@ void main() {
     expect(app.themeMode, ThemeMode.light);
     expect(app.darkTheme, isNull);
     final context = tester.element(find.byType(BrandSplash));
+    expect(
+      DefaultTextHeightBehavior.of(context).leadingDistribution,
+      TextLeadingDistribution.even,
+    );
     expect(Theme.of(context).brightness, Brightness.light);
     expect(Theme.of(context).scaffoldBackgroundColor, const Color(0xFFF7F7F7));
     final spinner = find.byType(CircularProgressIndicator);

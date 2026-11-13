@@ -61,11 +61,16 @@ class _ConsultState extends ConsumerState<ConsultScreen> {
           ),
           Material(
             color: Colors.transparent,
-            child: SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              title: const Text('Tôi đồng ý để sàn liên hệ tư vấn'),
-              value: consent,
-              onChanged: (v) => setState(() => consent = v),
+            child: MergeSemantics(
+              child: ListItem(
+                padding: EdgeInsets.zero,
+                title: 'Tôi đồng ý để sàn liên hệ tư vấn',
+                onPress: () => setState(() => consent = !consent),
+                right: Switch(
+                  value: consent,
+                  onChanged: (v) => setState(() => consent = v),
+                ),
+              ),
             ),
           ),
           if (sent)
