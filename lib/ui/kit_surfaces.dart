@@ -40,7 +40,7 @@ class Card extends StatelessWidget {
   final EdgeInsetsGeometry padding;
   final BoxDecoration? style;
   @override
-  Widget build(BuildContext context) => _Pressable(
+  Widget build(BuildContext context) => Pressable(
     onPress: onPress,
     pressedScale: 0.985,
     label: accessibilityLabel,
@@ -109,35 +109,14 @@ class Section extends StatelessWidget {
           if (action != null)
             Flexible(
               fit: FlexFit.tight,
-              child: Semantics(
-                link: true,
-                child: _Pressable(
+              child: Align(
+                alignment: Alignment.centerRight,
+                child: Button(
+                  title: action!.label,
+                  kind: 'link',
+                  size: 'sm',
+                  icon: Ionicons.chevronForward,
                   onPress: action!.onPress,
-                  child: Padding(
-                    padding: const EdgeInsets.only(top: 12),
-                    child: m.Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      mainAxisSize: MainAxisSize.min,
-                      spacing: 2,
-                      children: [
-                        Flexible(
-                          child: Text(
-                            action!.label,
-                            style: const TextStyle(
-                              color: link,
-                              fontWeight: FontWeight.w600,
-                              fontSize: 14,
-                            ),
-                          ),
-                        ),
-                        const Icon(
-                          Ionicons.chevronForward,
-                          size: 15,
-                          color: link,
-                        ),
-                      ],
-                    ),
-                  ),
                 ),
               ),
             ),

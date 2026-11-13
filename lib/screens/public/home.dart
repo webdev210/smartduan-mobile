@@ -501,12 +501,13 @@ class PublicHome extends ConsumerWidget {
                                               height: 20 / 14,
                                             ),
                                           ),
-                                          _GoldButton(
+                                          Button(
                                             title: 'Đăng nhập',
                                             onPress: () =>
                                                 context.push('/dang-nhap'),
                                           ),
-                                          _AltButton(
+                                          Button(
+                                            kind: 'secondary',
                                             title: 'Đăng ký tài khoản sale',
                                             onPress: () =>
                                                 context.push('/dang-ky'),
@@ -552,20 +553,17 @@ class PublicHome extends ConsumerWidget {
                         fontWeight: FontWeight.w800,
                       ),
                     ),
-                    Row(
+                    ButtonGroup(
                       spacing: 10,
                       children: [
-                        Expanded(
-                          child: _GoldButton(
-                            title: 'Đăng nhập',
-                            onPress: () => menuGo('/dang-nhap'),
-                          ),
+                        Button(
+                          title: 'Đăng nhập',
+                          onPress: () => menuGo('/dang-nhap'),
                         ),
-                        Expanded(
-                          child: _AltButton(
-                            title: 'Đăng ký',
-                            onPress: () => menuGo('/dang-ky'),
-                          ),
+                        Button(
+                          kind: 'secondary',
+                          title: 'Đăng ký',
+                          onPress: () => menuGo('/dang-ky'),
                         ),
                       ],
                     ),
@@ -689,8 +687,8 @@ class _HeroSlidesState extends State<_HeroSlides> {
                   child: Semantics(
                     button: true,
                     label: 'Xem dự án ${p.name}',
-                    child: GestureDetector(
-                      onTap: () => _openProject(context, p),
+                    child: Pressable(
+                      onPress: () => _openProject(context, p),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(28),
                         child: Stack(
@@ -958,9 +956,8 @@ class _PostItem extends StatelessWidget {
     );
     return Semantics(
       button: true,
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: () =>
+      child: Pressable(
+        onPress: () =>
             context.push('/bai-viet/${Uri.encodeComponent(post.slug)}'),
         child: Padding(
           padding: const EdgeInsets.all(14),
@@ -1024,88 +1021,24 @@ class _Contact extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) => Row(
+  Widget build(BuildContext context) => ButtonGroup(
     spacing: 10,
     children: [
       if (contact?.hotline?.isNotEmpty == true)
-        Expanded(
-          child: Button(
-            title: contact!.hotline!,
-            kind: 'secondary',
-            icon: Ionicons.callOutline,
-            onPress: () => _launch('tel:${contact!.hotline}'),
-          ),
+        Button(
+          title: contact!.hotline!,
+          kind: 'secondary',
+          icon: Ionicons.callOutline,
+          onPress: () => _launch('tel:${contact!.hotline}'),
         ),
       if (contact?.zaloUrl?.isNotEmpty == true)
-        Expanded(
-          child: Button(
-            title: 'Chat Zalo',
-            kind: 'secondary',
-            icon: Ionicons.chatbubbleEllipsesOutline,
-            onPress: () => _launch(contact!.zaloUrl!),
-          ),
+        Button(
+          title: 'Chat Zalo',
+          kind: 'secondary',
+          icon: Ionicons.chatbubbleEllipsesOutline,
+          onPress: () => _launch(contact!.zaloUrl!),
         ),
     ],
-  );
-}
-
-class _GoldButton extends StatelessWidget {
-  const _GoldButton({required this.title, required this.onPress});
-  final String title;
-  final VoidCallback onPress;
-  @override
-  Widget build(BuildContext context) => Card(
-    padding: EdgeInsets.zero,
-    onPress: onPress,
-    accessibilityLabel: title,
-    style: BoxDecoration(
-      gradient: c.goldGradient,
-      borderRadius: BorderRadius.circular(16),
-    ),
-    child: ConstrainedBox(
-      constraints: const BoxConstraints(minHeight: 52),
-      child: Center(
-        child: Text(
-          title,
-          style: const TextStyle(
-            color: c.brandDeep,
-            fontWeight: FontWeight.w800,
-            fontSize: 16,
-          ),
-        ),
-      ),
-    ),
-  );
-}
-
-class _AltButton extends StatelessWidget {
-  const _AltButton({required this.title, required this.onPress});
-  final String title;
-  final VoidCallback onPress;
-  @override
-  Widget build(BuildContext context) => Card(
-    padding: EdgeInsets.zero,
-    onPress: onPress,
-    accessibilityLabel: title,
-    style: BoxDecoration(
-      color: Colors.transparent,
-      border: Border.all(color: c.gold.withValues(alpha: 0.6)),
-      borderRadius: BorderRadius.circular(16),
-      boxShadow: const [],
-    ),
-    child: ConstrainedBox(
-      constraints: const BoxConstraints(minHeight: 52),
-      child: Center(
-        child: Text(
-          title,
-          style: const TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.w600,
-            fontSize: 15,
-          ),
-        ),
-      ),
-    ),
   );
 }
 
@@ -1162,9 +1095,8 @@ class _GuestBar extends StatelessWidget {
                 button: true,
                 selected: item.active,
                 label: item.label,
-                child: GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: item.onPress,
+                child: Pressable(
+                  onPress: item.onPress,
                   child: Container(
                     constraints: const BoxConstraints(minHeight: 62),
                     padding: const EdgeInsets.symmetric(vertical: 4),

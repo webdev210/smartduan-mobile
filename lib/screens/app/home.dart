@@ -286,24 +286,20 @@ class _SurveyState extends ConsumerState<_SurveyCard> {
       ),
       if (failed)
         const Notice(tone: 'error', text: 'Gửi không được, thử lại sau.'),
-      Row(
+      ButtonGroup(
         spacing: 8,
         children: [
-          Expanded(
-            child: Button(
-              kind: 'secondary',
-              title: 'Để sau',
-              disabled: sending,
-              onPress: () => send(true),
-            ),
+          Button(
+            kind: 'secondary',
+            title: 'Để sau',
+            disabled: sending,
+            onPress: () => send(true),
           ),
-          Expanded(
-            child: Button(
-              title: 'Gửi',
-              disabled: score == null || refer == null,
-              loading: sending,
-              onPress: () => send(false),
-            ),
+          Button(
+            title: 'Gửi',
+            disabled: score == null || refer == null,
+            loading: sending,
+            onPress: () => send(false),
           ),
         ],
       ),

@@ -18,8 +18,9 @@ part 'kit_controls.dart';
 part 'kit_surfaces.dart';
 
 // RN Pressable feedback, shared so controls keep the same touch/keyboard behavior.
-class _Pressable extends StatefulWidget {
-  const _Pressable({
+class Pressable extends StatefulWidget {
+  const Pressable({
+    super.key,
     required this.child,
     this.onPress,
     this.onLongPress,
@@ -35,10 +36,10 @@ class _Pressable extends StatefulWidget {
   final bool disabled;
   final double pressedOpacity, pressedScale;
   @override
-  State<_Pressable> createState() => _PressableState();
+  State<Pressable> createState() => _PressableState();
 }
 
-class _PressableState extends State<_Pressable> {
+class _PressableState extends State<Pressable> {
   bool pressed = false;
   bool showFocus = false;
   bool get enabled => !widget.disabled && widget.onPress != null;
@@ -439,32 +440,55 @@ class Body extends StatelessWidget {
 }
 
 class Row extends StatelessWidget {
-  const Row({super.key, required this.label, required this.value});
+  const Row({
+    super.key,
+    required this.label,
+    required this.value,
+    this.padding = const EdgeInsets.symmetric(vertical: 7),
+  });
   final String label;
   final Object value;
+  final EdgeInsetsGeometry padding;
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 7),
+    padding: padding,
     child: LayoutBuilder(
-      builder: (context, constraints) => m.Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        spacing: 12,
-        children: [
-          ConstrainedBox(
-            constraints: BoxConstraints(maxWidth: constraints.maxWidth / 2),
-            child: Muted(label),
-          ),
-          Flexible(
-            child: value is Widget
-                ? value as Widget
-                : Body(
-                    '$value',
-                    textAlign: TextAlign.right,
-                    style: const TextStyle(fontWeight: FontWeight.w600),
+      builder: (context, constraints) =>
+          MediaQuery.textScalerOf(context).scale(1) > 1.3
+          ? Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              spacing: 8,
+              children: [
+                Muted(label),
+                value is Widget
+                    ? value as Widget
+                    : Body(
+                        '$value',
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
+              ],
+            )
+          : m.Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              spacing: 12,
+              children: [
+                ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxWidth: constraints.maxWidth / 2,
                   ),
-          ),
-        ],
-      ),
+                  child: Muted(label),
+                ),
+                Flexible(
+                  child: value is Widget
+                      ? value as Widget
+                      : Body(
+                          '$value',
+                          textAlign: TextAlign.right,
+                          style: const TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                ),
+              ],
+            ),
     ),
   );
 }

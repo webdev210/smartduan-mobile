@@ -8,7 +8,8 @@ import '../../api/public.dart';
 import '../../auth/messages.dart';
 import '../../auth/session.dart';
 import '../../config.dart';
-import '../../ui/kit.dart' show Screen, Muted, Card, Field, Notice, Button;
+import '../../ui/kit.dart'
+    show Screen, Muted, Card, Field, Notice, Button, ButtonGroup;
 import '../../ui/otp_step.dart';
 import '../../ui/theme.dart' as c;
 
@@ -167,21 +168,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 loading: _busy,
                 disabled: _email.isEmpty || _password.isEmpty,
               ),
-              Row(
+              ButtonGroup(
+                spacing: 12,
                 children: [
-                  Expanded(
-                    child: Button(
-                      title: 'Quên mật khẩu?',
-                      kind: 'link',
-                      onPress: () => context.push('/quen-mat-khau'),
-                    ),
+                  Button(
+                    title: 'Quên mật khẩu?',
+                    kind: 'link',
+                    onPress: () => context.push('/quen-mat-khau'),
                   ),
-                  Expanded(
-                    child: Button(
-                      title: 'Đăng ký tài khoản',
-                      kind: 'link',
-                      onPress: () => context.push('/dang-ky'),
-                    ),
+                  Button(
+                    title: 'Đăng ký tài khoản',
+                    kind: 'link',
+                    onPress: () => context.push('/dang-ky'),
                   ),
                 ],
               ),

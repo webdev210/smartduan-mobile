@@ -179,6 +179,7 @@ class _ProjectHistoryScreenState extends ConsumerState<ProjectHistoryScreen> {
                                 last.value!.data.isNotEmpty &&
                                 all.length < result.total)
                       ? Button(
+                          kind: 'secondary',
                           title: 'Tải thêm',
                           loading: last.isLoading,
                           onPress: () => setState(() => page++),

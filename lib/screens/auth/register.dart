@@ -28,8 +28,18 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   Map<String, String> _fieldErrors = {};
   String? _token, _error, _sentTo;
   bool _consent = false, _busy = false;
+  bool _privacyPressed = false;
   int _captchaKey = 0;
   late final _privacyLink = TapGestureRecognizer()
+    ..onTapDown = (_) {
+      setState(() => _privacyPressed = true);
+    }
+    ..onTapUp = (_) {
+      setState(() => _privacyPressed = false);
+    }
+    ..onTapCancel = () {
+      setState(() => _privacyPressed = false);
+    }
     ..onTap = () => context.push('/chinh-sach-bao-mat');
 
   @override
@@ -224,9 +234,13 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                             TextSpan(
                               text: 'Chính sách bảo mật',
                               semanticsLabel: 'Chính sách bảo mật',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 color: theme.link,
                                 fontWeight: FontWeight.w600,
+                                decoration: TextDecoration.underline,
+                                backgroundColor: _privacyPressed
+                                    ? theme.brandSoft
+                                    : null,
                               ),
                               recognizer: _privacyLink,
                             ),

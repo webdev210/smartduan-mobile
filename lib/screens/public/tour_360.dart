@@ -19,10 +19,7 @@ class Tour360Screen extends StatelessWidget {
       value: SystemUiOverlayStyle.light,
       child: Scaffold(
         backgroundColor: Colors.black,
-        body: SafeArea(
-          minimum: EdgeInsets.only(
-            top: Theme.of(context).platform == TargetPlatform.iOS ? 20 : 0,
-          ),
+        body: ViewerSafeArea(
           child: Column(
             children: [
               Padding(
@@ -61,6 +58,7 @@ class Tour360Screen extends StatelessWidget {
                         icon: const Icon(Ionicons.close),
                         label: const Text('Đóng'),
                         style: TextButton.styleFrom(
+                          minimumSize: const Size(48, 48),
                           backgroundColor: Colors.white,
                           foregroundColor: Colors.black,
                         ),

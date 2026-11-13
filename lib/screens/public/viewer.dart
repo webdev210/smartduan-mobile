@@ -2,6 +2,8 @@ import 'package:ionicons/ionicons.dart';
 
 import 'dart:io';
 
+import 'package:flutter/services.dart';
+
 import 'package:dio/dio.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -166,37 +168,53 @@ class _ViewerScreenState extends State<ViewerScreen> {
   Widget build(BuildContext context) {
     final android = Theme.of(context).platform == TargetPlatform.android;
     final src = source;
-    return Scaffold(
-      appBar: AppBar(title: Text(widget.title.isEmpty ? 'Xem' : widget.title)),
-      body: SafeArea(
-        top: false,
-        child: src == null
-            ? const kit.Screen(
-                children: [
-                  kit.Notice(tone: 'warn', text: 'Link không hợp lệ.'),
-                ],
-              )
-            : android && (widget.file || isFileUrl(src))
-            ? _FileOpen(key: ValueKey(src), url: src)
-            : PublicWebView(
-                url: src,
-                title: widget.title,
-                navigation: (url, top) {
-                  final verdict = viewerNavigation(url, top, android: android);
-                  if (verdict == 'download') setState(() => source = url);
-                  return verdict;
-                },
-                onOpen: (url) async {
-                  try {
-                    await launchUrl(
-                      Uri.parse(url),
-                      mode: LaunchMode.externalApplication,
-                    );
-                  } catch (_) {
-                    /* RN best effort. */
-                  }
-                },
-              ),
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: Theme.of(context).brightness == Brightness.dark
+          ? SystemUiOverlayStyle.light
+          : SystemUiOverlayStyle.dark,
+      child: ColoredBox(
+        color: Theme.of(context).scaffoldBackgroundColor,
+        child: ViewerSafeArea(
+          child: Scaffold(
+            appBar: AppBar(
+              title: Text(widget.title.isEmpty ? 'Xem' : widget.title),
+            ),
+            body: SafeArea(
+              top: false,
+              child: src == null
+                  ? const kit.Screen(
+                      children: [
+                        kit.Notice(tone: 'warn', text: 'Link không hợp lệ.'),
+                      ],
+                    )
+                  : android && (widget.file || isFileUrl(src))
+                  ? _FileOpen(key: ValueKey(src), url: src)
+                  : PublicWebView(
+                      url: src,
+                      title: widget.title,
+                      navigation: (url, top) {
+                        final verdict = viewerNavigation(
+                          url,
+                          top,
+                          android: android,
+                        );
+                        if (verdict == 'download') setState(() => source = url);
+                        return verdict;
+                      },
+                      onOpen: (url) async {
+                        try {
+                          await launchUrl(
+                            Uri.parse(url),
+                            mode: LaunchMode.externalApplication,
+                          );
+                        } catch (_) {
+                          /* RN best effort. */
+                        }
+                      },
+                    ),
+            ),
+          ),
+        ),
       ),
     );
   }

@@ -221,33 +221,29 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
                   ),
                 ],
               ),
-              m.Row(
+              ButtonGroup(
                 spacing: 8,
                 children: [
-                  Expanded(
-                    child: Button(
-                      kind: 'secondary',
-                      icon: Ionicons.timeOutline,
-                      title: 'Biến động',
-                      onPress: () => context.push(
-                        Uri(
-                          path: '/bien-dong/$id',
-                          queryParameters: {
-                            if (widget.name != null) 'name': widget.name!,
-                          },
-                        ).toString(),
-                      ),
+                  Button(
+                    kind: 'secondary',
+                    icon: Ionicons.timeOutline,
+                    title: 'Biến động',
+                    onPress: () => context.push(
+                      Uri(
+                        path: '/bien-dong/$id',
+                        queryParameters: {
+                          if (widget.name != null) 'name': widget.name!,
+                        },
+                      ).toString(),
                     ),
                   ),
                   if (!free)
-                    Expanded(
-                      child: Button(
-                        kind: 'secondary',
-                        icon: Ionicons.downloadOutline,
-                        title: 'Xuất Excel',
-                        loading: _exporting,
-                        onPress: _export,
-                      ),
+                    Button(
+                      kind: 'secondary',
+                      icon: Ionicons.downloadOutline,
+                      title: 'Xuất Excel',
+                      loading: _exporting,
+                      onPress: _export,
                     ),
                 ],
               ),
@@ -354,23 +350,18 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
             visible: _sheet,
             onClose: () => setState(() => _sheet = false),
             title: 'Lọc căn',
-            footer: m.Row(
+            footer: ButtonGroup(
               spacing: 8,
               children: [
-                Expanded(
-                  child: Button(
-                    kind: 'secondary',
-                    title: 'Xoá lọc',
-                    disabled: extra.isEmpty,
-                    onPress: _clearExtra,
-                  ),
+                Button(
+                  kind: 'secondary',
+                  title: 'Xoá lọc',
+                  disabled: extra.isEmpty,
+                  onPress: _clearExtra,
                 ),
-                Expanded(
-                  flex: 2,
-                  child: Button(
-                    title: 'Xem $matched căn',
-                    onPress: () => setState(() => _sheet = false),
-                  ),
+                Button(
+                  title: 'Xem $matched căn',
+                  onPress: () => setState(() => _sheet = false),
                 ),
               ],
             ),

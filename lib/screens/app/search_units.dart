@@ -136,6 +136,7 @@ class _SearchUnitsState extends ConsumerState<SearchUnitsScreen> {
             child: const Text('Huỷ'),
           ),
           TextButton(
+            style: TextButton.styleFrom(foregroundColor: c.danger),
             onPressed: () => Navigator.pop(ctx, true),
             child: const Text('Xoá'),
           ),
@@ -386,24 +387,19 @@ class _SearchUnitsState extends ConsumerState<SearchUnitsScreen> {
             visible: sheet,
             onClose: () => setState(() => sheet = false),
             title: 'Lọc & sắp xếp',
-            footer: Row(
+            footer: ButtonGroup(
               spacing: 10,
               children: [
-                Expanded(
-                  child: Button(
-                    kind: 'secondary',
-                    title: 'Xoá lọc',
-                    disabled: extras.isEmpty,
-                    onPress: () =>
-                        filters(UnitSearchFilters(q: f.q, status: f.status)),
-                  ),
+                Button(
+                  kind: 'secondary',
+                  title: 'Xoá lọc',
+                  disabled: extras.isEmpty,
+                  onPress: () =>
+                      filters(UnitSearchFilters(q: f.q, status: f.status)),
                 ),
-                Expanded(
-                  flex: 2,
-                  child: Button(
-                    title: total == null ? 'Xem kết quả' : 'Xem $total căn',
-                    onPress: () => setState(() => sheet = false),
-                  ),
+                Button(
+                  title: total == null ? 'Xem kết quả' : 'Xem $total căn',
+                  onPress: () => setState(() => sheet = false),
                 ),
               ],
             ),
@@ -465,7 +461,7 @@ class _SearchUnitsState extends ConsumerState<SearchUnitsScreen> {
                     children: [
                       Expanded(child: Text(s.name)),
                       Button(
-                        kind: 'link',
+                        kind: 'danger',
                         title: 'Xoá',
                         accessibilityLabel: 'Xoá bộ lọc ${s.name}',
                         disabled: deleting,

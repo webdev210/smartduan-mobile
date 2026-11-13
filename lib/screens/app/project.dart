@@ -20,6 +20,7 @@ import '../../ui/in_app.dart';
 import '../../ui/kit.dart' as kit;
 import '../../ui/map_embed.dart';
 import '../../ui/overview.dart';
+import '../../ui/project_facts.dart';
 import '../../ui/project_filter.dart' show projectStatus;
 import '../../ui/tour360.dart';
 import '../../ui/search.dart';
@@ -215,8 +216,10 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
             queryParameters: params.isEmpty ? null : params,
           ).toString(),
         );
-    Widget card(String title, List<Widget> children) =>
-        kit.Card(children: [kit.H2(title), ...children]);
+    Widget card(String title, List<Widget> children) => kit.Section(
+      title: title,
+      child: kit.Card(children: children),
+    );
     Widget listCard<T>(
       String title,
       List<T> rows,
@@ -245,7 +248,7 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
     ]);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
-      spacing: 16,
+      spacing: 22,
       children: [
         if (images.isNotEmpty)
           _Strip(
@@ -276,14 +279,11 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
               p.province,
             ].whereType<String>().where((s) => s.isNotEmpty).join(', '),
           ),
-        kit.Card(
-          children: [
-            kit.Row(label: 'Chủ đầu tư', value: p.developerName ?? '—'),
-            kit.Row(label: 'Giá từ', value: fmtPrice(p.priceFrom)),
-            kit.Row(
-              label: 'Cập nhật rổ hàng',
-              value: fmtDate(p.inventoryUpdatedAt, true),
-            ),
+        ProjectFacts(
+          entries: [
+            ('Chủ đầu tư', p.developerName ?? '—'),
+            ('Giá từ', fmtPrice(p.priceFrom)),
+            ('Cập nhật rổ hàng', fmtDate(p.inventoryUpdatedAt, true)),
           ],
         ),
         if (screens['salesFloor']!(roles))
@@ -299,39 +299,42 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
             kind: 'secondary',
             onPress: () => push('/ro-hang', {'project': p.id, 'url': url}),
           ),
-        kit.Card(
-          padding: EdgeInsets.zero,
-          children: [
-            if (screens['salesFloor']!(roles))
-              kit.ListItem(
-                icon: Ionicons.trophyOutline,
-                title: 'Top căn',
-                subtitle: 'Căn giá tốt, căn đẹp, căn góc theo từng loại',
-                onPress: () => push('/top-can/${p.id}', {'name': p.name}),
-              ),
-            if (screens['shareLinks']!(roles)) ...[
-              const kit.Divider(),
-              kit.ListItem(
-                icon: Ionicons.tvOutline,
-                title: 'Trình chiếu cho khách',
-                subtitle: 'Bảng hàng giá làm tròn, không lộ dữ liệu nội bộ',
-                onPress: () => push('/trinh-chieu/${p.id}'),
-              ),
-              const kit.Divider(),
-              kit.ListItem(
-                icon: Ionicons.shareSocialOutline,
-                title: 'Chia sẻ cho khách',
-                subtitle:
-                    'Tạo link xem bảng hàng, theo dõi lượt xem và liên hệ',
-                onPress: () => push('/chia-se/${p.id}', {'name': p.name}),
-              ),
-            ],
-          ],
-        ),
+        if (screens['salesFloor']!(roles) || screens['shareLinks']!(roles))
+          kit.Card(
+            padding: EdgeInsets.zero,
+            child: Column(
+              children: [
+                if (screens['salesFloor']!(roles))
+                  kit.ListItem(
+                    icon: Ionicons.trophyOutline,
+                    title: 'Top căn',
+                    subtitle: 'Căn giá tốt, căn đẹp, căn góc theo từng loại',
+                    onPress: () => push('/top-can/${p.id}', {'name': p.name}),
+                  ),
+                if (screens['shareLinks']!(roles)) ...[
+                  const kit.Divider(),
+                  kit.ListItem(
+                    icon: Ionicons.tvOutline,
+                    title: 'Trình chiếu cho khách',
+                    subtitle: 'Bảng hàng giá làm tròn, không lộ dữ liệu nội bộ',
+                    onPress: () => push('/trinh-chieu/${p.id}'),
+                  ),
+                  const kit.Divider(),
+                  kit.ListItem(
+                    icon: Ionicons.shareSocialOutline,
+                    title: 'Chia sẻ cho khách',
+                    subtitle:
+                        'Tạo link xem bảng hàng, theo dõi lượt xem và liên hệ',
+                    onPress: () => push('/chia-se/${p.id}', {'name': p.name}),
+                  ),
+                ],
+              ],
+            ),
+          ),
         kit.Button(
           kind: 'soft',
           icon: Ionicons.chatbubblesOutline,
-          title: 'Yêu cầu tư vấn dự án này',
+          title: 'Tư vấn dự án',
           onPress: () => push('/tu-van', {'projectId': p.id, 'name': p.name}),
         ),
         kit.SearchBar(
@@ -401,7 +404,7 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
             'Phân khu',
             blocks,
             (d) => kit.ListItem(
-              padding: const EdgeInsets.symmetric(vertical: 14),
+              padding: const EdgeInsets.symmetric(vertical: 4),
               title: d.name,
               subtitle: [
                 '${d.totalUnits} căn',
@@ -452,6 +455,7 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
           card('Đầu mối dự án', [
             for (final c in people)
               kit.Row(
+                padding: EdgeInsets.zero,
                 label: '${c.fullName} · ${c.roleLabel}',
                 value:
                     c.phone.contains('★') ||
@@ -477,6 +481,7 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
             'Tài liệu',
             files,
             (d) => kit.Row(
+              padding: EdgeInsets.zero,
               label: d.title,
               value: kit.Button(
                 kind: 'link',
@@ -511,6 +516,7 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
             'Đào tạo',
             lessons,
             (m) => kit.Row(
+              padding: EdgeInsets.zero,
               label: m.caption ?? 'Tài liệu đào tạo',
               value: kit.Button(
                 kind: 'link',
@@ -684,8 +690,8 @@ class _Strip extends StatelessWidget {
           Semantics(
             button: true,
             label: x.name,
-            child: GestureDetector(
-              onTap: () => openInApp(context, x.url, x.name),
+            child: kit.Pressable(
+              onPress: () => openInApp(context, x.url, x.name),
               child: SizedBox(
                 width: width,
                 child: Column(

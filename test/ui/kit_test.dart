@@ -251,10 +251,7 @@ void main() {
             ),
           ),
         );
-        expect(
-          tester.getSize(find.byType(Button)).height,
-          small || kind == 'link' ? 48 : 52,
-        );
+        expect(tester.getSize(find.byType(Button)).height, small ? 48 : 52);
         expect(tester.takeException(), isNull);
       }
     });

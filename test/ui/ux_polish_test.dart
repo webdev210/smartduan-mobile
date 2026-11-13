@@ -144,7 +144,11 @@ void main() {
         ),
       ),
     );
-    expect(t.getBottomRight(find.byIcon(Ionicons.chevronForward)).dx, 370);
+    expect(t.getBottomRight(find.byType(Button)).dx, 370);
+    expect(
+      t.getTopLeft(find.byIcon(Ionicons.chevronForward)).dx,
+      lessThan(t.getTopLeft(find.text('Xem tất cả')).dx),
+    );
     expect(
       t
           .getSize(
@@ -260,7 +264,7 @@ void main() {
       }
     });
   }
-  testWidgets('compare control meets the card content inset', (t) async {
+  testWidgets('compare control sits beside the heart on the cover', (t) async {
     await mount(
       t,
       ProjectCard(
@@ -275,7 +279,11 @@ void main() {
     );
     final card = t.getRect(find.byType(ProjectCard));
     final chip = t.getRect(find.bySemanticsLabel('So sánh Dự án'));
-    expect(card.right - chip.right, closeTo(16, 1));
+    final heart = t.getRect(find.bySemanticsLabel('Yêu thích Dự án'));
+    expect(card.right - heart.right, closeTo(12, 1));
+    expect(chip.top - card.top, closeTo(12, 1));
+    expect(chip.top, heart.top);
+    expect(heart.left - chip.right, 8);
   });
   testWidgets('light headers and dark splash use opposite icon brightness', (
     t,

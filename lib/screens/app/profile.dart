@@ -36,6 +36,7 @@ class _ProfileState extends ConsumerState<ProfileScreen> {
               child: const Text('Huỷ'),
             ),
             TextButton(
+              style: TextButton.styleFrom(foregroundColor: c.danger),
               onPressed: () => Navigator.pop(context, true),
               child: Text(action),
             ),
@@ -209,7 +210,7 @@ class _ProfileState extends ConsumerState<ProfileScreen> {
                               subtitle:
                                   '${deviceStatusLabel[d.status] ?? d.status} · lần cuối ${fmtDate(d.lastSeenAt, true)}',
                               right: Button(
-                                kind: 'link',
+                                kind: 'danger',
                                 title: 'Gỡ',
                                 accessibilityLabel:
                                     'Gỡ thiết bị ${d.label ?? d.kind ?? ''}',

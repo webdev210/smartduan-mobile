@@ -282,46 +282,54 @@ void main() {
     });
   }
 
-  testWidgets('44 horizontal cards reserve equal name and detail rows', (
-    tester,
-  ) async {
-    await mount(
-      tester,
-      m.SingleChildScrollView(
-        child: m.Row(
-          crossAxisAlignment: m.CrossAxisAlignment.start,
-          children: [
-            ProjectCard(
-              width: 240,
-              p: const ProjectCardData(
-                status: 'selling',
-                name: 'A',
-                isPublic: false,
-              ),
-              onPress: () {},
+  testWidgets(
+    '44 bounded horizontal cards pin facts without placeholder rows',
+    (tester) async {
+      await mount(
+        tester,
+        m.SingleChildScrollView(
+          child: m.SizedBox(
+            height: 480,
+            child: m.Row(
+              crossAxisAlignment: m.CrossAxisAlignment.stretch,
+              children: [
+                ProjectCard(
+                  width: 240,
+                  p: const ProjectCardData(
+                    status: 'selling',
+                    name: 'A',
+                    isPublic: false,
+                  ),
+                  onPress: () {},
+                ),
+                ProjectCard(
+                  width: 240,
+                  p: const ProjectCardData(
+                    status: 'selling',
+                    name: 'Dự án tên dài xuống hai dòng',
+                    isPublic: false,
+                    province: 'Hà Nội',
+                    developerName: 'Chủ đầu tư',
+                    activity7d: 5,
+                  ),
+                  onPress: () {},
+                ),
+              ],
             ),
-            ProjectCard(
-              width: 240,
-              p: const ProjectCardData(
-                status: 'selling',
-                name: 'Dự án tên dài xuống hai dòng',
-                isPublic: false,
-                province: 'Hà Nội',
-                developerName: 'Chủ đầu tư',
-                activity7d: 5,
-              ),
-              onPress: () {},
-            ),
-          ],
+          ),
         ),
-      ),
-    );
-    expect(
-      tester.getSize(find.byType(ProjectCard).at(0)),
-      tester.getSize(find.byType(ProjectCard).at(1)),
-    );
-    expect(tester.takeException(), isNull);
-  });
+      );
+      expect(
+        tester.getSize(find.byType(ProjectCard).at(0)),
+        tester.getSize(find.byType(ProjectCard).at(1)),
+      );
+      expect(
+        tester.getTopLeft(find.text('Giá từ').at(0)).dy,
+        tester.getTopLeft(find.text('Giá từ').at(1)).dy,
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets('45 price prefix appears once', (tester) async {
     await mount(

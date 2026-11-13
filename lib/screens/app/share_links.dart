@@ -105,6 +105,7 @@ class _ShareLinksScreenState extends ConsumerState<ShareLinksScreen> {
             child: const Text('Huỷ'),
           ),
           TextButton(
+            style: TextButton.styleFrom(foregroundColor: c.danger),
             onPressed: () => Navigator.pop(context, true),
             child: const Text('Thu hồi'),
           ),
@@ -287,7 +288,7 @@ class _ShareLinksScreenState extends ConsumerState<ShareLinksScreen> {
           onPress: () => _copy(link),
         ),
         kit.Button(
-          kind: 'link',
+          kind: 'danger',
           title: 'Thu hồi',
           disabled: revoking,
           onPress: () => _revoke(link),

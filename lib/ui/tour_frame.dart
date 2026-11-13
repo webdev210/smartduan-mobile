@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:material_ui/material_ui.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_android/webview_flutter_android.dart';
@@ -6,6 +8,30 @@ import 'package:webview_flutter_wkwebview/webview_flutter_wkwebview.dart';
 import 'in_app.dart';
 import 'kit.dart' show Button, Loading, Notice;
 import 'tour.dart';
+
+/// Keep cut-outs protected even when immersive mode clears view padding's
+/// visible counterpart. SafeArea consumes the insets so nested viewers don't
+/// apply them twice.
+class ViewerSafeArea extends StatelessWidget {
+  const ViewerSafeArea({super.key, required this.child});
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final media = MediaQuery.of(context);
+    return MediaQuery(
+      data: media.copyWith(
+        padding: EdgeInsets.fromLTRB(
+          math.max(media.padding.left, media.viewPadding.left),
+          math.max(media.padding.top, media.viewPadding.top),
+          math.max(media.padding.right, media.viewPadding.right),
+          math.max(media.padding.bottom, media.viewPadding.bottom),
+        ),
+      ),
+      child: SafeArea(child: child),
+    );
+  }
+}
 
 /// Shared native setup for the four public WebViews. Configure the delegate and
 /// local-access restrictions before loading any content; no JavaScript bridge.
@@ -142,7 +168,10 @@ class _PublicWebViewState extends State<PublicWebView> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) =>
+      ViewerSafeArea(child: _content(context));
+
+  Widget _content(BuildContext context) {
     if (failed) {
       return Center(
         child: SingleChildScrollView(

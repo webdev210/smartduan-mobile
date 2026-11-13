@@ -57,7 +57,7 @@ class ProjectQuickFind extends StatelessWidget {
         ],
         Button(
           title: found.isEmpty
-              ? 'Không thấy ở đây — tìm trong toàn bộ danh mục'
+              ? 'Tìm trong toàn bộ danh mục'
               : 'Xem tất cả ${found.length} kết quả',
           kind: 'link',
           icon: Ionicons.arrowForward,
@@ -406,23 +406,18 @@ class _ProjectBrowserState extends ConsumerState<ProjectBrowser> {
           visible: sheet,
           onClose: () => control.sheet(false),
           title: 'Lọc & sắp xếp',
-          footer: Row(
+          footer: ButtonGroup(
             spacing: 10,
             children: [
-              Expanded(
-                child: Button(
-                  title: 'Xoá lọc',
-                  kind: 'secondary',
-                  disabled: active.isEmpty,
-                  onPress: control.clear,
-                ),
+              Button(
+                title: 'Xoá lọc',
+                kind: 'secondary',
+                disabled: active.isEmpty,
+                onPress: control.clear,
               ),
-              Expanded(
-                flex: 2,
-                child: Button(
-                  title: 'Xem ${rows.length} dự án',
-                  onPress: () => control.sheet(false),
-                ),
+              Button(
+                title: 'Xem ${rows.length} dự án',
+                onPress: () => control.sheet(false),
               ),
             ],
           ),

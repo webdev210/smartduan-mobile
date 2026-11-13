@@ -32,8 +32,14 @@ class _Picker extends Notifier<_PickerState> {
 }
 
 class CompareChip extends ConsumerStatefulWidget {
-  const CompareChip({super.key, required this.code, required this.name});
+  const CompareChip({
+    super.key,
+    required this.code,
+    required this.name,
+    this.overlay = false,
+  });
   final String code, name;
+  final bool overlay;
   @override
   ConsumerState<CompareChip> createState() => _CompareChipState();
 }
@@ -59,6 +65,14 @@ class _CompareChipState extends ConsumerState<CompareChip> {
     timer?.cancel();
     setState(() => full = rejected);
     if (rejected) {
+      if (widget.overlay) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(_full),
+            duration: Duration(milliseconds: 2500),
+          ),
+        );
+      }
       timer = Timer(const Duration(milliseconds: 2500), () {
         if (mounted) setState(() => full = false);
       });
@@ -76,7 +90,7 @@ class _CompareChipState extends ConsumerState<CompareChip> {
           crossAxisAlignment: WrapCrossAlignment.center,
           spacing: 8,
           children: [
-            if (full)
+            if (full && !widget.overlay)
               const Text(
                 _full,
                 style: TextStyle(
@@ -106,45 +120,70 @@ class _CompareChipState extends ConsumerState<CompareChip> {
                       ),
                 },
                 child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
                   onTap: toggle,
-                  child: Container(
-                    constraints: const BoxConstraints(
-                      minWidth: 48,
-                      minHeight: 48,
-                    ),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: on ? c.brand : c.brandSoft,
-                      border: Border.all(color: on ? c.brand : c.dangerBorder),
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      spacing: 5,
-                      children: [
-                        Icon(
-                          on
-                              ? Ionicons.checkmarkCircle
-                              : Ionicons.gitCompareOutline,
-                          size: 15,
-                          color: on ? Colors.white : c.brand,
-                        ),
-                        Flexible(
-                          child: Text(
-                            on ? 'Đang so sánh' : 'So sánh',
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w700,
-                              color: on ? Colors.white : c.brand,
+                  child: widget.overlay
+                      ? SizedBox.square(
+                          dimension: 48,
+                          child: Center(
+                            child: Material(
+                              color: on
+                                  ? c.brand
+                                  : Colors.white.withValues(alpha: .94),
+                              elevation: 1,
+                              shadowColor: c.text,
+                              shape: const CircleBorder(),
+                              child: SizedBox.square(
+                                dimension: 44,
+                                child: Icon(
+                                  Ionicons.gitCompareOutline,
+                                  size: 22,
+                                  color: on ? Colors.white : c.text,
+                                ),
+                              ),
                             ),
                           ),
+                        )
+                      : Container(
+                          constraints: const BoxConstraints(
+                            minWidth: 48,
+                            minHeight: 48,
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: on ? c.brand : c.brandSoft,
+                            border: Border.all(
+                              color: on ? c.brand : c.dangerBorder,
+                            ),
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            spacing: 5,
+                            children: [
+                              Icon(
+                                on
+                                    ? Ionicons.checkmarkCircle
+                                    : Ionicons.gitCompareOutline,
+                                size: 15,
+                                color: on ? Colors.white : c.brand,
+                              ),
+                              Flexible(
+                                child: Text(
+                                  on ? 'Đang so sánh' : 'So sánh',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w700,
+                                    color: on ? Colors.white : c.brand,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ],
-                    ),
-                  ),
                 ),
               ),
             ),

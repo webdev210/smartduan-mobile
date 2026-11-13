@@ -24,19 +24,14 @@ class Button extends StatelessWidget {
   Widget build(BuildContext context) {
     final off = disabled || loading;
     final (fg, background, stroke) = switch (kind) {
-      'soft' => (brand, brandSoft, Colors.transparent),
+      'soft' || 'secondary' => (brand, brandSoft, Colors.transparent),
       'danger' => (danger, card, dangerBorder),
-      'secondary' => (text, card, border),
       'link' => (link, Colors.transparent, Colors.transparent),
       _ => (card, primary, Colors.transparent),
     };
     final small = size == 'sm';
-    final radius = kind == 'link'
-        ? 0.0
-        : small
-        ? 12.0
-        : 16.0;
-    final button = _Pressable(
+    final radius = small ? 12.0 : 16.0;
+    final button = Pressable(
       label: loading
           ? '${accessibilityLabel ?? title}, đang xử lý'
           : accessibilityLabel ?? title,
@@ -48,9 +43,7 @@ class Button extends StatelessWidget {
       child: Opacity(
         opacity: off ? 0.45 : 1,
         child: Container(
-          constraints: BoxConstraints(
-            minHeight: small || kind == 'link' ? 44 : 52,
-          ),
+          constraints: BoxConstraints(minHeight: small ? 44 : 52),
           padding: EdgeInsets.symmetric(
             horizontal: kind == 'link'
                 ? 4
@@ -78,17 +71,18 @@ class Button extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     spacing: 8,
                     children: [
-                      if (icon != null)
-                        Icon(icon, size: small ? 16 : 19, color: fg),
+                      if (icon != null) Icon(icon, size: 20, color: fg),
                       Flexible(
                         child: Text(
                           title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             color: fg,
                             fontWeight: kind == 'primary'
                                 ? FontWeight.w700
                                 : FontWeight.w600,
-                            fontSize: kind == 'link' || small ? 15 : 16,
+                            fontSize: small ? 15 : 16,
                             letterSpacing: kind == 'primary' ? 0.1 : 0,
                           ),
                         ),
@@ -114,11 +108,57 @@ class Button extends StatelessWidget {
           ? Align(
               alignment: Alignment.centerLeft,
               heightFactor: 1,
+              widthFactor: 1,
               child: button,
             )
           : button,
     );
   }
+}
+
+/// Equal-size actions, stacked when their labels need more room.
+class ButtonGroup extends StatelessWidget {
+  const ButtonGroup({super.key, required this.children, this.spacing = 12});
+  final List<Button> children;
+  final double spacing;
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) {
+      final cellWidth =
+          (constraints.maxWidth - spacing * (children.length - 1)) /
+          children.length;
+      final stack = children.any((button) {
+        final painter = TextPainter(
+          text: TextSpan(
+            text: button.title,
+            style: TextStyle(
+              fontSize: button.size == 'sm' ? 15 : 16,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          textDirection: Directionality.of(context),
+          textScaler: MediaQuery.textScalerOf(context),
+          maxLines: 1,
+        )..layout();
+        final needed = painter.width + 40 + (button.icon == null ? 0 : 28);
+        painter.dispose();
+        return cellWidth < needed || cellWidth < 48;
+      });
+      return stack
+          ? Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              spacing: spacing,
+              children: children,
+            )
+          : m.Row(
+              spacing: spacing,
+              children: [
+                for (final button in children) Expanded(child: button),
+              ],
+            );
+    },
+  );
 }
 
 class IconButton extends StatelessWidget {
@@ -142,7 +182,7 @@ class IconButton extends StatelessWidget {
       _ => (card, text),
     };
     final hasBadge = badge != null && badge != 0;
-    return _Pressable(
+    return Pressable(
       label: hasBadge ? '$label, $badge mới' : label,
       onPress: onPress,
       pressedOpacity: 0.7,
@@ -160,7 +200,6 @@ class IconButton extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: background,
                     shape: BoxShape.circle,
-                    boxShadow: tone == 'plain' ? cardShadow : null,
                   ),
                   child: Icon(icon, size: 21, color: fg),
                 ),
@@ -451,7 +490,7 @@ class _SearchBarState extends State<SearchBar> {
                   button: true,
                   label: 'Xoá từ khoá',
                   onTap: () => widget.onChangeText(''),
-                  child: _Pressable(
+                  child: Pressable(
                     onPress: () => widget.onChangeText(''),
                     child: const SizedBox(
                       width: 48,
@@ -475,7 +514,7 @@ class _SearchBarState extends State<SearchBar> {
               ? 'Bộ lọc, đang bật ${widget.filterCount}'
               : 'Bộ lọc',
           onTap: widget.onFilter,
-          child: _Pressable(
+          child: Pressable(
             onPress: widget.onFilter,
             child: ExcludeSemantics(
               child: SizedBox(
@@ -546,7 +585,7 @@ class Chip extends StatelessWidget {
         button: informational ? null : true,
         selected: informational ? null : active,
         enabled: informational ? null : onPress != null,
-        child: _Pressable(
+        child: Pressable(
           onPress: informational ? null : onPress,
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 5),
@@ -576,10 +615,13 @@ class Chip extends StatelessWidget {
                             color: color,
                           ),
                         ),
-                      if (icon != null) Icon(icon, size: 15, color: fg),
+                      if (icon ?? trailing case final leading?)
+                        Icon(leading, size: 20, color: fg),
                       Flexible(
                         child: Text(
                           label,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             color: fg,
                             fontSize: 14,
@@ -589,7 +631,6 @@ class Chip extends StatelessWidget {
                           ),
                         ),
                       ),
-                      if (trailing != null) Icon(trailing, size: 15, color: fg),
                     ],
                   ),
                 ),
@@ -656,7 +697,7 @@ class Segmented<T extends String> extends StatelessWidget {
           child: Semantics(
             selected: active,
             button: true,
-            child: _Pressable(
+            child: Pressable(
               onPress: () => onChange(o.key),
               child: Padding(
                 padding: const EdgeInsets.symmetric(vertical: 4),

@@ -207,6 +207,9 @@ class _AccountCardState extends ConsumerState<_AccountCard>
             child: const Text('Huỷ'),
           ),
           TextButton(
+            style: action == 'lock'
+                ? TextButton.styleFrom(foregroundColor: c.danger)
+                : null,
             onPressed: () => Navigator.pop(ctx, true),
             child: Text(accountActionLabel[action]!),
           ),

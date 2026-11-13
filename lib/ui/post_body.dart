@@ -6,6 +6,7 @@ import 'package:flutter/gestures.dart';
 import 'package:material_ui/material_ui.dart';
 
 import 'in_app.dart';
+import 'kit.dart' show Pressable;
 import 'post_html.dart';
 import 'theme.dart' as c;
 
@@ -28,8 +29,9 @@ class PostBody extends StatelessWidget {
         children: [
           ClipRRect(
             borderRadius: BorderRadius.circular(12),
-            child: InkWell(
-              onTap: () => Navigator.of(context).push<void>(
+            child: Pressable(
+              label: 'Xem ảnh',
+              onPress: () => Navigator.of(context).push<void>(
                 MaterialPageRoute(
                   builder: (_) => Scaffold(
                     appBar: AppBar(title: const Text('Xem ảnh')),
@@ -125,9 +127,14 @@ class _Spans extends StatefulWidget {
 }
 
 class _SpansState extends State<_Spans> {
-  final recognizers = <TapGestureRecognizer>[];
+  final recognizers = <String, TapGestureRecognizer>{};
+  String? pressedLink;
+  void _pressed(String? href) {
+    if (mounted) setState(() => pressedLink = href);
+  }
+
   void _clear() {
-    for (final r in recognizers) {
+    for (final r in recognizers.values) {
       r.dispose();
     }
     recognizers.clear();
@@ -135,10 +142,29 @@ class _SpansState extends State<_Spans> {
 
   TapGestureRecognizer? _link(Object? href) {
     if (href is! String) return null;
-    final recognizer = TapGestureRecognizer()
-      ..onTap = () => openInApp(context, href);
-    recognizers.add(recognizer);
-    return recognizer;
+    return recognizers.putIfAbsent(
+      href,
+      () => TapGestureRecognizer()
+        ..onTapDown = (_) {
+          _pressed(href);
+        }
+        ..onTapUp = (_) {
+          _pressed(null);
+        }
+        ..onTapCancel = () {
+          _pressed(null);
+        }
+        ..onTap = () => openInApp(context, href),
+    );
+  }
+
+  @override
+  void didUpdateWidget(_Spans oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!identical(oldWidget.spans, widget.spans)) {
+      _clear();
+      pressedLink = null;
+    }
   }
 
   @override
@@ -149,7 +175,6 @@ class _SpansState extends State<_Spans> {
 
   @override
   Widget build(BuildContext context) {
-    _clear();
     return Text.rich(
       TextSpan(
         children: [
@@ -161,6 +186,10 @@ class _SpansState extends State<_Spans> {
                 fontWeight: span['bold'] == true ? FontWeight.w700 : null,
                 fontStyle: span['italic'] == true ? FontStyle.italic : null,
                 color: span['href'] != null ? c.link : null,
+                backgroundColor:
+                    pressedLink != null && span['href'] == pressedLink
+                    ? c.brandSoft
+                    : null,
                 decoration: span['href'] != null
                     ? TextDecoration.underline
                     : null,

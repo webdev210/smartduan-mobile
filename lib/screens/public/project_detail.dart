@@ -18,6 +18,7 @@ import '../../ui/map_embed.dart';
 import '../../ui/overview.dart';
 import '../../ui/project_card.dart';
 import '../../ui/project_filter.dart';
+import '../../ui/project_facts.dart';
 import '../../ui/theme.dart' as c;
 import '../../ui/tour360.dart';
 import '../../ui/favorite_button.dart';
@@ -55,39 +56,55 @@ class ProjectDetailScreen extends ConsumerWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
               color: c.card,
-              child: Row(
-                spacing: 16,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const kit.Muted(
-                          'Giá bán',
-                          style: TextStyle(fontSize: 12),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final stacked =
+                      constraints.maxWidth < 340 ||
+                      MediaQuery.textScalerOf(context).scale(1) > 1.3;
+                  return Wrap(
+                    spacing: 16,
+                    runSpacing: 8,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      SizedBox(
+                        width: stacked
+                            ? constraints.maxWidth
+                            : (constraints.maxWidth - 16) / 3,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const kit.Muted(
+                              'Giá bán',
+                              style: TextStyle(fontSize: 12),
+                            ),
+                            Text(
+                              p == null
+                                  ? '…'
+                                  : priceLabel(
+                                      p.priceFrom,
+                                    ).replaceFirst(RegExp(r'^Giá từ '), 'từ '),
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
                         ),
-                        Text(
-                          p == null
-                              ? '…'
-                              : priceLabel(p.priceFrom)
-                                    .replaceFirst(RegExp(r'^Giá từ '), 'từ '),
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
-                          ),
+                      ),
+                      SizedBox(
+                        width: stacked
+                            ? constraints.maxWidth
+                            : (constraints.maxWidth - 16) * 2 / 3,
+                        child: kit.Button(
+                          icon: Ionicons.lockOpenOutline,
+                          title: 'Xem bảng hàng',
+                          onPress: () =>
+                              _openBoard(context, ref, signedIn, p?.id),
                         ),
-                      ],
-                    ),
-                  ),
-                  Expanded(
-                    flex: 2,
-                    child: kit.Button(
-                      icon: Ionicons.lockOpenOutline,
-                      title: 'Xem bảng hàng',
-                      onPress: () => _openBoard(context, ref, signedIn, p?.id),
-                    ),
-                  ),
-                ],
+                      ),
+                    ],
+                  );
+                },
               ),
             ),
           ],
@@ -212,81 +229,46 @@ class _Detail extends ConsumerWidget {
               video.caption ?? 'Video dự án',
             ),
           ),
-        if (facts.isNotEmpty)
-          kit.Card(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              spacing: 14,
-              children: [
-                for (final (label, value) in facts)
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      spacing: 4,
-                      children: [
-                        kit.Muted(label, style: const TextStyle(fontSize: 12)),
-                        kit.Body(value),
-                      ],
-                    ),
-                  ),
-              ],
-            ),
-          ),
+        if (facts.isNotEmpty) ProjectFacts(entries: facts),
         if (p.developer case final d?)
           kit.Card(
             accessibilityLabel: 'Chủ đầu tư ${d.name}, xem các dự án khác',
             onPress: () =>
                 openDeveloper(context, id: d.id, name: d.name, slug: d.slug),
-            child: LayoutBuilder(
-              builder: (context, constraints) => Flex(
-                mainAxisSize: MainAxisSize.min,
-                direction:
-                    constraints.maxWidth /
-                            MediaQuery.textScalerOf(context).scale(1) <
-                        400
-                    ? Axis.vertical
-                    : Axis.horizontal,
-                spacing: 12,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (mediaUrl(d.logoUrl) case final logo?)
-                    AppNetworkImage(
-                      logo,
-                      width: 40,
-                      height: 40,
-                      fit: BoxFit.contain,
-                      errorBuilder: (_, _, _) => const Icon(
-                        Ionicons.businessOutline,
-                        size: 20,
-                        color: c.muted,
-                      ),
-                    )
-                  else
-                    const SizedBox(
-                      width: 40,
-                      height: 40,
-                      child: Icon(
-                        Ionicons.businessOutline,
-                        size: 20,
-                        color: c.muted,
-                      ),
+            child: Row(
+              spacing: 12,
+              children: [
+                if (mediaUrl(d.logoUrl) case final logo?)
+                  AppNetworkImage(
+                    logo,
+                    width: 40,
+                    height: 40,
+                    fit: BoxFit.contain,
+                    errorBuilder: (_, _, _) => const Icon(
+                      Ionicons.businessOutline,
+                      size: 20,
+                      color: c.muted,
                     ),
-                  Flexible(
-                    fit: FlexFit.loose,
-                    flex: 1,
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const kit.Muted('Chủ đầu tư'),
-                        kit.Body(d.name),
-                      ],
-                    ),
+                  )
+                else
+                  const Icon(
+                    Ionicons.businessOutline,
+                    size: 24,
+                    color: c.muted,
                   ),
-                  const Text('Dự án khác', style: TextStyle(color: c.link)),
-                  const Icon(Ionicons.chevronForward, size: 16, color: c.link),
-                ],
-              ),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    spacing: 4,
+                    children: [
+                      const kit.Muted('Chủ đầu tư'),
+                      kit.Body(d.name),
+                      const Text('Dự án khác', style: TextStyle(color: c.link)),
+                    ],
+                  ),
+                ),
+                const Icon(Ionicons.chevronForward, size: 20, color: c.link),
+              ],
             ),
           ),
         if (overview.summary != null || overview.usp.isNotEmpty)
@@ -300,44 +282,10 @@ class _Detail extends ConsumerWidget {
         if (overview.specs.isNotEmpty)
           kit.Section(
             title: 'Thông tin dự án',
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final columns =
-                    constraints.maxWidth /
-                            MediaQuery.textScalerOf(context).scale(1) <
-                        400
-                    ? 1
-                    : 2;
-                return Column(
-                  spacing: 10,
-                  children: [
-                    for (var i = 0; i < overview.specs.length; i += columns)
-                      IntrinsicHeight(
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          spacing: 10,
-                          children: [
-                            for (final spec
-                                in overview.specs.skip(i).take(columns))
-                              Expanded(
-                                child: kit.Card(
-                                  children: [
-                                    kit.Muted(
-                                      spec.label,
-                                      style: const TextStyle(fontSize: 12),
-                                    ),
-                                    kit.Body(spec.value),
-                                  ],
-                                ),
-                              ),
-                            if (columns == 2 && i + 1 == overview.specs.length)
-                              const Expanded(child: SizedBox()),
-                          ],
-                        ),
-                      ),
-                  ],
-                );
-              },
+            child: ProjectFacts(
+              entries: [
+                for (final spec in overview.specs) (spec.label, spec.value),
+              ],
             ),
           ),
         if (amenities.isNotEmpty)
@@ -362,8 +310,8 @@ class _Detail extends ConsumerWidget {
                     child: Semantics(
                       button: true,
                       label: f.name,
-                      child: GestureDetector(
-                        onTap: () => openInApp(context, f.url!, f.name),
+                      child: kit.Pressable(
+                        onPress: () => openInApp(context, f.url!, f.name),
                         child: Column(
                           spacing: 6,
                           children: [
@@ -393,26 +341,26 @@ class _Detail extends ConsumerWidget {
               const kit.Muted(
                 'Giá và bảng hàng từng căn hiển thị sau khi đăng nhập.',
               ),
-              _PreviewList(
-                children: [
-                  for (final d in p.subdivisions!)
-                    kit.Card(
-                      padding: EdgeInsets.zero,
-                      children: [
-                        if (mediaUrl(d.coverUrl) case final cover?)
-                          AspectRatio(
-                            aspectRatio: 16 / 9,
-                            child: AppNetworkImage(
-                              cover,
-                              fit: BoxFit.cover,
-                              semanticLabel: d.name,
-                              errorBuilder: (_, _, _) =>
-                                  const ColoredBox(color: c.quiet),
+              kit.Card(
+                child: _PreviewList(
+                  children: [
+                    for (final d in p.subdivisions!)
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        spacing: 8,
+                        children: [
+                          if (mediaUrl(d.coverUrl) case final cover?)
+                            AspectRatio(
+                              aspectRatio: 16 / 9,
+                              child: AppNetworkImage(
+                                cover,
+                                fit: BoxFit.cover,
+                                semanticLabel: d.name,
+                                errorBuilder: (_, _, _) =>
+                                    const ColoredBox(color: c.quiet),
+                              ),
                             ),
-                          ),
-                        Padding(
-                          padding: const EdgeInsets.all(14),
-                          child: Column(
+                          Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             spacing: 4,
                             children: [
@@ -421,10 +369,10 @@ class _Detail extends ConsumerWidget {
                                 _PreviewText(description),
                             ],
                           ),
-                        ),
-                      ],
-                    ),
-                ],
+                        ],
+                      ),
+                  ],
+                ),
               ),
             ],
           ),
@@ -493,28 +441,7 @@ class _Detail extends ConsumerWidget {
             ),
           ),
         if (overview.source case final source?)
-          kit.Card(
-            onPress: () => openInApp(context, source, 'Nguồn thông tin dự án'),
-            child: Row(
-              spacing: 10,
-              children: [
-                const Icon(Ionicons.globeOutline, size: 20, color: c.muted),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const kit.Body('Nguồn thông tin dự án'),
-                      kit.Muted(
-                        source.replaceFirst(RegExp(r'^https?://'), ''),
-                        numberOfLines: 1,
-                      ),
-                    ],
-                  ),
-                ),
-                const Icon(Ionicons.openOutline, size: 16, color: c.subtle),
-              ],
-            ),
-          ),
+          ProjectSourcePreview(name: p.name, source: source, cover: p.coverUrl),
         if (!signedIn)
           kit.Card(
             children: [
@@ -550,6 +477,7 @@ class _Detail extends ConsumerWidget {
                 'Xem rổ hàng, quỹ căn và tài liệu nội bộ nếu dự án đã phân bổ cho bạn.',
               ),
               kit.Button(
+                kind: 'secondary',
                 title: 'Mở dự án nội bộ',
                 onPress: () => _openBoard(context, ref, true, p.id),
               ),
@@ -557,28 +485,106 @@ class _Detail extends ConsumerWidget {
               const kit.Muted(
                 'Dành cho chuyên viên kinh doanh. Đăng nhập để xem rổ hàng, quỹ căn và tài liệu nội bộ của dự án.',
               ),
-              Row(
+              kit.ButtonGroup(
                 spacing: 10,
                 children: [
-                  Expanded(
-                    child: kit.Button(
-                      title: 'Đăng nhập',
-                      onPress: () => _openBoard(context, ref, false, p.id),
-                    ),
+                  kit.Button(
+                    kind: 'secondary',
+                    title: 'Đăng nhập',
+                    onPress: () => _openBoard(context, ref, false, p.id),
                   ),
-                  Expanded(
-                    child: kit.Button(
-                      title: 'Đăng ký sale',
-                      kind: 'secondary',
-                      onPress: () {
-                        ref.read(publicApiProvider).trackCtaClick(p.id);
-                        context.push('/dang-ky');
-                      },
-                    ),
+                  kit.Button(
+                    title: 'Đăng ký sale',
+                    kind: 'link',
+                    onPress: () {
+                      ref.read(publicApiProvider).trackCtaClick(p.id);
+                      context.push('/dang-ky');
+                    },
                   ),
                 ],
               ),
             ],
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class ProjectSourcePreview extends StatelessWidget {
+  const ProjectSourcePreview({
+    super.key,
+    required this.name,
+    required this.source,
+    this.cover,
+  });
+  final String name, source;
+  final String? cover;
+
+  @override
+  Widget build(BuildContext context) {
+    final host = Uri.tryParse(source)?.host ?? '';
+    final image = mediaUrl(cover);
+    return kit.Card(
+      accessibilityLabel: 'Mở trang giới thiệu dự án $name trên $host',
+      onPress: () => openInApp(context, source, 'Nguồn thông tin dự án'),
+      children: [
+        if (image != null)
+          ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: AspectRatio(
+              aspectRatio: 16 / 9,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  AppNetworkImage(
+                    image,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, _, _) => const ColoredBox(color: c.quiet),
+                  ),
+                  const DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.center,
+                        end: Alignment.bottomCenter,
+                        colors: [Colors.transparent, Colors.black38],
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    right: 8,
+                    bottom: 8,
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: c.card,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(
+                        Ionicons.openOutline,
+                        size: 16,
+                        color: c.brand,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        Row(
+          spacing: 12,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                spacing: 4,
+                children: [
+                  const kit.Body('Xem trang giới thiệu dự án'),
+                  kit.Muted(host, numberOfLines: 1),
+                ],
+              ),
+            ),
+            const Icon(Ionicons.openOutline, size: 20, color: c.link),
           ],
         ),
       ],
