@@ -858,7 +858,7 @@ void main() {
         if (status == SessionStatus.loading) {
           expect(find.byType(BrandSplash), findsOneWidget, reason: key);
           expect(
-            find.image(const AssetImage('assets/splash.webp')),
+            find.image(const AssetImage('assets/splash-bg.jpg')),
             findsOneWidget,
           );
           expect(find.byType(Placeholder), findsNothing);

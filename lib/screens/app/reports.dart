@@ -245,37 +245,41 @@ class _ReportBlockState<T> extends State<_ReportBlock<T>> {
     }
     return Section(
       title: widget.title,
-      child: AsyncView(
-        value: widget.value,
-        onRetry: widget.retry,
-        builder: (data) {
-          final rows = widget.builder(data);
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              if (rows.length > 5)
-                Muted(
-                  '${rows.length} dòng · ${expanded ? 'Vuốt để xem tất cả' : 'Hiển thị 5 dòng đầu'}',
-                ),
-              if (expanded && rows.length > 5)
-                SizedBox(
-                  height: 360,
-                  child: ListView.builder(
-                    itemCount: rows.length,
-                    itemBuilder: (_, i) => rows[i],
+      child: Card(
+        child: AsyncView(
+          value: widget.value,
+          onRetry: widget.retry,
+          builder: (data) {
+            final rows = widget.builder(data);
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (rows.length > 5)
+                  Muted(
+                    '${rows.length} dòng · ${expanded ? 'Vuốt để xem tất cả' : 'Hiển thị 5 dòng đầu'}',
                   ),
-                )
-              else
-                ...rows.take(5),
-              if (rows.length > 5)
-                Button(
-                  kind: 'link',
-                  title: expanded ? 'Thu gọn' : 'Xem thêm (${rows.length - 5})',
-                  onPress: () => setState(() => expanded = !expanded),
-                ),
-            ],
-          );
-        },
+                if (expanded && rows.length > 5)
+                  SizedBox(
+                    height: 360,
+                    child: ListView.builder(
+                      itemCount: rows.length,
+                      itemBuilder: (_, i) => rows[i],
+                    ),
+                  )
+                else
+                  ...rows.take(5),
+                if (rows.length > 5)
+                  Button(
+                    kind: 'link',
+                    title: expanded
+                        ? 'Thu gọn'
+                        : 'Xem thêm (${rows.length - 5})',
+                    onPress: () => setState(() => expanded = !expanded),
+                  ),
+              ],
+            );
+          },
+        ),
       ),
     );
   }

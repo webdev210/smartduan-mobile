@@ -42,7 +42,7 @@ void main() {
     const RegisterScreen(),
     const ForgotPasswordScreen(),
   ]) {
-    testWidgets('16 ${screen.runtimeType} fields align to the 20dp gutter', (
+    testWidgets('16 ${screen.runtimeType} fields sit inside the RN form card', (
       tester,
     ) async {
       tester.view.physicalSize = const Size(390, 844);
@@ -52,8 +52,9 @@ void main() {
       addTearDown(auth.client.close);
       await tester.pumpWidget(authApp(screen, auth, TestSession()));
       await tester.pumpAndSettle();
-      expect(tester.getTopLeft(find.byType(TextField).first).dx, 20);
-      expect(tester.getSize(find.byType(TextField).first).width, 350);
+      // 20dp gutter + 1dp card border + 20dp card padding.
+      expect(tester.getTopLeft(find.byType(TextField).first).dx, 41);
+      expect(tester.getSize(find.byType(TextField).first).width, 308);
     });
   }
 
@@ -67,20 +68,11 @@ void main() {
     expect(find.bySemanticsLabel('Kiểm tra kết nối'), findsOneWidget);
   });
 
-  testWidgets('7 guest promotions are flat brand surfaces with gold accents', (
-    tester,
-  ) async {
+  testWidgets('7 guest promotions use the RN wine hero', (tester) async {
     await mountHome(tester, FakeHttp((call) => homeReply(call.path)));
     await tester.tap(find.text('Menu'));
     await tester.pumpAndSettle();
-    final promos = tester
-        .widgetList<kit.Card>(find.byType(kit.Card))
-        .where((card) => card.style?.color == c.brandDeep);
-    expect(promos, hasLength(2));
-    for (final card in promos) {
-      expect(card.style?.gradient, isNull);
-      expect((card.style?.border as Border?)?.left.color, c.gold);
-    }
+    expect(find.byType(kit.Hero), findsWidgets);
   });
 
   testWidgets('29 public home uses the shared bottom bar', (tester) async {

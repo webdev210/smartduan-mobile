@@ -42,9 +42,7 @@ class _DeveloperScreenState extends ConsumerState<DeveloperScreen> {
               value: dev,
               onRetry: () =>
                   ref.invalidate(fetchPublicDeveloperProvider(widget.slug)),
-              builder: (d) => Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                spacing: 12,
+              builder: (d) => kit.Card(
                 children: [
                   Row(
                     spacing: 14,
@@ -65,6 +63,19 @@ class _DeveloperScreenState extends ConsumerState<DeveloperScreen> {
                       Expanded(child: kit.H1(d.name)),
                     ],
                   ),
+                  if (d.badges.isNotEmpty)
+                    kit.Chips(
+                      children: [
+                        for (final b in d.badges)
+                          kit.Chip(
+                            icon: Ionicons.ribbonOutline,
+                            label: b,
+                            informational: true,
+                          ),
+                      ],
+                    ),
+                  if (d.description case final description?)
+                    kit.Body(description),
                   if (d.website case final website?)
                     kit.Button(
                       kind: 'link',
@@ -72,9 +83,6 @@ class _DeveloperScreenState extends ConsumerState<DeveloperScreen> {
                       title: 'Website chủ đầu tư',
                       onPress: () => openInApp(context, website, d.name),
                     ),
-                  if (d.badges.isNotEmpty) kit.Muted(d.badges.join(' · ')),
-                  if (d.description case final description?)
-                    kit.Body(description),
                 ],
               ),
             ),
@@ -108,12 +116,12 @@ class _DeveloperScreenState extends ConsumerState<DeveloperScreen> {
         sliver: SliverMainAxisGroup(
           slivers: [
             SliverToBoxAdapter(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                spacing: 12,
+              child: kit.Section(
+                title: 'Dự án',
+                eyebrow: '${page.total} dự án',
                 children: [
-                  const kit.H2('Dự án'),
-                  kit.Muted('Hiển thị ${loaded.length}/${page.total} dự án'),
+                  if (loaded.length < page.total)
+                    kit.Muted('Hiển thị ${loaded.length}/${page.total} dự án'),
                   if (loaded.length > 4)
                     kit.SearchBar(
                       value: query,

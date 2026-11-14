@@ -192,27 +192,22 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('photo splash keeps app, tagline, brand and accessible label', (
+  // User request 13/11: splash shows only the logo and app name on their photo.
+  testWidgets('photo splash keeps only app name and accessible label', (
     t,
   ) async {
-    // Do not settle the repeating spinner.
     container = ProviderContainer.test();
     router = GoRouter(
       routes: [GoRoute(path: '/', builder: (_, _) => const BrandSplash())],
     );
     await t.pumpWidget(MaterialApp.router(routerConfig: router));
     expect(find.text('Smart Dự Án'), findsOneWidget);
-    expect(find.text('SMARTLAND'), findsOneWidget);
-    expect(find.image(const AssetImage('assets/splash.webp')), findsOneWidget);
+    expect(find.text('SMARTLAND'), findsNothing);
     expect(
-      find.byWidgetPredicate(
-        (widget) =>
-            widget is Text &&
-            widget.data?.replaceAll('\u00a0', ' ') ==
-                'Bảng hàng & dự án bất động sản trong tay bạn',
-      ),
+      find.image(const AssetImage('assets/splash-bg.jpg')),
       findsOneWidget,
     );
+    expect(find.textContaining('Bảng hàng'), findsNothing);
     expect(find.bySemanticsLabel('Đang mở Smart Dự Án'), findsOneWidget);
   });
   testWidgets('intro remains on for 1400ms', (t) async {

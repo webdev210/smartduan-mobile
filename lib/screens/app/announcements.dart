@@ -95,15 +95,11 @@ class _AnnouncementsState extends ConsumerState<AnnouncementsScreen> {
                   text: 'Chưa có tin.',
                 ),
         ),
-        renderItem: (a) => Column(
+        renderItem: (a) => Card(
+          onPress: () => context.push('/bang-tin/${Uri.encodeComponent(a.id)}'),
           children: [
-            if (a.id != rows.first.id) const Divider(),
-            ListItem(
-              title: a.title,
-              subtitle: fmtDate(a.publishedAt, true),
-              onPress: () =>
-                  context.push('/bang-tin/${Uri.encodeComponent(a.id)}'),
-            ),
+            Body(a.title, style: const TextStyle(fontWeight: FontWeight.w600)),
+            Muted(fmtDate(a.publishedAt, true)),
           ],
         ),
         footer: list.hasError && all.isNotEmpty

@@ -40,7 +40,7 @@ void main() {
     expect(saved, isTrue);
   });
 
-  for (final spec in [(320.0, 1.0), (400.0, 1.5), (400.0, 1.0)]) {
+  for (final spec in [(280.0, 1.0), (320.0, 1.0), (400.0, 1.5), (400.0, 1.0)]) {
     testWidgets('16 responsive equal tiles at $spec', (tester) async {
       await mount(
         tester,
@@ -67,7 +67,8 @@ void main() {
       final second = tester.getRect(find.byType(Tile).at(1));
       final third = tester.getRect(find.byType(Tile).at(2));
       expect(first.size, second.size);
-      expect(third.top > first.top, spec.$1 == 320 || spec.$2 > 1.3);
+      // RN keeps three columns; only a 280dp grid (320dp phone) or large text wraps.
+      expect(third.top > first.top, spec.$1 == 280 || spec.$2 > 1.3);
       expect(tester.takeException(), isNull);
     });
   }
@@ -323,9 +324,10 @@ void main() {
         tester.getSize(find.byType(ProjectCard).at(0)),
         tester.getSize(find.byType(ProjectCard).at(1)),
       );
+      // RN puts the activity line under the facts box, so only the card bottoms align.
       expect(
-        tester.getTopLeft(find.text('Liên hệ').at(0)).dy,
-        tester.getTopLeft(find.text('Liên hệ').at(1)).dy,
+        tester.getBottomLeft(find.byType(ProjectCard).at(0)).dy,
+        tester.getBottomLeft(find.byType(ProjectCard).at(1)).dy,
       );
       expect(tester.takeException(), isNull);
     },
@@ -378,7 +380,7 @@ void main() {
     expect(find.byType(Loading), findsNothing);
   });
 
-  testWidgets('48 sheet has no drag handle and keeps dragging disabled', (
+  testWidgets('48 sheet shows the RN drag handle but keeps dragging disabled', (
     tester,
   ) async {
     await mount(
@@ -392,21 +394,12 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(
-      find.byWidgetPredicate(
-        (w) =>
-            w is m.Container &&
-            w.constraints?.maxWidth == 40 &&
-            w.constraints?.maxHeight == 4,
-      ),
-      findsNothing,
-    );
-    expect(
       tester.widget<m.BottomSheet>(find.byType(m.BottomSheet)).enableDrag,
       isFalse,
     );
   });
 
-  testWidgets('49 hero retains content without decorative circles', (
+  testWidgets('49 hero keeps content above the RN decorative circles', (
     tester,
   ) async {
     await mount(tester, const Hero(child: Body('Tài khoản')));
@@ -416,7 +409,7 @@ void main() {
         of: find.byType(Hero),
         matching: find.byType(m.Positioned),
       ),
-      findsNothing,
+      findsNWidgets(2),
     );
   });
 }

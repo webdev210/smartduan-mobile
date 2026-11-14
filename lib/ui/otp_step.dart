@@ -6,7 +6,7 @@ import '../api/errors.dart';
 import '../auth/messages.dart';
 import '../auth/session.dart';
 import 'captcha.dart';
-import 'kit.dart' show Screen, Notice, Field, Button;
+import 'kit.dart' show Screen, Notice, Card, Field, Button;
 
 class OtpStep extends ConsumerStatefulWidget {
   const OtpStep({
@@ -77,43 +77,46 @@ class _OtpStepState extends ConsumerState<OtpStep> {
   Widget build(BuildContext context) => Screen(
     children: [
       Notice(tone: 'success', text: _info),
-      Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        spacing: 14,
-        children: [
-          Field(
-            label: 'Mã xác thực (6 chữ số)',
-            value: _code,
-            onChangeText: (value) => setState(() => _code = value),
-            placeholder: '123456',
-            keyboardType: TextInputType.number,
-            autofillHints: const [AutofillHints.oneTimeCode],
-            maxLength: 6,
-            inputFormatters: [
-              FilteringTextInputFormatter.digitsOnly,
-              LengthLimitingTextInputFormatter(6),
-            ],
-            textInputAction: TextInputAction.go,
-            onSubmit: (_) => _verify(),
-          ),
-          if (_error != null) Notice(tone: 'error', text: _error!),
-          Button(
-            title: 'Xác thực và đăng nhập',
-            onPress: _verify,
-            loading: _busy,
-            disabled: _code.length != 6,
-          ),
-          if (_resending)
-            Captcha(action: 'register', onToken: _resend)
-          else
-            Button(
-              title: 'Gửi lại mã',
-              kind: 'secondary',
-              loading: _sending,
-              onPress: () => setState(() => _resending = true),
+      Card(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          spacing: 14,
+          children: [
+            Field(
+              label: 'Mã xác thực (6 chữ số)',
+              value: _code,
+              onChangeText: (value) => setState(() => _code = value),
+              placeholder: '123456',
+              keyboardType: TextInputType.number,
+              autofillHints: const [AutofillHints.oneTimeCode],
+              maxLength: 6,
+              inputFormatters: [
+                FilteringTextInputFormatter.digitsOnly,
+                LengthLimitingTextInputFormatter(6),
+              ],
+              textInputAction: TextInputAction.go,
+              onSubmit: (_) => _verify(),
             ),
-          Button(title: 'Quay lại', kind: 'link', onPress: widget.onBack),
-        ],
+            if (_error != null) Notice(tone: 'error', text: _error!),
+            Button(
+              title: 'Xác thực và đăng nhập',
+              onPress: _verify,
+              loading: _busy,
+              disabled: _code.length != 6,
+            ),
+            if (_resending)
+              Captcha(action: 'register', onToken: _resend)
+            else
+              Button(
+                title: 'Gửi lại mã',
+                kind: 'secondary',
+                loading: _sending,
+                onPress: () => setState(() => _resending = true),
+              ),
+            Button(title: 'Quay lại', kind: 'link', onPress: widget.onBack),
+          ],
+        ),
       ),
     ],
   );

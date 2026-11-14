@@ -83,8 +83,8 @@ class _StackGridState extends State<StackGrid> {
   @override
   Widget build(BuildContext context) {
     final scale = MediaQuery.textScalerOf(context);
-    final width = 120 * (scale.scale(14) / 14).clamp(1.0, double.infinity);
-    final height = 88 * (scale.scale(14) / 14).clamp(1.0, double.infinity);
+    final width = 84 * (scale.scale(11) / 11).clamp(1.0, double.infinity);
+    final height = 52 + (scale.scale(11) - 11).clamp(0.0, double.infinity) * 3;
     if (_rows.isEmpty) {
       const empty = Empty(text: 'Toà này chưa có căn nào bạn được xem.');
       return widget.sliver ? const SliverToBoxAdapter(child: empty) : empty;
@@ -266,7 +266,7 @@ class _StackGridState extends State<StackGrid> {
     final raw = widget.fundColors?[cell.fund];
     final dot = raw == null ? null : _hex(raw);
     return Opacity(
-      opacity: included ? 1 : 0.4,
+      opacity: included ? 1 : 0.2,
       child: Semantics(
         button: true,
         enabled: included,
@@ -301,7 +301,7 @@ class _StackGridState extends State<StackGrid> {
                               color: c.solidForeground(
                                 _hex(statusColor[cell.status] ?? '#9ca3af')!,
                               ),
-                              fontSize: 14,
+                              fontSize: 11,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
@@ -314,18 +314,7 @@ class _StackGridState extends State<StackGrid> {
                             color: c.solidForeground(
                               _hex(statusColor[cell.status] ?? '#9ca3af')!,
                             ),
-                            fontSize: 14,
-                          ),
-                        ),
-                        Text(
-                          included
-                              ? statusLabel[cell.status] ?? cell.status
-                              : 'Không khớp',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: c.solidForeground(
-                              _hex(statusColor[cell.status] ?? '#9ca3af')!,
-                            ),
+                            fontSize: 11,
                           ),
                         ),
                       ],

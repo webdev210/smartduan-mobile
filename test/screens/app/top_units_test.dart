@@ -1,7 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:smartduan/screens/app/top_units.dart';
-import 'package:smartduan/ui/kit.dart' as kit;
 
 import 'task_h_fakes.dart';
 
@@ -56,13 +55,8 @@ void main() {
     );
     expect(find.textContaining('Giá tốt · View sông'), findsOneWidget);
     final label = find.text('A101 · 400 tr');
-    final card = find
-        .ancestor(of: label, matching: find.byType(kit.ListItem))
-        .first;
-    expect(
-      tester.getTopLeft(label).dx - tester.getTopLeft(card).dx,
-      closeTo(16, 1),
-    );
+    // 20dp screen gutter + 16dp RN card padding.
+    expect(tester.getTopLeft(label).dx, closeTo(36, 1));
     expect(find.textContaining('50,5 m²'), findsOneWidget);
     await tester.enterText(find.byType(TextField), 'View song');
     await tester.pumpAndSettle();

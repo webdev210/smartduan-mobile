@@ -510,10 +510,13 @@ class Notice extends StatelessWidget {
           borderRadius: BorderRadius.circular(14),
         ),
         child: m.Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
           spacing: 10,
           children: [
-            Icon(icon, size: 18, color: fg),
+            Padding(
+              padding: const EdgeInsets.only(top: 1),
+              child: Icon(icon, size: 18, color: fg),
+            ),
             Expanded(
               child: Text(
                 text,
@@ -591,7 +594,15 @@ class Empty extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       spacing: 14,
       children: [
-        Icon(icon, size: 24, color: muted),
+        Container(
+          width: 68,
+          height: 68,
+          decoration: const BoxDecoration(
+            color: brandSoft,
+            shape: BoxShape.circle,
+          ),
+          child: Icon(icon, size: 30, color: brand),
+        ),
         Muted(
           text,
           textAlign: TextAlign.center,

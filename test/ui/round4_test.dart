@@ -32,7 +32,10 @@ void main() {
               matching: find.byType(m.DecoratedBox),
             )
             .first;
-        expect(tester.getSize(painted).height, small ? 48 : 52);
+        expect(
+          tester.getSize(painted).height,
+          small || kind == 'link' ? 48 : 52,
+        );
       }
     }
     await mount(

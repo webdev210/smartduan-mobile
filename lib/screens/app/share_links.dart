@@ -299,13 +299,14 @@ class _ShareLinksScreenState extends ConsumerState<ShareLinksScreen> {
   Widget _linkCard(ShareLink link) => kit.Card(
     key: ValueKey(link.id),
     children: [
-      Text(
-        link.revokedAt?.isNotEmpty == true
+      kit.Pill(
+        soft: true,
+        label: link.revokedAt?.isNotEmpty == true
             ? 'Đã thu hồi'
             : shareLinkIsDead(link)
             ? 'Hết hạn'
             : 'Còn hiệu lực',
-        style: TextStyle(color: shareLinkIsDead(link) ? c.muted : c.success),
+        color: shareLinkIsDead(link) ? c.muted : c.success,
       ),
       kit.Row(label: 'Tạo lúc', value: fmtDate(link.insertedAt, true)),
       kit.Row(

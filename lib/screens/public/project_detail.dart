@@ -23,7 +23,6 @@ import '../../ui/map_embed.dart';
 import '../../ui/overview.dart';
 import '../../ui/project_card.dart';
 import '../../ui/project_filter.dart';
-import '../../ui/project_facts.dart';
 import '../../ui/theme.dart' as c;
 import '../../ui/tour360.dart';
 import '../../ui/favorite_button.dart';
@@ -137,8 +136,8 @@ class ProjectDetailScreen extends ConsumerWidget {
                             ? constraints.maxWidth
                             : (constraints.maxWidth - 16) * 2 / 3,
                         child: kit.Button(
-                          title: directBoard ? 'Bảng hàng' : 'Xem bảng hàng',
                           icon: Ionicons.lockOpenOutline,
+                          title: directBoard ? 'Bảng hàng' : 'Xem bảng hàng',
                           disabled: p == null,
                           onPress: () => directBoard
                               ? context.push(
@@ -280,7 +279,26 @@ class _Detail extends ConsumerWidget {
               video.caption ?? 'Video dự án',
             ),
           ),
-        if (facts.isNotEmpty) ProjectFacts(entries: facts),
+        if (facts.isNotEmpty)
+          kit.Card(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              spacing: 14,
+              children: [
+                for (final (label, value) in facts)
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      spacing: 4,
+                      children: [
+                        kit.Muted(label, style: const TextStyle(fontSize: 12)),
+                        kit.Body(value),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+          ),
         if (p.developer case final d?)
           kit.Card(
             accessibilityLabel: 'Chủ đầu tư ${d.name}, xem các dự án khác',
@@ -289,19 +307,40 @@ class _Detail extends ConsumerWidget {
             child: Row(
               spacing: 12,
               children: [
+                if (mediaUrl(d.logoUrl) case final logo?)
+                  AppNetworkImage(
+                    logo,
+                    width: 40,
+                    height: 40,
+                    fit: BoxFit.contain,
+                    errorBuilder: (_, _, _) => const Icon(
+                      Ionicons.businessOutline,
+                      size: 20,
+                      color: c.muted,
+                    ),
+                  )
+                else
+                  const SizedBox(
+                    width: 40,
+                    height: 40,
+                    child: Icon(
+                      Ionicons.businessOutline,
+                      size: 20,
+                      color: c.muted,
+                    ),
+                  ),
                 Expanded(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    spacing: 4,
-                    children: [
-                      const kit.Muted('Chủ đầu tư'),
-                      DeveloperIdentity(name: d.name, logo: d.logoUrl),
-                      const Text('Dự án khác', style: TextStyle(color: c.link)),
-                    ],
+                    children: [const kit.Muted('Chủ đầu tư'), kit.Body(d.name)],
                   ),
                 ),
-                const Icon(Ionicons.chevronForward, size: 20, color: c.link),
+                // Flexible: at large text the link shares the row instead of squeezing the name.
+                const Flexible(
+                  child: Text('Dự án khác', style: TextStyle(color: c.link)),
+                ),
+                const Icon(Ionicons.chevronForward, size: 16, color: c.link),
               ],
             ),
           ),
@@ -324,10 +363,26 @@ class _Detail extends ConsumerWidget {
         if (overview.specs.isNotEmpty)
           kit.Section(
             title: 'Thông tin dự án',
-            child: ProjectFacts(
-              entries: [
-                for (final spec in overview.specs) (spec.label, spec.value),
-              ],
+            child: LayoutBuilder(
+              builder: (_, constraints) => Wrap(
+                spacing: 10,
+                runSpacing: 10,
+                children: [
+                  for (final spec in overview.specs)
+                    SizedBox(
+                      width: (constraints.maxWidth - 10) / 2,
+                      child: kit.Card(
+                        children: [
+                          kit.Muted(
+                            spec.label,
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                          kit.Body(spec.value),
+                        ],
+                      ),
+                    ),
+                ],
+              ),
             ),
           ),
         if (amenities.isNotEmpty)
@@ -400,9 +455,8 @@ class _Detail extends ConsumerWidget {
               _PreviewList(
                 children: [
                   for (final d in p.subdivisions!)
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      spacing: 8,
+                    kit.Card(
+                      padding: EdgeInsets.zero,
                       children: [
                         if (mediaUrl(d.coverUrl) case final cover?)
                           AspectRatio(
@@ -415,21 +469,17 @@ class _Detail extends ConsumerWidget {
                                   const ColoredBox(color: c.quiet),
                             ),
                           ),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          spacing: 4,
-                          children: [
-                            kit.Body(d.name),
-                            if (d.description case final description?)
-                              PreviewText(
-                                description,
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  height: 1.6,
-                                  color: c.text,
-                                ),
-                              ),
-                          ],
+                        Padding(
+                          padding: const EdgeInsets.all(14),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            spacing: 4,
+                            children: [
+                              kit.Body(d.name),
+                              if (d.description case final description?)
+                                PreviewText(description, style: _muted),
+                            ],
+                          ),
                         ),
                       ],
                     ),
@@ -440,66 +490,68 @@ class _Detail extends ConsumerWidget {
         if (p.progress?.isNotEmpty == true)
           kit.Section(
             title: 'Tiến độ',
-            child: _PreviewList(
-              children: [
-                for (final e in p.progress!)
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    spacing: 2,
-                    children: [
-                      kit.Muted(fmtDate(e.occurredOn)),
-                      kit.Body(e.title),
-                      if (e.body case final body?)
-                        PreviewText(
-                          body,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            height: 1.6,
-                            color: c.text,
-                          ),
-                        ),
-                    ],
-                  ),
-              ],
+            child: kit.Card(
+              child: _PreviewList(
+                children: [
+                  for (final e in p.progress!)
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      spacing: 2,
+                      children: [
+                        kit.Muted(fmtDate(e.occurredOn)),
+                        kit.Body(e.title),
+                        if (e.body case final body?)
+                          PreviewText(body, style: _muted),
+                      ],
+                    ),
+                ],
+              ),
             ),
           ),
         if (docs.isNotEmpty)
           kit.Section(
             title: 'Tài liệu',
-            child: _PreviewList(
-              children: [
-                for (final d in docs)
-                  Material(
-                    color: Colors.transparent,
-                    child: ListTile(
-                      leading: const Icon(
-                        Ionicons.documentTextOutline,
-                        size: 20,
-                        color: c.brand,
+            child: kit.Card(
+              padding: EdgeInsets.zero,
+              child: _PreviewList(
+                divided: true,
+                children: [
+                  for (final d in docs)
+                    Material(
+                      color: Colors.transparent,
+                      child: ListTile(
+                        leading: const Icon(
+                          Ionicons.documentTextOutline,
+                          size: 20,
+                          color: c.brand,
+                        ),
+                        title: Text(d.name ?? 'Tài liệu'),
+                        trailing: const Icon(Ionicons.openOutline, size: 16),
+                        onTap: () =>
+                            openInApp(context, d.url!, d.name ?? 'Tài liệu'),
                       ),
-                      title: Text(d.name ?? 'Tài liệu'),
-                      trailing: const Icon(Ionicons.openOutline, size: 16),
-                      onTap: () =>
-                          openInApp(context, d.url!, d.name ?? 'Tài liệu'),
                     ),
-                  ),
-              ],
+                ],
+              ),
             ),
           ),
         if (p.faqs?.isNotEmpty == true)
           kit.Section(
             title: 'Hỏi đáp',
-            children: [
-              for (final f in p.faqs!)
-                Material(
-                  color: Colors.transparent,
-                  child: kit.FaqItem(
-                    key: ValueKey(f.id),
-                    question: f.question,
-                    answer: f.answer,
+            child: kit.Card(
+              padding: EdgeInsets.zero,
+              children: [
+                for (final f in p.faqs!)
+                  Material(
+                    color: Colors.transparent,
+                    child: kit.FaqItem(
+                      key: ValueKey(f.id),
+                      question: f.question,
+                      answer: f.answer,
+                    ),
                   ),
-                ),
-            ],
+              ],
+            ),
           ),
         if (overview.source case final source?)
           ProjectSourcePreview(name: p.name, source: source, cover: p.coverUrl),
@@ -525,15 +577,19 @@ class _Detail extends ConsumerWidget {
               ),
             ],
           ),
-        kit.Section(
-          title: 'Bảng hàng, giá từng căn và chính sách',
+        kit.Card(
+          style: BoxDecoration(
+            color: c.brandSoft,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: c.brandBorder),
+          ),
           children: [
+            const kit.H2('Bảng hàng, giá từng căn và chính sách'),
             if (signedIn) ...[
               const kit.Muted(
                 'Xem bảng hàng, quỹ hàng và tài liệu nội bộ nếu dự án đã phân bổ cho bạn.',
               ),
               kit.Button(
-                kind: 'secondary',
                 title: 'Mở dự án nội bộ',
                 onPress: () => _openBoard(context, ref, true, p.id),
               ),
@@ -545,13 +601,12 @@ class _Detail extends ConsumerWidget {
                 spacing: 10,
                 children: [
                   kit.Button(
-                    kind: 'secondary',
                     title: 'Đăng nhập',
                     onPress: () => _openBoard(context, ref, false, p.id),
                   ),
                   kit.Button(
                     title: 'Đăng ký sale',
-                    kind: 'link',
+                    kind: 'secondary',
                     onPress: () {
                       ref.read(publicApiProvider).trackCtaClick(p.id);
                       context.push('/dang-ky');
@@ -668,9 +723,13 @@ class _Bullets extends StatelessWidget {
 }
 
 class _PreviewList extends StatefulWidget {
-  const _PreviewList({required this.children, this.horizontal = false});
+  const _PreviewList({
+    required this.children,
+    this.horizontal = false,
+    this.divided = false,
+  });
   final List<Widget> children;
-  final bool horizontal;
+  final bool horizontal, divided;
   @override
   State<_PreviewList> createState() => _PreviewListState();
 }
@@ -680,7 +739,7 @@ class _PreviewListState extends State<_PreviewList> {
   @override
   Widget build(BuildContext context) => Column(
     crossAxisAlignment: CrossAxisAlignment.stretch,
-    spacing: 9,
+    spacing: widget.divided ? 0 : 9,
     children: [
       if (widget.horizontal)
         SingleChildScrollView(
@@ -693,7 +752,13 @@ class _PreviewListState extends State<_PreviewList> {
           ),
         )
       else
-        ...widget.children.take(expanded ? widget.children.length : 5),
+        for (final (i, child)
+            in widget.children
+                .take(expanded ? widget.children.length : 5)
+                .indexed) ...[
+          if (widget.divided && i > 0) const kit.Divider(),
+          child,
+        ],
       if (widget.children.length > 5)
         kit.Button(
           kind: 'link',
@@ -787,3 +852,5 @@ class _GalleryState extends State<_Gallery> {
           ),
   );
 }
+
+const _muted = TextStyle(color: c.muted, fontSize: 14, height: 20 / 14);

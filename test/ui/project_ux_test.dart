@@ -9,7 +9,6 @@ import 'package:smartduan/screens/app/project.dart';
 import 'package:smartduan/screens/public/project_detail.dart';
 import 'package:smartduan/ui/kit.dart' as kit;
 import 'package:smartduan/ui/network_image.dart';
-import 'package:smartduan/ui/project_facts.dart';
 import 'package:smartduan/ui/post_body.dart';
 
 import '../screens/app/task_h_fakes.dart';
@@ -80,34 +79,6 @@ void main() {
   });
   for (final width in [320.0, 360.0, 390.0]) {
     for (final scale in [1.0, 1.3, 2.0]) {
-      testWidgets('compact definitions at $width / $scale', (tester) async {
-        await mount(
-          tester,
-          const ProjectFacts(
-            entries: [
-              (
-                'Quy mô',
-                'Một giá trị dài cần xuống dòng trong ô mà không mất nội dung',
-              ),
-              ('Bàn giao', 'Năm 2027'),
-              ('Pháp lý', 'Sở hữu lâu dài'),
-            ],
-          ),
-          width,
-          scale,
-        );
-        expect(find.byType(kit.Card), findsOneWidget);
-        final first = tester.getTopLeft(find.text('Quy mô'));
-        final second = tester.getTopLeft(find.text('Bàn giao'));
-        if (width - 40 >= 340 && scale <= 1.3) {
-          expect(second.dy, first.dy);
-          expect(second.dx, greaterThan(first.dx));
-        } else {
-          expect(second.dy, greaterThan(first.dy));
-        }
-        expect(tester.takeException(), isNull);
-      });
-
       for (final cover in [null, 'https://example.vn/cover.jpg']) {
         testWidgets('source preview $cover at $width / $scale', (tester) async {
           await mount(
@@ -277,7 +248,7 @@ void main() {
           ),
           findsOneWidget,
         );
-        expect(find.byType(ProjectFacts), findsOneWidget);
+        expect(find.text('Chủ đầu tư'), findsOneWidget);
         for (final title in [
           'Phân khu (1)',
           'Chính sách bán hàng (1)',
@@ -359,7 +330,8 @@ void main() {
   });
 
   for (final size in ['md', 'sm']) {
-    testWidgets('all button kinds have the same $size height', (tester) async {
+    // RN: link buttons stay 48dp at every size; filled kinds are 52dp at md.
+    testWidgets('all button kinds have the RN $size height', (tester) async {
       await mount(
         tester,
         Column(
@@ -378,19 +350,16 @@ void main() {
         1,
       );
       for (final finder in find.byType(kit.Button).evaluate()) {
-        expect(
-          tester.getSize(find.byWidget(finder.widget)).height,
-          size == 'sm' ? 48 : 52,
-        );
+        final link = (finder.widget as kit.Button).kind == 'link';
+        final height = size == 'sm' || link ? 48.0 : 52.0;
+        expect(tester.getSize(find.byWidget(finder.widget)).height, height);
         final surface = find.descendant(
           of: find.byWidget(finder.widget),
           matching: find.byWidgetPredicate(
-            (w) =>
-                w is Container &&
-                w.constraints?.minHeight == (size == 'sm' ? 48 : 52),
+            (w) => w is Container && w.constraints?.minHeight == height,
           ),
         );
-        expect(tester.getSize(surface).height, size == 'sm' ? 48 : 52);
+        expect(tester.getSize(surface).height, height);
       }
     });
   }

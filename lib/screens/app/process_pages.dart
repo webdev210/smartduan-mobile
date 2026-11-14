@@ -99,17 +99,15 @@ class _ProcessPagesState extends ConsumerState<ProcessPagesScreen> {
                   text: 'Chưa có trang quy trình.',
                 ),
         ),
-        renderItem: (p) => Column(
+        renderItem: (p) => Card(
+          onPress: () =>
+              context.push('/quy-trinh/${Uri.encodeComponent(p.slug)}'),
           children: [
-            if (p.id != rows.first.id) const Divider(),
-            ListItem(
-              title: p.title,
-              subtitle: [
-                if (p.summary?.isNotEmpty == true) p.summary!,
-                '${p.projectName != null ? '${p.projectName} · ' : ''}Cập nhật ${fmtDate(p.updatedAt)}',
-              ].join('\n'),
-              onPress: () =>
-                  context.push('/quy-trinh/${Uri.encodeComponent(p.slug)}'),
+            Body(p.title, style: const TextStyle(fontWeight: FontWeight.w600)),
+            if (p.summary?.isNotEmpty == true)
+              Muted(p.summary!, numberOfLines: 3),
+            Muted(
+              '${p.projectName != null ? '${p.projectName} · ' : ''}Cập nhật ${fmtDate(p.updatedAt)}',
             ),
           ],
         ),

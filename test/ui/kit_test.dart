@@ -201,9 +201,7 @@ void main() {
     await tester.tap(find.bySemanticsLabel('Thông báo, 120 mới'));
     expect(calls, 1);
   });
-  testWidgets('Button stays flat and Card retains pressed scale', (
-    tester,
-  ) async {
+  testWidgets('Button and Card show RN pressed scale', (tester) async {
     await mount(
       tester,
       m.Column(
@@ -225,7 +223,7 @@ void main() {
           )
           .first,
     );
-    expect(transform.transform.storage[0], 1);
+    expect(transform.transform.storage[0], closeTo(0.98, 0.001));
     await button.up();
     await tester.pump();
     final card = await tester.startGesture(tester.getCenter(find.byType(Card)));
@@ -253,7 +251,10 @@ void main() {
             ),
           ),
         );
-        expect(tester.getSize(find.byType(Button)).height, small ? 48 : 52);
+        expect(
+          tester.getSize(find.byType(Button)).height,
+          small || kind == 'link' ? 48 : 52,
+        );
         expect(tester.takeException(), isNull);
       }
     });

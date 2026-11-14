@@ -117,10 +117,25 @@ class _ProfileState extends ConsumerState<ProfileScreen> {
                       ),
                     ],
                   ),
-                  Muted(
-                    p.roles.isEmpty
-                        ? 'Chưa có vai trò'
-                        : p.roles.map(roleName).join(' · '),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: p.roles.isEmpty
+                        ? [
+                            const Pill(
+                              label: 'Chưa có vai trò',
+                              color: c.muted,
+                              soft: true,
+                            ),
+                          ]
+                        : [
+                            for (final r in p.roles)
+                              Pill(
+                                label: roleName(r),
+                                color: c.brand,
+                                soft: true,
+                              ),
+                          ],
                   ),
                 ],
               ),

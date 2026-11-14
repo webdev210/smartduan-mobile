@@ -5,7 +5,7 @@ import '../../api/errors.dart';
 import '../../auth/register.dart';
 import '../../auth/session.dart';
 import '../../ui/captcha.dart';
-import '../../ui/kit.dart' show Screen, Muted, Field, Notice, Button;
+import '../../ui/kit.dart' show Screen, Muted, Card, Field, Notice, Button;
 
 class ForgotPasswordScreen extends ConsumerStatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -62,8 +62,8 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
         const Muted(
           'Nhập email đăng ký, chúng tôi sẽ gửi link đặt lại mật khẩu.',
         ),
-      Padding(
-        padding: EdgeInsets.zero,
+      Card(
+        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           spacing: 14,

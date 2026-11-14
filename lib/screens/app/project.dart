@@ -27,7 +27,6 @@ import '../../ui/kit.dart' as kit;
 import '../../ui/preview_text.dart';
 import '../../ui/map_embed.dart';
 import '../../ui/overview.dart';
-import '../../ui/project_facts.dart';
 import '../../ui/project_filter.dart' show projectStatus;
 import '../../ui/tour360.dart';
 import '../../ui/search.dart';
@@ -139,13 +138,12 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
                     child: LayoutBuilder(
                       builder: (context, constraints) {
                         final stack =
-                            constraints.maxWidth < 350 ||
-                            MediaQuery.textScalerOf(context).scale(1) >= 1.5;
+                            constraints.maxWidth < 360 ||
+                            MediaQuery.textScalerOf(context).scale(14) > 18.2;
                         final buttons = <Widget>[
                           if (screens['salesFloor']!(session.roles))
-                            _ProjectAction(
+                            kit.Button(
                               title: 'Bảng hàng',
-                              primary: true,
                               onPress: () => context.push(
                                 Uri(
                                   path:
@@ -156,8 +154,9 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
                             ),
                           if (p.basketEmbedUrl case final url?
                               when url.isNotEmpty)
-                            _ProjectAction(
+                            kit.Button(
                               title: 'Mở rổ hàng ngoài',
+                              kind: 'secondary',
                               icon: Ionicons.basketOutline,
                               onPress: () => context.push(
                                 Uri(
@@ -331,7 +330,7 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
           ).toString(),
         );
     Widget card(String title, List<Widget> children) =>
-        kit.Section(title: title, children: children);
+        kit.Card(children: [kit.H2(title), ...children]);
     Widget listCard<T>(
       String title,
       List<T> rows,
@@ -358,25 +357,37 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
           ),
         ),
     ]);
-    Widget loadingSection(String title) => kit.Section(
-      title: title,
-      children: [
-        for (var i = 0; i < 2; i++)
-          kit.Skeleton(height: MediaQuery.textScalerOf(context).scale(60)),
-      ],
-    );
+    Widget loadingSection(String title) => card(title, [
+      for (var i = 0; i < 2; i++)
+        kit.Skeleton(height: MediaQuery.textScalerOf(context).scale(60)),
+    ]);
     return [
+      if (images.isNotEmpty || media.isLoading)
+        SizedBox(
+          height: 156,
+          child: images.isEmpty
+              ? const ColoredBox(color: c.quiet)
+              : _Strip(
+                  items: [
+                    for (final m in images)
+                      (
+                        url: m.url,
+                        name: m.caption ?? p.name,
+                        caption: m.caption,
+                      ),
+                  ],
+                  width: 260,
+                ),
+        ),
       Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
-        spacing: 6,
+        spacing: 8,
         children: [
           if (projectStatus[p.status] case final st?)
-            Text(
-              st.label,
-              style: TextStyle(
-                color: Color(
-                  int.parse(st.color.replaceFirst('#', 'ff'), radix: 16),
-                ),
+            kit.Pill(
+              label: st.label,
+              color: Color(
+                int.parse(st.color.replaceFirst('#', 'ff'), radix: 16),
               ),
             ),
           kit.H1(p.name),
@@ -396,15 +407,20 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
             ),
         ],
       ),
-      ProjectFacts(
-        valueWidgets: {'Chủ đầu tư': _ProjectDeveloper(project: p)},
-        entries: [
-          ('Chủ đầu tư', p.developerName ?? '—'),
-          (
-            price == 'Liên hệ' ? 'Giá bán' : 'Giá từ',
-            price.replaceFirst('Giá từ ', ''),
+      kit.Card(
+        children: [
+          kit.Row(
+            label: 'Chủ đầu tư',
+            value: _ProjectDeveloper(project: p),
           ),
-          ('Cập nhật bảng hàng', fmtDate(p.inventoryUpdatedAt, true)),
+          kit.Row(
+            label: price == 'Liên hệ' ? 'Giá bán' : 'Giá từ',
+            value: price.replaceFirst('Giá từ ', ''),
+          ),
+          kit.Row(
+            label: 'Cập nhật bảng hàng',
+            value: fmtDate(p.inventoryUpdatedAt, true),
+          ),
         ],
       ),
       if (policy.hasError && !_hiddenWhenDenied(policy.error))
@@ -435,23 +451,6 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
                 '${soon.contains(x) ? 'Sắp áp dụng · ' : ''}${scope(x.fund)}',
             onFile: _openPolicy,
           ),
-        ),
-      if (images.isNotEmpty || media.isLoading)
-        SizedBox(
-          height: 156,
-          child: images.isEmpty
-              ? const ColoredBox(color: c.quiet)
-              : _Strip(
-                  items: [
-                    for (final m in images)
-                      (
-                        url: m.url,
-                        name: m.caption ?? p.name,
-                        caption: m.caption,
-                      ),
-                  ],
-                  width: 260,
-                ),
         ),
       if (screens['salesFloor']!(roles) || screens['shareLinks']!(roles))
         kit.Card(
@@ -664,9 +663,13 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
         ]),
       if (answers.isEmpty && faqs.isLoading) loadingSection('Hỏi đáp'),
       if (answers.isNotEmpty)
-        kit.Section(
-          title: 'Hỏi đáp',
+        kit.Card(
+          padding: const EdgeInsets.only(top: 16, bottom: 4),
           children: [
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16),
+              child: kit.H2('Hỏi đáp'),
+            ),
             for (final f in answers)
               Material(
                 color: Colors.transparent,
@@ -798,51 +801,6 @@ class _ProjectDeveloper extends ConsumerWidget {
       child: DeveloperIdentity(name: name, logo: developer?.logoUrl),
     );
   }
-}
-
-class _ProjectAction extends StatelessWidget {
-  const _ProjectAction({
-    required this.title,
-    required this.onPress,
-    this.primary = false,
-    this.icon,
-  });
-  final String title;
-  final VoidCallback onPress;
-  final bool primary;
-  final IconData? icon;
-
-  @override
-  Widget build(BuildContext context) => kit.Pressable(
-    label: title,
-    onPress: onPress,
-    child: Container(
-      constraints: const BoxConstraints(minHeight: 52),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-      decoration: BoxDecoration(
-        color: primary ? c.primary : c.brandSoft,
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        spacing: 6,
-        children: [
-          if (icon != null) Icon(icon, size: 20, color: c.brand),
-          Flexible(
-            child: Text(
-              title,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: primary ? c.card : c.brand,
-              ),
-            ),
-          ),
-        ],
-      ),
-    ),
-  );
 }
 
 class _PolicyBlock extends StatelessWidget {

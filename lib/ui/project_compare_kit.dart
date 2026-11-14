@@ -172,8 +172,11 @@ class _CompareChipState extends ConsumerState<CompareChip> {
                                 color: on ? Colors.white : c.brand,
                               ),
                               Flexible(
+                                // One line: toggling must not change the card's measured height.
                                 child: Text(
                                   on ? 'Đang so sánh' : 'So sánh',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                   style: TextStyle(
                                     fontSize: 13,
                                     fontWeight: FontWeight.w700,

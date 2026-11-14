@@ -69,19 +69,16 @@ void main() {
     await env.mount(tester, const BecomeSalesScreen());
     expect(find.text('Xin xác nhận F2'), findsOneWidget);
   });
-  testWidgets('home projects precede quick access and news', (tester) async {
+  testWidgets('home lists working projects before news like RN', (
+    tester,
+  ) async {
     final env = HEnv(roles: ['agent']);
     env.http.respond = (r) => response(r.path, 'data');
     await env.mount(tester, const Scaffold(body: HomeScreen()));
-    final sections = tester.widgetList<kit.Section>(find.byType(kit.Section));
-    expect(sections.map((s) => s.title).toList(), [
-      'Dự án của bạn',
-      'Dự án theo khu vực',
-      'Truy cập nhanh',
-      'Bảng tin mới',
-    ]);
-    expect(find.text('Biến động'), findsNothing);
-    expect(find.byType(kit.TileGrid), findsOneWidget);
+    expect(
+      tester.getTopLeft(find.text('Dự án của bạn')).dy,
+      lessThan(tester.getTopLeft(find.text('Bảng tin mới')).dy),
+    );
   });
   testWidgets(
     'loan year presets use month values and overrides start collapsed',

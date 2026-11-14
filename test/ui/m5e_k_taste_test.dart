@@ -84,28 +84,33 @@ void main() {
     expect(find.text('T2'), findsOneWidget);
   });
 
-  testWidgets('7 promo is flat brand deep with a gold accent', (tester) async {
+  // RN main (aa6bc54): promo panels keep the wine gradient and float shadow.
+  testWidgets('7 promo uses the RN wine gradient', (tester) async {
     await mount(tester, const kit.Hero(child: Text('Đăng nhập')));
     final box = tester
         .widgetList<Container>(find.byType(Container))
         .map((w) => w.decoration)
         .whereType<BoxDecoration>()
-        .singleWhere((d) => d.color == c.brandDeep);
-    expect(box.gradient, isNull);
-    expect(box.border, Border.all(color: c.gold));
+        .firstWhere((d) => d.gradient != null);
+    expect(box.gradient, c.wineGradient);
+    final clip = tester.widget<ClipRRect>(
+      find.descendant(
+        of: find.byType(kit.Hero),
+        matching: find.byType(ClipRRect),
+      ),
+    );
+    expect(clip.borderRadius, BorderRadius.circular(28));
   });
 
-  testWidgets('8 filter headings retain sentence case at 15/600', (
-    tester,
-  ) async {
+  testWidgets('8 filter headings use the RN tracked caps', (tester) async {
     await mount(
       tester,
       const kit.FilterGroup(title: 'Trạng thái', children: []),
     );
-    final text = tester.widget<Text>(find.text('Trạng thái'));
-    expect(text.style!.fontSize, 15);
-    expect(text.style!.fontWeight, FontWeight.w600);
-    expect(text.style!.letterSpacing, isNull);
+    final text = tester.widget<Text>(find.text('TRẠNG THÁI'));
+    expect(text.style!.fontSize, 13);
+    expect(text.style!.fontWeight, FontWeight.w700);
+    expect(text.style!.letterSpacing, 0.3);
   });
 
   testWidgets(
@@ -120,7 +125,7 @@ void main() {
         ),
       );
       await mount(tester, section(600));
-      expect(tester.getSize(find.byType(kit.Pressable)).width, lessThan(200));
+      expect(tester.getSize(find.text('Xem tất cả')).width, lessThan(200));
       expect(
         tester.getTopLeft(find.text('Xem tất cả')).dy,
         lessThan(tester.getBottomLeft(find.text('Dự án nổi bật')).dy),
@@ -141,20 +146,13 @@ void main() {
     },
   );
 
-  testWidgets(
-    '10 row status is coloured text while cover status stays backed',
-    (tester) async {
-      const p = ProjectCardData(name: 'Dự án', status: 'selling');
-      await mount(tester, ProjectRow(p: p, onPress: () {}));
-      expect(find.byType(kit.Pill), findsNothing);
-      final status = tester.widget<Text>(
-        find.text(projectStatus['selling']!.label),
-      );
-      expect(status.style!.color, isNotNull);
-      await mount(tester, const ProjectMedia(name: 'Dự án', status: 'selling'));
-      expect(find.byType(kit.Pill), findsOneWidget);
-    },
-  );
+  testWidgets('10 row and cover status both use the RN pill', (tester) async {
+    const p = ProjectCardData(name: 'Dự án', status: 'selling');
+    await mount(tester, ProjectRow(p: p, onPress: () {}));
+    expect(find.byType(kit.Pill), findsOneWidget);
+    await mount(tester, const ProjectMedia(name: 'Dự án', status: 'selling'));
+    expect(find.byType(kit.Pill), findsOneWidget);
+  });
 
   testWidgets('12 list boundaries and chevrons preserve unit navigation', (
     tester,
@@ -170,9 +168,7 @@ void main() {
     expect(opened, 'A-01.01');
   });
 
-  testWidgets('16 OTP uses the screen gutter without an inset card', (
-    tester,
-  ) async {
+  testWidgets('16 OTP form sits in one RN card', (tester) async {
     await mount(
       tester,
       SizedBox(
@@ -185,10 +181,13 @@ void main() {
         ),
       ),
     );
-    expect(find.byType(kit.Card), findsNothing);
+    expect(find.byType(kit.Card), findsOneWidget);
     expect(
-      tester.getTopLeft(find.byType(kit.Field)).dx,
-      tester.getTopLeft(find.byType(kit.Notice)).dx,
+      find.descendant(
+        of: find.byType(kit.Card),
+        matching: find.byType(kit.Field),
+      ),
+      findsOneWidget,
     );
   });
 
@@ -338,12 +337,12 @@ void main() {
     },
   );
 
-  testWidgets('25 skeleton and project card use 16dp radii', (tester) async {
+  testWidgets('25 skeleton and project card use RN radii', (tester) async {
     await mount(tester, const kit.Skeleton(height: 60));
     final box =
         tester.widget<Container>(find.byType(Container)).decoration
             as BoxDecoration;
-    expect(box.borderRadius, BorderRadius.circular(16));
+    expect(box.borderRadius, BorderRadius.circular(20));
     await mount(
       tester,
       ProjectCard(
@@ -353,19 +352,16 @@ void main() {
     );
     expect(
       tester.widget<ClipRRect>(find.byType(ClipRRect).first).borderRadius,
-      BorderRadius.circular(16),
+      BorderRadius.circular(22),
     );
   });
 
-  test('29 shared bottom bar uses a divider and a 62dp row', () {
+  test('29 shared bottom bar uses the RN shadow and top padding', () {
     final style = tabBarStyle(20);
-    expect(style.decoration.boxShadow, isNull);
-    expect(
-      style.decoration.border,
-      const Border(top: BorderSide(color: c.line)),
-    );
+    expect(style.decoration.boxShadow, isNotEmpty);
+    expect(style.decoration.border, isNull);
     expect(style.height, 82);
-    expect(style.padding, EdgeInsets.zero);
+    expect(style.padding, const EdgeInsets.only(top: 6));
   });
 
   testWidgets('shared sections retain the complete responsive matrix', (

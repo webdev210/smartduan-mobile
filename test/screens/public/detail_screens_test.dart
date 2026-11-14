@@ -420,7 +420,9 @@ void main() {
       );
       await mount(tester, const DeveloperScreen(slug: 'dev'), container);
       expect(find.text('Uy tín'), findsOneWidget);
-      expect(find.text('Hiển thị 5/5 dự án'), findsOneWidget);
+      // RN: total as the section eyebrow; "Hiển thị x/y" only while partial.
+      expect(find.text('5 dự án'), findsOneWidget);
+      expect(find.text('Hiển thị 5/5 dự án'), findsNothing);
       await tester.scrollUntilVisible(
         find.text('Dự án 4'),
         500,
@@ -442,7 +444,8 @@ void main() {
       await tester.pump();
       await tester.tap(find.text('Xoá từ khoá'));
       await tester.pumpAndSettle();
-      expect(find.text('Hiển thị 5/5 dự án'), findsOneWidget);
+      expect(find.text('5 dự án'), findsOneWidget);
+      expect(find.text('Hiển thị 5/5 dự án'), findsNothing);
       expect(find.text('Hồ Tây'), findsOneWidget);
     },
   );

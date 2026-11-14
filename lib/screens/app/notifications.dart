@@ -124,40 +124,47 @@ class _NotificationsState extends ConsumerState<NotificationsScreen> {
         renderItem: (n) {
           final unread = n.readAt == null || n.readAt!.isEmpty;
           final route = notificationRoute(n.href);
-          return Column(
-            children: [
-              if (n.id != rows.first.id) const Divider(),
-              Semantics(
-                label: unread ? 'Chưa đọc' : 'Đã đọc',
-                child: ColoredBox(
-                  color: unread ? c.brandSoft : c.card,
+          return Card(
+            onPress: route == null && !unread
+                ? null
+                : () {
+                    if (unread) mark([n.id]);
+                    if (route != null) context.push(route);
+                  },
+            accessibilityLabel: '${unread ? 'Chưa đọc. ' : ''}${n.title}',
+            style: BoxDecoration(color: unread ? c.brandSoft : c.card),
+            child: Row(
+              spacing: 12,
+              children: [
+                Icon(
+                  unread
+                      ? Ionicons.notifications
+                      : Ionicons.notificationsOutline,
+                  color: unread ? c.brand : c.muted,
+                ),
+                Expanded(
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    spacing: 4,
                     children: [
-                      ListItem(
-                        icon: unread
-                            ? Ionicons.notifications
-                            : Ionicons.notificationsOutline,
-                        title: n.title,
-                        subtitle: fmtDate(n.insertedAt, true),
-                        right: route == null ? const SizedBox.shrink() : null,
-                        onPress: route == null && !unread
-                            ? null
-                            : () {
-                                if (unread) mark([n.id]);
-                                if (route != null) context.push(route);
-                              },
-                      ),
-                      if (route == null)
-                        const Padding(
-                          padding: EdgeInsets.fromLTRB(52, 0, 16, 14),
-                          child: Muted('Chỉ thông báo'),
+                      Text(
+                        n.title,
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: unread
+                              ? FontWeight.w700
+                              : FontWeight.w400,
                         ),
+                      ),
+                      Muted(fmtDate(n.insertedAt, true)),
+                      if (route == null) const Muted('Chỉ thông báo'),
                     ],
                   ),
                 ),
-              ),
-            ],
+                if (route != null)
+                  const Icon(Ionicons.chevronForward, size: 18),
+              ],
+            ),
           );
         },
         onRefresh: () => ref.refresh(fetchNotificationsProvider.future),

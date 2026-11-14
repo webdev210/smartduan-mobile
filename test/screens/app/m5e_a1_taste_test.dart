@@ -27,7 +27,7 @@ import '../../realtime/fakes.dart';
 
 void main() {
   testWidgets(
-    '2, 11: project scope hides tower choices and uses divided unit navigation',
+    '2, 11: project scope hides tower choices and lists units as RN cards',
     (t) async {
       final e = HEnv();
       final projects = BoardProjects(e.client)
@@ -71,8 +71,8 @@ void main() {
         scrollable: find.byType(Scrollable).first,
       );
       await t.pumpAndSettle();
-      expect(find.widgetWithText(kit.ListItem, 'A101'), findsOneWidget);
-      expect(find.byType(kit.Divider), findsWidgets);
+      expect(find.widgetWithText(kit.Card, 'A101'), findsOneWidget);
+      expect(find.byType(kit.Pill), findsWidgets);
     },
   );
 
@@ -191,16 +191,16 @@ void main() {
         await t.pumpAndSettle();
       },
     );
-    testWidgets('10: ${screen.runtimeType} status is text metadata', (t) async {
+    testWidgets('10: ${screen.runtimeType} status is an RN pill', (t) async {
       final e = HEnv(roles: ['admin']);
       e.http.respond = (r) => response(r.path, 'data');
       await e.mount(t, screen);
-      expect(find.byType(kit.Pill), findsNothing);
+      expect(find.byType(kit.Pill), findsWidgets);
       expect(find.text('Chờ duyệt'), findsWidgets);
     });
   }
 
-  testWidgets('12: announcements have between-row rules', (t) async {
+  testWidgets('12: announcements are RN cards', (t) async {
     final e = HEnv();
     e.http.respond = (r) => const Reply(200, {
       'data': [
@@ -210,8 +210,9 @@ void main() {
       'total': 2,
     });
     await e.mount(t, const AnnouncementsScreen());
-    expect(find.byType(kit.Divider), findsOneWidget);
-    expect(find.byType(kit.ListItem), findsNWidgets(2));
+    expect(find.byType(kit.Divider), findsNothing);
+    expect(find.widgetWithText(kit.Card, 'Tin thứ nhất'), findsOneWidget);
+    expect(find.widgetWithText(kit.Card, 'Tin thứ hai'), findsOneWidget);
   });
 
   testWidgets('13: manager chooser uses titled kit sheet with close action', (
@@ -227,12 +228,7 @@ void main() {
         await t.pumpAndSettle();
         expect(find.byType(kit.Sheet), findsOneWidget);
         expect(find.widgetWithText(kit.H2, 'Chọn quản lý'), findsOneWidget);
-        expect(
-          find.byWidgetPredicate(
-            (w) => w is kit.IconButton && w.label == 'Đóng',
-          ),
-          findsOneWidget,
-        );
+        expect(find.bySemanticsLabel('Đóng'), findsWidgets);
         expect(find.widgetWithText(kit.Button, 'Đóng'), findsNothing);
       },
     );

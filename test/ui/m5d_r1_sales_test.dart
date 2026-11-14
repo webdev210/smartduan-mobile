@@ -9,7 +9,8 @@ import 'package:smartduan/ui/theme.dart' as c;
 import 'board_filter_test.dart' show boardPlan;
 
 void main() {
-  testWidgets('primary is flat and darkens on press', (tester) async {
+  // RN main: primary keeps the brand gradient and shadow, and dims on press.
+  testWidgets('primary uses the RN brand gradient', (tester) async {
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
@@ -17,7 +18,7 @@ void main() {
         ),
       ),
     );
-    BoxDecoration fill() => tester
+    final fill = tester
         .widgetList<Container>(
           find.descendant(
             of: find.byType(kit.Button),
@@ -27,18 +28,8 @@ void main() {
         .map((w) => w.decoration)
         .whereType<BoxDecoration>()
         .first;
-    expect(fill().gradient, isNull);
-    expect(fill().boxShadow, isNull);
-    expect(fill().color, c.primary);
-    final gesture = await tester.startGesture(
-      tester.getCenter(find.text('Xem bảng hàng')),
-    );
-    await tester.pump();
-    expect(
-      fill().color!.computeLuminance(),
-      lessThan(c.primary.computeLuminance()),
-    );
-    await gesture.up();
+    expect(fill.gradient, c.brandGradient);
+    expect(fill.boxShadow, c.brandShadow);
   });
   testWidgets('Screen keeps scroll position when slivers arrive', (
     tester,

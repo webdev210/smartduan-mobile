@@ -201,7 +201,7 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   sliver: SliverList.separated(
                     itemCount: flatRows.length,
-                    separatorBuilder: (_, _) => const Divider(),
+                    separatorBuilder: (_, _) => const SizedBox(height: 16),
                     itemBuilder: (_, i) => _unitCard(flatRows[i]),
                   ),
                 ),
@@ -274,11 +274,8 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
                   text:
                       'Không tải được file Excel: ${errorMessage(_exportError)}',
                 ),
-              const Body(
-                'Phạm vi',
-                style: TextStyle(fontWeight: FontWeight.w600),
-              ),
-              Chips(
+              FilterGroup(
+                title: 'Phạm vi',
                 children: [
                   Chip(
                     label: 'Theo toà',
@@ -497,29 +494,28 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
     );
   }
 
-  Widget _unitCard(Unit u) => ListItem(
+  Widget _unitCard(Unit u) => Card(
     onPress: () => _open(u.id),
-    title: u.publicCode ?? u.code,
-    subtitle:
-        '${[u.unitType, if (u.bedrooms != null) '${u.bedrooms}PN', fmtArea(u.areaNet)].whereType<String>().where((s) => s.isNotEmpty).join(' · ')} · ${u.status == 'sold' ? 'Đã bán' : fmtPrice(u.priceMin ?? u.priceList)}',
-    right: ConstrainedBox(
-      constraints: BoxConstraints(
-        maxWidth: MediaQuery.sizeOf(context).width * .3,
-      ),
-      child: m.Row(
-        mainAxisSize: MainAxisSize.min,
+    children: [
+      m.Row(
         spacing: 8,
         children: [
-          Flexible(
+          Expanded(
             child: Body(
-              statusLabel[u.status] ?? u.status,
-              style: TextStyle(color: _color(statusColor[u.status])),
+              u.publicCode ?? u.code,
+              style: const TextStyle(fontWeight: FontWeight.w600),
             ),
           ),
-          const Icon(Ionicons.chevronForward, size: 18, color: c.subtle),
+          Pill(
+            label: statusLabel[u.status] ?? u.status,
+            color: _color(statusColor[u.status]) ?? c.subtle,
+          ),
         ],
       ),
-    ),
+      Muted(
+        '${[u.unitType, if (u.bedrooms != null) '${u.bedrooms}PN', fmtArea(u.areaNet)].whereType<String>().where((s) => s.isNotEmpty).join(' · ')} · ${u.status == 'sold' ? 'Đã bán' : fmtPrice(u.priceMin ?? u.priceList)}',
+      ),
+    ],
   );
 }
 

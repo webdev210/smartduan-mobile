@@ -30,10 +30,16 @@ class TabIcon extends StatelessWidget {
 ) => (
   decoration: const BoxDecoration(
     color: c.card,
-    border: Border(top: BorderSide(color: c.line)),
+    boxShadow: [
+      BoxShadow(
+        color: Color.fromRGBO(19, 19, 19, 0.07),
+        offset: Offset(0, -6),
+        blurRadius: 24,
+      ),
+    ],
   ),
   height: 62 + bottom,
-  padding: EdgeInsets.zero,
+  padding: const EdgeInsets.only(top: 6),
 );
 
 class BarItem {
@@ -82,7 +88,7 @@ class GuestBar extends StatelessWidget {
                   child: InkWell(
                     onTap: item.onPress,
                     child: Container(
-                      constraints: const BoxConstraints(minHeight: 62),
+                      constraints: const BoxConstraints(minHeight: 56),
                       padding: const EdgeInsets.symmetric(vertical: 4),
                       child: Column(
                         mainAxisSize: MainAxisSize.min,

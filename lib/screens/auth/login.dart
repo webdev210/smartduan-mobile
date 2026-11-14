@@ -10,7 +10,7 @@ import '../../auth/messages.dart';
 import '../../auth/session.dart';
 import '../../config.dart';
 import '../../ui/kit.dart'
-    show Screen, Muted, Field, Notice, Button, ButtonGroup;
+    show Screen, Muted, Card, Field, Notice, Button, ButtonGroup;
 import '../../ui/otp_step.dart';
 import '../../ui/in_app.dart';
 import '../../ui/theme.dart' as c;
@@ -149,8 +149,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         if (ended != null) Notice(tone: 'warn', text: ended),
         if (widget.notice?.isNotEmpty == true)
           Notice(tone: 'success', text: widget.notice!),
-        Padding(
-          padding: EdgeInsets.zero,
+        Card(
+          padding: const EdgeInsets.all(20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             spacing: 14,
@@ -223,8 +223,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             ],
           ),
         ),
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 12),
+        Card(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             spacing: 6,

@@ -98,53 +98,52 @@ class _TeamState extends ConsumerState<TeamScreen> {
                   action: (label: 'Xoá tìm kiếm & bộ lọc', onPress: reset),
                 ),
         ),
-        renderItem: (m) => Column(
-          children: [
-            if (m.id != rows.first.id) const Divider(),
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              child: Row(
-                spacing: 12,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Avatar(name: m.fullName, size: 44),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      spacing: 2,
-                      children: [
-                        Text(
-                          m.fullName ?? '—',
-                          style: const TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700,
-                          ),
+        renderItem: (m) {
+          final status = Pill(
+            label: m.status == 'locked' ? 'Đã khoá' : 'Hoạt động',
+            color: m.status == 'locked' ? c.muted : c.success,
+            soft: true,
+          );
+          // RN keeps the pill beside the name; large text moves it below to avoid overflow.
+          final stacked = MediaQuery.textScalerOf(context).scale(1) > 1.3;
+          return Card(
+            child: Row(
+              spacing: 12,
+              children: [
+                Avatar(name: m.fullName, size: 44),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    spacing: 2,
+                    children: [
+                      Text(
+                        m.fullName ?? '—',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
                         ),
-                        if (m.salesCode?.isNotEmpty == true ||
-                            m.roles.isNotEmpty)
-                          Muted(
-                            [m.salesCode, m.roles.map(roleName).join(', ')]
-                                .whereType<String>()
-                                .where((s) => s.isNotEmpty)
-                                .join(' · '),
-                          ),
+                      ),
+                      if (m.salesCode?.isNotEmpty == true || m.roles.isNotEmpty)
                         Muted(
-                          'Đăng nhập gần nhất: ${fmtDate(m.lastLoginAt, true).replaceAll(' ', '\u00a0')}',
+                          [m.salesCode, m.roles.map(roleName).join(', ')]
+                              .whereType<String>()
+                              .where((s) => s.isNotEmpty)
+                              .join(' · '),
                         ),
-                        Text(
-                          m.status == 'locked' ? 'Đã khoá' : 'Hoạt động',
-                          style: TextStyle(
-                            color: m.status == 'locked' ? c.muted : c.success,
-                          ),
-                        ),
-                      ],
-                    ),
+                      Muted(
+                        'Đăng nhập gần nhất: ${fmtDate(m.lastLoginAt, true).replaceAll(' ', '\u00a0')}',
+                      ),
+                      if (stacked) status,
+                    ],
                   ),
-                ],
-              ),
+                ),
+                if (!stacked) status,
+              ],
             ),
-          ],
-        ),
+          );
+        },
         onRefresh: () => ref.refresh(fetchTeamProvider.future),
       ),
     );

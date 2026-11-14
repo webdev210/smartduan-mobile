@@ -10,7 +10,6 @@ import 'package:smartduan/screens/public/viewer.dart';
 import 'package:smartduan/api/models.dart';
 import 'package:smartduan/ui/project_card.dart';
 import 'package:smartduan/ui/project_compare.dart';
-import 'package:smartduan/ui/theme.dart' as c;
 import 'package:smartduan/ui/tour360.dart';
 import 'package:smartduan/ui/tour_frame.dart';
 import 'package:webview_flutter/webview_flutter.dart';
@@ -88,22 +87,22 @@ Future<void> _card(
 void main() {
   setUp(() => WebViewPlatform.instance = DetailWebViewPlatform());
 
-  testWidgets('390dp sample card height and compact natural facts', (
+  // RN main (aa6bc54) card: price and type side by side, "So sánh" chip under the facts.
+  testWidgets('390dp sample card keeps the RN facts box and compare chip', (
     tester,
   ) async {
     addTearDown(tester.view.reset);
     await _card(tester);
     final height = tester.getSize(find.byType(ProjectCard)).height;
     debugPrint('390dp Artisan Park list card: ${height.toStringAsFixed(2)}dp');
-    expect(height, lessThan(450));
-    expect(find.text('Loại hình'), findsNothing);
-    expect(find.text('So sánh'), findsNothing);
+    expect(find.text('Loại hình'), findsOneWidget);
+    expect(find.text('So sánh'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
   for (final carousel in [false, true]) {
     testWidgets(
-      'compare and heart share the cover with 48dp targets carousel $carousel',
+      'heart sits on the cover, compare chip below it, 48dp targets carousel $carousel',
       (tester) async {
         addTearDown(tester.view.reset);
         await _card(tester, width: 320, scale: 2, carousel: carousel);
@@ -111,32 +110,19 @@ void main() {
         final heart = find.bySemanticsLabel('Yêu thích Artisan Park');
         final cr = tester.getRect(compare), hr = tester.getRect(heart);
         final cover = tester.getRect(find.byType(ProjectMedia));
-        expect(cr.top, hr.top);
-        expect(hr.left - cr.right, 8);
-        for (final rect in [cr, hr]) {
-          expect(rect.width, 48);
-          expect(rect.height, 48);
-          expect(cover.contains(rect.topLeft), isTrue);
-          expect(cover.contains(rect.bottomRight), isTrue);
-        }
-        final badge = tester.getRect(find.text('Đang bán'));
-        expect(badge.right, lessThanOrEqualTo(cr.left - 8));
-        expect(
-          DefaultTextStyle.of(tester.element(find.text('Đang bán'))).overflow,
-          TextOverflow.ellipsis,
-        );
-        final visuals = find.descendant(
-          of: compare,
-          matching: find.byType(Material),
-        );
-        expect(tester.getSize(visuals), const Size(44, 44));
+        expect(cover.contains(hr.topLeft), isTrue);
+        expect(cover.contains(hr.bottomRight), isTrue);
+        expect(hr.width, greaterThanOrEqualTo(48));
+        expect(hr.height, greaterThanOrEqualTo(48));
+        expect(cr.top, greaterThanOrEqualTo(cover.bottom));
+        expect(cr.height, greaterThanOrEqualTo(48));
         final container = ProviderScope.containerOf(
           tester.element(find.byType(ProjectCard)),
         );
-        await tester.tapAt(cr.topLeft + const Offset(1, 1));
+        await tester.tap(compare);
         await tester.pump();
         expect(container.read(projectCompareProvider), ['A']);
-        expect(tester.widget<Material>(visuals).color, c.brand);
+        expect(find.text('Đang so sánh'), findsOneWidget);
         expect(tester.takeException(), isNull);
       },
     );
@@ -156,19 +142,22 @@ void main() {
     expect(find.byIcon(Ionicons.flameOutline), findsNothing);
     expect(find.byType(Visibility), findsNothing);
     expect(find.text('Liên hệ'), findsOneWidget);
+    // 12dp gap to the facts box, then its 10dp padding.
     expect(
-      tester.getRect(find.text('Liên hệ')).top -
+      tester.getRect(find.text('Giá')).top -
           tester.getRect(find.text('A').last).bottom,
-      12,
+      22,
     );
   });
 
-  testWidgets('narrow carousel puts type below price', (tester) async {
+  testWidgets('narrow carousel keeps type beside price like RN', (
+    tester,
+  ) async {
     addTearDown(tester.view.reset);
     await _card(tester, width: 280, carousel: true);
     expect(
-      tester.getRect(find.text('Cao tầng & thấp tầng')).top,
-      greaterThanOrEqualTo(tester.getRect(find.text('2,5 tỷ')).bottom),
+      tester.getRect(find.text('Cao tầng & thấp tầng')).left,
+      greaterThanOrEqualTo(tester.getRect(find.text('2,5 tỷ')).right),
     );
     expect(tester.takeException(), isNull);
   });
@@ -204,7 +193,7 @@ void main() {
     expect(container.read(projectCompareProvider), ['A']);
     final selected = tester.widget<Semantics>(compare).properties.selected;
     expect(selected, isTrue);
-    final icon = tester.widget<Icon>(find.byIcon(Ionicons.gitCompareOutline));
+    final icon = tester.widget<Icon>(find.byIcon(Ionicons.checkmarkCircle));
     expect(icon.color, Colors.white);
     await tester.tap(compare);
     await tester.pump();
@@ -269,9 +258,6 @@ void main() {
           expect(tester.takeException(), isNull);
           final price = tester.getRect(find.text('2,5 tỷ'));
           final type = tester.getRect(find.text('Cao tầng & thấp tầng'));
-          if (scale >= 1.5) {
-            expect(type.top, greaterThanOrEqualTo(price.bottom));
-          }
           final card = tester.getRect(find.byType(ProjectCard));
           expect(price.bottom, lessThanOrEqualTo(card.bottom));
           expect(type.bottom, lessThanOrEqualTo(card.bottom));

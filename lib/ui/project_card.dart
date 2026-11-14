@@ -66,21 +66,60 @@ class ProjectCardSkeleton extends StatelessWidget {
                         line(const TextStyle(fontSize: 14)),
                       ],
                     ),
-                    m.Row(
-                      spacing: 12,
-                      children: [
-                        Expanded(
-                          child: line(
-                            const TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w800,
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 10,
+                      ),
+                      child: m.Row(
+                        spacing: 12,
+                        children: [
+                          for (var i = 0; i < 2; i++)
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                spacing: 2,
+                                children: [
+                                  line(
+                                    const TextStyle(
+                                      fontSize: 12,
+                                      height: 20 / 14,
+                                    ),
+                                  ),
+                                  line(
+                                    const TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
-                        ),
-                        Expanded(child: line(const TextStyle(fontSize: 13))),
-                      ],
+                        ],
+                      ),
                     ),
                   ],
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: SizedBox(
+                    width: 110,
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(minHeight: 34),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 6),
+                        child: line(
+                          const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
               ),
             ],
@@ -216,6 +255,26 @@ Widget _line(IconData icon, String value, [Color color = muted]) => m.Row(
   ],
 );
 
+Widget _fact(String label, String value, {bool strong = false}) => Expanded(
+  child: Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    spacing: 2,
+    children: [
+      Muted(label, style: const TextStyle(fontSize: 12)),
+      Text(
+        value,
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(
+          fontSize: 15,
+          fontWeight: strong ? FontWeight.w800 : FontWeight.w700,
+          color: strong ? brand : text,
+        ),
+      ),
+    ],
+  ),
+);
+
 class ProjectCard extends StatelessWidget {
   const ProjectCard({
     super.key,
@@ -224,6 +283,8 @@ class ProjectCard extends StatelessWidget {
     this.width,
     this.action,
   });
+
+  /// Extra action under the card (favourites: the project's board shortcut).
   final Widget? action;
   final Browsable p;
   final VoidCallback onPress;
@@ -232,19 +293,6 @@ class ProjectCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final code = _publicCode(p);
     final place = _placeOf(p).isNotEmpty ? _placeOf(p) : p.address;
-    final developer = developerOf(p);
-    final activity = p.inventoryUpdatedAt != null
-        ? _line(
-            Ionicons.timeOutline,
-            'Bảng hàng cập nhật ${fmtDate(p.inventoryUpdatedAt, true)}',
-          )
-        : p.activity7d != 0
-        ? _line(
-            Ionicons.flameOutline,
-            '${p.activity7d} giao dịch trong 7 ngày qua',
-            brand,
-          )
-        : null;
     final heading = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       spacing: 6,
@@ -263,133 +311,142 @@ class ProjectCard extends StatelessWidget {
         ),
         if (place != null && place.isNotEmpty)
           _line(Ionicons.locationOutline, place),
-        if (developer != null && developer.isNotEmpty)
-          _line(Ionicons.businessOutline, developer),
-        ?activity,
+        if (developerOf(p) != null)
+          _line(Ionicons.businessOutline, developerOf(p)!),
+      ],
+    );
+    final activity = p.inventoryUpdatedAt != null
+        ? _line(
+            Ionicons.timeOutline,
+            'Bảng hàng cập nhật ${fmtDate(p.inventoryUpdatedAt, true)}',
+          )
+        : p.activity7d != 0
+        ? _line(
+            Ionicons.flameOutline,
+            '${p.activity7d} giao dịch trong 7 ngày qua',
+            brand,
+          )
+        : null;
+    final facts = Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      spacing: 12,
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: BoxDecoration(
+            color: bg,
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: IntrinsicHeight(
+            child: m.Row(
+              spacing: 12,
+              children: [
+                _fact(
+                  priceLabel(p.priceFrom) == 'Liên hệ' ? 'Giá' : 'Giá từ',
+                  priceLabel(p.priceFrom).replaceFirst('Giá từ ', ''),
+                  strong: true,
+                ),
+                const VerticalDivider(width: 1, color: border),
+                _fact(
+                  'Loại hình',
+                  typeLabel[p.projectType] ?? p.projectType ?? '—',
+                ),
+              ],
+            ),
+          ),
+        ),
+        if (code == null) ?activity,
       ],
     );
     final body = Padding(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.fromLTRB(16, 16, 16, code == null ? 16 : 12),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         spacing: 12,
-        children: [
-          heading,
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final price = Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (priceLabel(p.priceFrom) != 'Liên hệ')
-                    const Muted('Giá từ', style: TextStyle(fontSize: 12)),
-                  Text(
-                    priceLabel(p.priceFrom).replaceFirst('Giá từ ', ''),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w800,
-                      color: brand,
-                    ),
-                  ),
-                ],
-              );
-              final type = Text(
-                typeLabel[p.projectType] ?? p.projectType ?? '—',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontSize: 13, color: muted),
-              );
-              if (constraints.maxWidth + 32 < 300 ||
-                  MediaQuery.textScalerOf(context).scale(14) >= 21) {
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  spacing: 4,
-                  children: [price, type],
-                );
-              }
-              return m.Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                spacing: 12,
-                children: [
-                  Expanded(child: price),
-                  Flexible(child: type),
-                ],
-              );
-            },
-          ),
-        ],
+        children: [heading, facts],
       ),
-    );
-    final content = Stack(
-      children: [
-        LayoutBuilder(
-          builder: (context, constraints) => _ProjectHit(
-            label: _a11y(p),
-            onPress: onPress,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                ProjectMedia(
-                  name: p.name,
-                  uri: p.coverUrl,
-                  status: p.status,
-                  tour: p.hasTour360,
-                  actionsWidth: code == null ? 0 : 112,
-                ),
-                if (constraints.hasBoundedHeight)
-                  Expanded(child: body)
-                else
-                  body,
-              ],
-            ),
-          ),
-        ),
-        if (code != null)
-          Positioned(
-            top: 12,
-            right: 12,
-            child: m.Row(
-              mainAxisSize: MainAxisSize.min,
-              spacing: 8,
-              children: [
-                CompareChip(code: code, name: p.name, overlay: true),
-                IconButtonTheme(
-                  data: IconButtonThemeData(
-                    style: IconButton.styleFrom(
-                      fixedSize: const Size(44, 44),
-                      minimumSize: const Size(44, 44),
-                      tapTargetSize: MaterialTapTargetSize.padded,
-                      shape: const CircleBorder(),
-                    ),
-                  ),
-                  child: FavoriteButton(
-                    code: code,
-                    name: p.name,
-                    overlay: true,
-                  ),
-                ),
-              ],
-            ),
-          ),
-      ],
     );
     return SizedBox(
       width: width,
       child: Card(
         padding: EdgeInsets.zero,
+        style: BoxDecoration(borderRadius: BorderRadius.circular(22)),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(16),
-          child: action == null
-              ? content
-              : Column(
+          borderRadius: BorderRadius.circular(22),
+          child: Stack(
+            children: [
+              LayoutBuilder(
+                builder: (context, constraints) => Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    content,
+                    if (constraints.hasBoundedHeight)
+                      Expanded(
+                        child: _ProjectHit(
+                          label: _a11y(p),
+                          onPress: onPress,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              ProjectMedia(
+                                name: p.name,
+                                uri: p.coverUrl,
+                                status: p.status,
+                                tour: p.hasTour360,
+                                actionsWidth: code == null ? 0 : 56,
+                              ),
+                              Expanded(child: body),
+                            ],
+                          ),
+                        ),
+                      )
+                    else
+                      _ProjectHit(
+                        label: _a11y(p),
+                        onPress: onPress,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            ProjectMedia(
+                              name: p.name,
+                              uri: p.coverUrl,
+                              status: p.status,
+                              tour: p.hasTour360,
+                              actionsWidth: code == null ? 0 : 56,
+                            ),
+                            body,
+                          ],
+                        ),
+                      ),
+                    if (code != null)
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+                        child: m.Row(
+                          spacing: 10,
+                          children: [
+                            Expanded(
+                              child: Semantics(
+                                button: true,
+                                label: _a11y(p),
+                                onTap: onPress,
+                                child: GestureDetector(
+                                  onTap: onPress,
+                                  excludeFromSemantics: true,
+                                  child: activity ?? const SizedBox.shrink(),
+                                ),
+                              ),
+                            ),
+                            Flexible(
+                              child: Align(
+                                alignment: Alignment.centerRight,
+                                child: CompareChip(code: code, name: p.name),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     if (action != null)
                       Padding(
                         padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
@@ -397,6 +454,19 @@ class ProjectCard extends StatelessWidget {
                       ),
                   ],
                 ),
+              ),
+              if (code != null)
+                Positioned(
+                  top: 12,
+                  right: 12,
+                  child: FavoriteButton(
+                    code: code,
+                    name: p.name,
+                    overlay: true,
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );
@@ -421,98 +491,97 @@ class ProjectRow extends StatelessWidget {
       _placeOf(p),
       developerOf(p),
     ].whereType<String>().where((s) => s.isNotEmpty).join(' · ');
-    return Card(
-      padding: const EdgeInsets.fromLTRB(10, 10, 14, 10),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          m.Row(
-            spacing: 10,
-            children: [
-              Expanded(
-                child: _ProjectHit(
-                  label: _a11y(p),
-                  onPress: onPress,
-                  child: m.Row(
-                    spacing: 14,
+    final row = m.Row(
+      spacing: 10,
+      children: [
+        Expanded(
+          child: _ProjectHit(
+            label: _a11y(p),
+            onPress: onPress,
+            child: m.Row(
+              spacing: 14,
+              children: [
+                SizedBox(
+                  width: 92,
+                  height: 92,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(14),
+                    child: ProjectMedia(
+                      compact: true,
+                      name: p.name,
+                      uri: p.coverUrl,
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    spacing: 4,
                     children: [
-                      SizedBox(
-                        width: 92,
-                        height: 92,
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(14),
-                          child: ProjectMedia(
-                            compact: true,
-                            name: p.name,
-                            uri: p.coverUrl,
-                          ),
+                      Text(
+                        p.name,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: text,
                         ),
                       ),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          spacing: 4,
-                          children: [
-                            Text(
-                              p.name,
-                              maxLines: 2,
+                      if (place.isNotEmpty)
+                        Muted(
+                          place,
+                          style: const TextStyle(fontSize: 13),
+                          numberOfLines: 1,
+                        ),
+                      m.Row(
+                        spacing: 8,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              priceLabel(p.priceFrom),
+                              maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w700,
-                                color: text,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w800,
+                                color: brand,
                               ),
                             ),
-                            if (place.isNotEmpty)
-                              Muted(
-                                place,
-                                style: const TextStyle(fontSize: 13),
-                                numberOfLines: 1,
-                              ),
-                            m.Row(
-                              spacing: 8,
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    priceLabel(p.priceFrom),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w800,
-                                      color: brand,
-                                    ),
+                          ),
+                          if (st != null)
+                            Flexible(
+                              child: Pill(
+                                soft: true,
+                                label: st.label,
+                                color: Color(
+                                  int.parse(
+                                    st.color.replaceFirst('#', 'ff'),
+                                    radix: 16,
                                   ),
                                 ),
-                                if (st != null)
-                                  Flexible(
-                                    child: Text(
-                                      st.label,
-                                      style: TextStyle(
-                                        color: Color(
-                                          int.parse(
-                                            st.color.replaceFirst('#', 'ff'),
-                                            radix: 16,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                              ],
+                              ),
                             ),
-                          ],
-                        ),
+                        ],
                       ),
                     ],
                   ),
                 ),
-              ),
-              if (code != null) FavoriteButton(code: code, name: p.name),
-            ],
+              ],
+            ),
           ),
-          ?action,
-        ],
-      ),
+        ),
+        if (code != null) FavoriteButton(code: code, name: p.name),
+      ],
+    );
+    return Card(
+      padding: const EdgeInsets.fromLTRB(10, 10, 14, 10),
+      child: action == null
+          ? row
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [row, action!],
+            ),
     );
   }
 }

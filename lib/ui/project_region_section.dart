@@ -1,7 +1,8 @@
 import 'package:material_ui/material_ui.dart';
+import 'package:ionicons/ionicons.dart';
 
 import '../api/public.dart';
-import 'kit.dart' show Muted, Section, Segmented;
+import 'kit.dart' show Empty, Section, Segmented;
 import 'project_card.dart';
 import 'regions.dart';
 
@@ -88,7 +89,7 @@ class ProjectRail extends StatelessWidget {
     if (!loading && items.isEmpty) {
       return Padding(
         padding: EdgeInsets.symmetric(horizontal: inset),
-        child: Muted(empty),
+        child: Empty(icon: Ionicons.businessOutline, text: empty),
       );
     }
     return SingleChildScrollView(

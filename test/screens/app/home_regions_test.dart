@@ -123,8 +123,9 @@ Future<void> choose(WidgetTester tester, String label) async {
     of: regionSection,
     matching: find.textContaining(label),
   );
-  await tester.ensureVisible(segment);
-  await tester.pump();
+  await Scrollable.ensureVisible(tester.element(segment), alignment: .5);
+  await tester.pumpAndSettle();
+  expect(segment.hitTestable(), findsOneWidget);
   await tester.tap(segment);
   await tester.pump();
 }

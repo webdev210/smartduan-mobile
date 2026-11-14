@@ -312,9 +312,7 @@ class _FileOpenState extends ConsumerState<_FileOpen> {
         kit.AsyncView(
           value: value,
           onRetry: () => ref.invalidate(viewerFileProvider(widget.url)),
-          builder: (path) => Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            spacing: 12,
+          builder: (path) => kit.Card(
             children: [
               const kit.Muted(
                 'Đã tải file về máy. Chọn ứng dụng để xem (Drive, trình đọc PDF…).',

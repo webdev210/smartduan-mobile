@@ -24,16 +24,16 @@ import 'm5d_r4_responsive_test.dart'
 import 'task_h_fakes.dart';
 
 void main() {
-  testWidgets('8 search filter headings use sentence case and 15/600', (
+  testWidgets('8 search filter headings use the RN uppercase 13/700 label', (
     t,
   ) async {
     final e = HEnv();
     await e.mount(t, const SearchUnitsScreen());
     t.widget<kit.SearchBar>(find.byType(kit.SearchBar)).onFilter!();
     await t.pumpAndSettle();
-    final text = t.widget<Text>(find.text('Phòng ngủ'));
-    expect(text.style?.fontSize, 15);
-    expect(text.style?.fontWeight, FontWeight.w600);
+    final text = t.widget<Text>(find.text('PHÒNG NGỦ'));
+    expect(text.style?.fontSize, 13);
+    expect(text.style?.fontWeight, FontWeight.w700);
   });
 
   for (final (name, screen, path, row)
@@ -57,7 +57,7 @@ void main() {
           {'id': 'a', 'full_name': 'Thành viên mẫu'},
         ),
       ]) {
-    testWidgets('11/12 $name has between-row dividers', (t) async {
+    testWidgets('11/12 $name lists one RN card per row', (t) async {
       final e = HEnv(roles: ['manager']);
       e.http.respond = (r) => r.path == path
           ? Reply(200, {
@@ -68,8 +68,14 @@ void main() {
             })
           : hReply(r.path);
       await e.mount(t, screen);
-      expect(find.byType(kit.Divider), findsOneWidget);
-      if (name == 'team') {
+      expect(find.byType(kit.Divider), findsNothing);
+      final title = (row['title'] ?? row['full_name'])! as String;
+      expect(
+        find.ancestor(of: find.text(title), matching: find.byType(kit.Card)),
+        findsNWidgets(2),
+      );
+      // RN: only notifications with a route show a chevron.
+      if (name != 'notifications') {
         expect(find.byIcon(Ionicons.chevronForward), findsNothing);
       } else {
         expect(find.byIcon(Ionicons.chevronForward), findsNWidgets(2));
@@ -239,14 +245,14 @@ void main() {
     expect(group.children.last.kind, 'secondary');
   });
 
-  testWidgets('10 unit status is text metadata', (t) async {
+  testWidgets('10 unit status is an RN pill', (t) async {
     final e = HEnv();
     await e.mount(t, const UnitScreen(id: 'u'));
-    expect(find.byType(kit.Pill), findsNothing);
+    expect(find.byType(kit.Pill), findsWidgets);
     expect(find.text('Còn hàng'), findsWidgets);
   });
 
-  testWidgets('10 profile roles are plain text', (t) async {
+  testWidgets('10 profile roles are RN pills', (t) async {
     final e = HEnv();
     e.http.respond = (r) => r.path == '/sales/profile'
         ? const Reply(200, {
@@ -256,7 +262,7 @@ void main() {
           })
         : hReply(r.path);
     await e.mount(t, const ProfileScreen());
-    expect(find.byType(kit.Pill), findsNothing);
+    expect(find.byType(kit.Pill), findsNWidgets(2));
     expect(find.textContaining('Quản lý'), findsOneWidget);
   });
 
@@ -264,12 +270,11 @@ void main() {
     const NotificationsScreen(),
     const ProcessPagesScreen(),
   ]) {
-    testWidgets('11 ${screen.runtimeType} uses navigational rows', (t) async {
+    testWidgets('11 ${screen.runtimeType} uses RN cards', (t) async {
       final e = HEnv();
       e.http.respond = (r) => r4Reply(r.path);
       await e.mount(t, screen);
-      expect(find.byType(kit.Card), findsNothing);
-      expect(find.byType(kit.ListItem), findsWidgets);
+      expect(find.byType(kit.Card), findsWidgets);
     });
   }
 

@@ -25,8 +25,6 @@ class Button extends StatefulWidget {
 }
 
 class _ButtonState extends State<Button> {
-  bool pressed = false;
-
   @override
   Widget build(BuildContext context) {
     final Button(
@@ -42,13 +40,18 @@ class _ButtonState extends State<Button> {
     ) = widget;
     final off = disabled || loading;
     final (fg, background, stroke) = switch (kind) {
-      'soft' || 'secondary' => (brand, brandSoft, Colors.transparent),
+      'soft' => (brand, brandSoft, Colors.transparent),
       'danger' => (danger, card, dangerBorder),
+      'secondary' => (text, card, border),
       'link' => (link, Colors.transparent, Colors.transparent),
       _ => (card, primary, Colors.transparent),
     };
     final small = size == 'sm';
-    final radius = small ? 12.0 : 14.0;
+    final radius = kind == 'link'
+        ? 0.0
+        : small
+        ? 12.0
+        : 16.0;
     final button = Pressable(
       label: loading
           ? '${accessibilityLabel ?? title}, đang xử lý'
@@ -56,12 +59,14 @@ class _ButtonState extends State<Button> {
       disabled: off,
       onPress: onPress,
       onLongPress: onLongPress,
-      pressedOpacity: 1,
-      onHighlightChanged: (value) => setState(() => pressed = value),
+      pressedOpacity: 0.88,
+      pressedScale: kind == 'link' ? 1 : 0.98,
       child: Opacity(
         opacity: off ? 0.45 : 1,
         child: Container(
-          constraints: BoxConstraints(minHeight: small ? 48 : 52),
+          constraints: BoxConstraints(
+            minHeight: small || kind == 'link' ? 48 : 52,
+          ),
           padding: EdgeInsets.symmetric(
             horizontal: kind == 'link'
                 ? 4
@@ -71,9 +76,11 @@ class _ButtonState extends State<Button> {
             vertical: 8,
           ),
           decoration: BoxDecoration(
-            color: pressed && kind == 'primary' ? primaryPressed : background,
+            color: background,
+            gradient: kind == 'primary' ? brandGradient : null,
             border: kind == 'link' ? null : Border.all(color: stroke),
             borderRadius: BorderRadius.circular(radius),
+            boxShadow: kind == 'primary' && !off ? brandShadow : null,
           ),
           child: Center(
             heightFactor: 1,
@@ -89,7 +96,8 @@ class _ButtonState extends State<Button> {
                     mainAxisSize: MainAxisSize.min,
                     spacing: 8,
                     children: [
-                      if (icon != null) Icon(icon, size: 20, color: fg),
+                      if (icon != null)
+                        Icon(icon, size: small ? 16 : 19, color: fg),
                       Flexible(
                         child: Text(
                           loading && MediaQuery.disableAnimationsOf(context)
@@ -100,7 +108,7 @@ class _ButtonState extends State<Button> {
                             fontWeight: kind == 'primary'
                                 ? FontWeight.w700
                                 : FontWeight.w600,
-                            fontSize: small ? 15 : 16,
+                            fontSize: kind == 'link' || small ? 15 : 16,
                             letterSpacing: kind == 'primary' ? 0.1 : 0,
                           ),
                         ),
@@ -218,6 +226,7 @@ class IconButton extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: background,
                     shape: BoxShape.circle,
+                    boxShadow: tone == 'plain' ? cardShadow : null,
                   ),
                   child: Icon(icon, size: 21, color: fg),
                 ),
@@ -464,8 +473,9 @@ class _SearchBarState extends State<SearchBar> {
           padding: const EdgeInsets.symmetric(horizontal: 14),
           decoration: BoxDecoration(
             color: card,
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(16),
             border: Border.all(color: focused ? primary : line),
+            boxShadow: cardShadow,
           ),
           child: m.Row(
             spacing: 10,
@@ -544,12 +554,16 @@ class _SearchBarState extends State<SearchBar> {
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
                         color: widget.filterCount != 0 ? primary : card,
-                        borderRadius: BorderRadius.circular(14),
+                        gradient: widget.filterCount != 0
+                            ? brandGradient
+                            : null,
+                        borderRadius: BorderRadius.circular(16),
                         border: Border.all(
                           color: widget.filterCount != 0
                               ? Colors.transparent
                               : line,
                         ),
+                        boxShadow: cardShadow,
                       ),
                       child: Icon(
                         Ionicons.optionsOutline,
@@ -629,8 +643,7 @@ class Chip extends StatelessWidget {
                             color: color,
                           ),
                         ),
-                      if (icon ?? trailing case final leading?)
-                        Icon(leading, size: 20, color: fg),
+                      if (icon != null) Icon(icon, size: 15, color: fg),
                       Flexible(
                         child: Text(
                           label,
@@ -643,6 +656,7 @@ class Chip extends StatelessWidget {
                           ),
                         ),
                       ),
+                      if (trailing != null) Icon(trailing, size: 15, color: fg),
                     ],
                   ),
                 ),
@@ -717,6 +731,15 @@ class Segmented<T extends String> extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: active ? card : Colors.transparent,
                     borderRadius: BorderRadius.circular(10),
+                    boxShadow: active
+                        ? const [
+                            BoxShadow(
+                              color: Color.fromRGBO(19, 19, 19, 0.12),
+                              offset: Offset(0, 1),
+                              blurRadius: 4,
+                            ),
+                          ]
+                        : null,
                   ),
                   child: Material(
                     color: Colors.transparent,
@@ -763,6 +786,8 @@ class Pill extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Align(
     alignment: Alignment.centerLeft,
+    // widthFactor: shrink-wrap inside Wrap/Row; tight parents still stretch it.
+    widthFactor: 1,
     heightFactor: 1,
     child: Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
@@ -792,11 +817,12 @@ class FilterGroup extends StatelessWidget {
     spacing: 10,
     children: [
       Text(
-        title,
+        title.toUpperCase(),
         style: const TextStyle(
-          fontSize: 15,
-          fontWeight: FontWeight.w600,
+          fontSize: 13,
+          fontWeight: FontWeight.w700,
           color: muted,
+          letterSpacing: 0.3,
         ),
       ),
       Chips(children: children),

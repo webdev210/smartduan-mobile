@@ -241,8 +241,15 @@ class _MenuTabState extends ConsumerState<MenuTab> {
                         padding: EdgeInsets.zero,
                         children: [for (final item in group.items) entry(item)],
                       )
-                    : Column(
-                        children: [for (final item in group.items) entry(item)],
+                    : TileGrid(
+                        children: [
+                          for (final item in group.items)
+                            Tile(
+                              icon: menuIcon(item.icon),
+                              label: item.label,
+                              onPress: () => context.push(item.href),
+                            ),
+                        ],
                       ),
               ),
           Button(

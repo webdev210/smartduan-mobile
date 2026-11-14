@@ -90,7 +90,7 @@ void main() {
       await tester.tap(find.text('A-01.01'));
       expect(opened, isNull);
       expect(
-        find.byWidgetPredicate((w) => w is Opacity && w.opacity == 0.4),
+        find.byWidgetPredicate((w) => w is Opacity && w.opacity == 0.2),
         findsNWidgets(3),
       );
       expect(tester.takeException(), isNull);

@@ -256,12 +256,17 @@ void main() {
             constraint,
             platform,
           );
-          expectCentered(tester, find.byType(kit.Notice), [
-            find.text('Thông tin\ndự án'),
-          ], horizontal: false);
-          expectCentered(tester, find.byType(kit.Notice), [
-            find.byIcon(Ionicons.informationCircle),
-          ], horizontal: false);
+          expect(
+            tester.getTopLeft(find.text('Thông tin\ndự án')).dy,
+            closeTo(tester.getTopLeft(find.byType(kit.Notice)).dy + 14, .5),
+          );
+          expect(
+            tester.getTopLeft(find.byIcon(Ionicons.informationCircle)).dy,
+            closeTo(
+              tester.getTopLeft(find.text('Thông tin\ndự án')).dy + 1,
+              .5,
+            ),
+          );
         });
         testWidgets('Pressable small child $scenario', (tester) async {
           await pumpControl(
@@ -295,7 +300,9 @@ void main() {
             find.text('Dự án'),
           ], horizontal: false);
         });
-        testWidgets('Section action icon and text $scenario', (tester) async {
+        testWidgets('RN Section action bottoms align $scenario', (
+          tester,
+        ) async {
           await pumpControl(
             tester,
             kit.Section(
@@ -310,10 +317,17 @@ void main() {
           final action = find.text('Tất cả');
           final icon = find.byIcon(Ionicons.chevronForward);
           expect(
-            tester.getCenter(action).dy,
-            closeTo(tester.getCenter(icon).dy, .5),
+            tester.getBottomLeft(action).dy,
+            closeTo(tester.getBottomLeft(icon).dy, .5),
           );
-          expectCentered(tester, find.byType(kit.Pressable), [action, icon]);
+          expect(
+            tester.getRect(icon).left,
+            greaterThanOrEqualTo(tester.getRect(action).right),
+          );
+          expect(
+            tester.getSize(find.byType(kit.Pressable)).height,
+            greaterThanOrEqualTo(48),
+          );
         });
         testWidgets('ButtonGroup $scenario', (tester) async {
           await pumpControl(

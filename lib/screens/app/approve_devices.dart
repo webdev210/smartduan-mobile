@@ -322,17 +322,16 @@ class _DeviceCardState extends ConsumerState<_DeviceCard>
               ),
             ),
             Flexible(
-              child: Body(
-                d.rejected
+              child: Pill(
+                label: d.rejected
                     ? 'Đã từ chối'
                     : deviceStatusLabel[d.status] ?? d.status,
-                style: TextStyle(
-                  color: switch (d.status) {
-                    'pending' => c.warn,
-                    'approved' => c.success,
-                    _ => c.muted,
-                  },
-                ),
+                soft: true,
+                color: switch (d.status) {
+                  'pending' => c.warn,
+                  'approved' => c.success,
+                  _ => c.muted,
+                },
               ),
             ),
           ],

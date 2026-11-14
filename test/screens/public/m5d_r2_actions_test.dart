@@ -250,7 +250,7 @@ void main() {
     expect(find.text('Đăng nhập lại sau duyệt'), findsOneWidget);
     expect(api.logins, hasLength(1));
   });
-  testWidgets('developer website precedes the full description', (
+  testWidgets('developer website follows the description like RN', (
     tester,
   ) async {
     final container = ProviderContainer.test(
@@ -280,8 +280,8 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(
-      tester.getTopLeft(find.text('Website chủ đầu tư')).dy,
-      lessThan(tester.getTopLeft(find.text('Mô tả chủ đầu tư')).dy),
+      tester.getTopLeft(find.text('Mô tả chủ đầu tư')).dy,
+      lessThan(tester.getTopLeft(find.text('Website chủ đầu tư')).dy),
     );
   });
 }

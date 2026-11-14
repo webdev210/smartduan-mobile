@@ -1,7 +1,5 @@
 import 'dart:async';
 
-import 'package:smartduan/ui/project_card.dart';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/services.dart';
@@ -30,6 +28,7 @@ import 'package:smartduan/screens/app/team.dart';
 import 'package:smartduan/screens/app/top_units.dart';
 import 'package:smartduan/screens/app/unit.dart';
 import 'package:smartduan/ui/kit.dart' as kit;
+import 'package:smartduan/ui/project_card.dart';
 
 import 'account_content_test.dart' show KEnv;
 import 'presentation_test.dart' show board, plan;
@@ -348,7 +347,7 @@ void main() {
     expect(find.textContaining('Đang giữ → Đã bán'), findsOneWidget);
   });
 
-  testWidgets('19 long team names wrap with the status below the identity', (
+  testWidgets('19 long team names ellipsize beside the RN status pill', (
     t,
   ) async {
     final e = KEnv(
@@ -368,10 +367,11 @@ void main() {
     await e.mount(t, const TeamScreen());
     t.view.physicalSize = const Size(320, 900);
     await t.pumpAndSettle();
-    expect(t.widget<Text>(find.text(name)).maxLines, isNull);
+    expect(t.widget<Text>(find.text(name)).maxLines, 1);
+    expect(t.widget<Text>(find.text(name)).overflow, TextOverflow.ellipsis);
     expect(
-      t.getTopLeft(find.text('Hoạt động').last).dy,
-      greaterThan(t.getBottomLeft(find.text(name)).dy),
+      t.getTopLeft(find.text('Hoạt động').last).dx,
+      greaterThanOrEqualTo(t.getTopRight(find.text(name)).dx),
     );
     expect(t.takeException(), isNull);
   });
@@ -841,6 +841,7 @@ void main() {
           })
         : original(r);
     await e.mount(t, const Scaffold(body: HomeScreen()));
+    // RN home shows working projects as project cards in a rail.
     expect(find.widgetWithText(ProjectCard, hProject['name']!), findsOneWidget);
     expect(
       find.widgetWithText(

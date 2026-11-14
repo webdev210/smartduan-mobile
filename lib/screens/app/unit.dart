@@ -290,22 +290,19 @@ class _UnitScreenState extends ConsumerState<UnitScreen> {
                       onRetry: () =>
                           ref.invalidate(fetchUnitImagesProvider(widget.id)),
                     ),
-                  Wrap(
+                  Row(
                     spacing: 12,
-                    runSpacing: 8,
                     children: [
-                      kit.H1(u.publicCode ?? u.code),
-                      Text(
-                        statusLabel[u.status] ?? u.status,
-                        style: TextStyle(
-                          color: Color(
-                            int.parse(
-                              (statusColor[u.status] ?? '#9ca3af').replaceFirst(
-                                '#',
-                                'ff',
-                              ),
-                              radix: 16,
+                      Expanded(child: kit.H1(u.publicCode ?? u.code)),
+                      kit.Pill(
+                        label: statusLabel[u.status] ?? u.status,
+                        color: Color(
+                          int.parse(
+                            (statusColor[u.status] ?? '#9ca3af').replaceFirst(
+                              '#',
+                              'ff',
                             ),
+                            radix: 16,
                           ),
                         ),
                       ),
@@ -361,9 +358,7 @@ class _UnitScreenState extends ConsumerState<UnitScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 spacing: 16,
                 children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    spacing: 8,
+                  kit.Card(
                     children: [
                       const kit.H2('Thông tin'),
                       kit.Row(label: 'Toà', value: u.block?.name ?? '—'),
@@ -402,9 +397,7 @@ class _UnitScreenState extends ConsumerState<UnitScreen> {
                           : 'Xem tất cả ${images!.value!.data.length} hình ảnh',
                       onPress: () => setState(() => allImages = !allImages),
                     ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    spacing: 8,
+                  kit.Card(
                     children: [
                       const kit.H2('Giá'),
                       kit.Row(
@@ -459,9 +452,7 @@ class _UnitScreenState extends ConsumerState<UnitScreen> {
                     ],
                   ),
                   if (u.related.isNotEmpty)
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      spacing: 8,
+                    kit.Card(
                       children: [
                         const kit.H2('Có thể bạn quan tâm'),
                         for (final r in u.related)
@@ -479,9 +470,7 @@ class _UnitScreenState extends ConsumerState<UnitScreen> {
                           ref.invalidate(fetchUnitHistoryProvider(widget.id)),
                       builder: (data) => data.data.isEmpty
                           ? const kit.Muted('Chưa có lịch sử thay đổi.')
-                          : Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              spacing: 8,
+                          : kit.Card(
                               children: [
                                 const kit.H2('Lịch sử thay đổi'),
                                 kit.Muted(

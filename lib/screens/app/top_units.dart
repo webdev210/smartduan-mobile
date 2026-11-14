@@ -7,6 +7,7 @@ import 'package:material_ui/material_ui.dart';
 import '../../api/projects.dart';
 import '../../ui/format.dart';
 import '../../ui/kit.dart' as kit;
+import '../../ui/theme.dart' as c;
 import '../../ui/search.dart';
 
 const topModes = [
@@ -56,12 +57,6 @@ class _TopUnitsScreenState extends ConsumerState<TopUnitsScreen> {
             ),
           ),
     ].where((g) => q.trim().isEmpty || g.units.isNotEmpty).toList();
-    final entries = <({TopUnitGroup group, TopUnit? unit})>[
-      for (final g in groups) ...[
-        (group: g.group, unit: null),
-        for (final u in g.units) (group: g.group, unit: u),
-      ],
-    ];
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -71,35 +66,44 @@ class _TopUnitsScreenState extends ConsumerState<TopUnitsScreen> {
       body: kit.Screen(
         onRefresh: () => ref.refresh(provider.future),
         slivers: [
-          if (entries.isNotEmpty)
+          // RN's titled section around one card per group; units stay lazy slivers.
+          for (final (i, g) in groups.indexed) ...[
+            SliverPadding(
+              padding: EdgeInsets.fromLTRB(20, i == 0 ? 0 : 16, 20, 12),
+              sliver: SliverToBoxAdapter(
+                child: kit.Section(
+                  title: topGroupName(g.group),
+                  eyebrow: '${g.group.available} căn còn hàng',
+                  children: const [],
+                ),
+              ),
+            ),
             SliverPadding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
-              sliver: SliverList.builder(
-                itemCount: entries.length,
-                itemBuilder: (_, i) {
-                  final entry = entries[i];
-                  final u = entry.unit;
-                  return u == null
-                      ? Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              kit.H2(topGroupName(entry.group)),
-                              kit.Muted(
-                                '${entry.group.available} căn còn hàng',
-                              ),
-                              if (entry.group.units.isEmpty)
-                                const kit.Muted('Chưa có căn phù hợp.'),
-                            ],
-                          ),
+              sliver: DecoratedSliver(
+                decoration: BoxDecoration(
+                  color: c.card,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: c.line,
+                    width: 1 / MediaQuery.devicePixelRatioOf(context),
+                  ),
+                  boxShadow: c.cardShadow,
+                ),
+                sliver: SliverPadding(
+                  padding: const EdgeInsets.all(16),
+                  sliver: g.units.isEmpty
+                      ? const SliverToBoxAdapter(
+                          child: kit.Muted('Chưa có căn phù hợp.'),
                         )
-                      : Column(
-                          key: ValueKey(u.id),
-                          children: [
-                            if (i > 0 && entries[i - 1].unit != null)
-                              const kit.Divider(),
-                            kit.ListItem(
+                      : SliverList.separated(
+                          itemCount: g.units.length,
+                          separatorBuilder: (_, _) => const SizedBox(height: 8),
+                          itemBuilder: (_, k) {
+                            final u = g.units[k];
+                            return kit.ListItem(
+                              key: ValueKey(u.id),
+                              padding: const EdgeInsets.symmetric(vertical: 14),
                               title:
                                   '${u.publicCode ?? u.code} · ${u.priceMinLabel ?? fmtPrice(u.priceMin)}',
                               subtitle:
@@ -116,12 +120,13 @@ class _TopUnitsScreenState extends ConsumerState<TopUnitsScreen> {
                               onPress: () => context.push(
                                 '/can/${Uri.encodeComponent(u.id)}',
                               ),
-                            ),
-                          ],
-                        );
-                },
+                            );
+                          },
+                        ),
+                ),
               ),
             ),
+          ],
         ],
         children: [
           kit.Segmented(

@@ -108,36 +108,42 @@ void main() {
           ], horizontal: false);
         });
       }
-      testWidgets('cover round actions and status $platform $scale', (
-        tester,
-      ) async {
-        await pumpControl(
-          tester,
-          ProviderScope(
-            overrides: [sessionProvider.overrideWith(TestSession.new)],
-            child: ProjectCard(
-              p: const Browsable(code: 'P', name: 'Dự án', status: 'selling'),
-              onPress: () {},
+      testWidgets(
+        'RN compare chip, cover favourite and status $platform $scale',
+        (tester) async {
+          await pumpControl(
+            tester,
+            ProviderScope(
+              overrides: [sessionProvider.overrideWith(TestSession.new)],
+              child: ProjectCard(
+                p: const Browsable(code: 'P', name: 'Dự án', status: 'selling'),
+                onPress: () {},
+              ),
             ),
-          ),
-          scale,
-          'wide',
-          platform,
-        );
-        for (final (label, icon) in [
-          ('So sánh Dự án', Ionicons.gitCompareOutline),
-          ('Yêu thích Dự án', Ionicons.heartOutline),
-        ]) {
-          expectCentered(tester, find.bySemanticsLabel(label), [
-            find.byIcon(icon),
-          ]);
-        }
-        final label = find.text('Đang bán');
-        final pill = find
-            .ancestor(of: label, matching: find.byType(Container))
-            .first;
-        expectCentered(tester, pill, [label]);
-      });
+            scale,
+            'wide',
+            platform,
+          );
+          for (final (label, icon) in [
+            ('So sánh Dự án', Ionicons.gitCompareOutline),
+            ('Yêu thích Dự án', Ionicons.heartOutline),
+          ]) {
+            expectCentered(tester, find.bySemanticsLabel(label), [
+              find.byIcon(icon),
+              if (icon == Ionicons.gitCompareOutline) find.text('So sánh'),
+            ]);
+            expect(
+              tester.getSize(find.bySemanticsLabel(label)).height,
+              greaterThanOrEqualTo(48),
+            );
+          }
+          final label = find.text('Đang bán');
+          final pill = find
+              .ancestor(of: label, matching: find.byType(Container))
+              .first;
+          expectCentered(tester, pill, [label]);
+        },
+      );
       testWidgets('gallery close and retry $platform $scale', (tester) async {
         await pumpControl(
           tester,
@@ -172,9 +178,12 @@ void main() {
             .ancestor(of: title, matching: find.byType(Padding))
             .first;
         expectCentered(tester, header, [title], horizontal: false);
-        expectCentered(tester, find.byType(kit.IconButton), [
-          find.byIcon(Ionicons.close),
-        ]);
+        final close = find.ancestor(
+          of: find.byIcon(Ionicons.close),
+          matching: find.byType(kit.Pressable),
+        );
+        expect(tester.getSize(close).height, greaterThanOrEqualTo(48));
+        expectCentered(tester, close, [find.byIcon(Ionicons.close)]);
         expectCentered(tester, find.byType(kit.Button), [find.text('Áp dụng')]);
         await tester.pumpWidget(const SizedBox());
         await tester.pumpAndSettle();

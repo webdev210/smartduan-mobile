@@ -8,7 +8,8 @@ import '../../api/public.dart';
 import '../../auth/register.dart';
 import '../../auth/session.dart';
 import '../../ui/captcha.dart';
-import '../../ui/kit.dart' show Screen, Muted, Field, Notice, Button, AsyncView;
+import '../../ui/kit.dart'
+    show Screen, Muted, Card, Field, Notice, Button, AsyncView;
 import '../../ui/otp_step.dart';
 import '../../ui/theme.dart' as theme;
 
@@ -147,8 +148,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             'Tài khoản miễn phí cho chuyên viên kinh doanh, xác nhận bằng mã OTP gửi qua email. Sau đó đăng ký làm sale tự do ở Menu.',
             style: TextStyle(fontSize: 15),
           ),
-          Padding(
-            padding: EdgeInsets.zero,
+          Card(
+            padding: const EdgeInsets.all(20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               spacing: 14,

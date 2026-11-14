@@ -28,7 +28,7 @@ void main() {
 
     expect(find.byType(BrandSplash), findsOneWidget);
     expect(find.text('Smart Dự Án'), findsOneWidget);
-    expect(find.text('SMARTLAND'), findsOneWidget);
+    expect(find.text('SMARTLAND'), findsNothing);
     final app = tester.widget<MaterialApp>(find.byType(MaterialApp));
     expect(app.title, 'Smart Dự Án');
     expect(app.themeMode, ThemeMode.light);
@@ -40,17 +40,10 @@ void main() {
     );
     expect(Theme.of(context).brightness, Brightness.light);
     expect(Theme.of(context).scaffoldBackgroundColor, const Color(0xFFF7F7F7));
-    final spinner = find.byType(CircularProgressIndicator);
-    expect(spinner, findsOneWidget);
+    expect(find.byType(CircularProgressIndicator), findsNothing);
     expect(
-      tester.widget<CircularProgressIndicator>(spinner).color,
-      const Color(0xFFE6C28F),
-    );
-    expect(tester.getSize(spinner), const Size(16, 16));
-    expect(find.image(const AssetImage('assets/splash.webp')), findsOneWidget);
-    expect(
-      tester.getCenter(spinner).dx,
-      tester.view.physicalSize.width / tester.view.devicePixelRatio / 2,
+      find.image(const AssetImage('assets/splash-bg.jpg')),
+      findsOneWidget,
     );
     expect(tester.takeException(), isNull);
   });

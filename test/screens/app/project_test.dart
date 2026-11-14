@@ -88,9 +88,10 @@ void main() {
       final card = find
           .ancestor(of: label, matching: find.byType(kit.Card))
           .first;
+      // RN: 16dp card padding + 40dp icon tile + 12dp gap (+1dp border).
       expect(
         tester.getTopLeft(label).dx - tester.getTopLeft(card).dx,
-        closeTo(52, 1),
+        closeTo(69, 1),
       );
     }
   });

@@ -144,7 +144,8 @@ void main() {
         ),
       ),
     );
-    expect(t.getBottomRight(find.byType(Pressable)).dx, 370);
+    // RN link: label then chevron, flush with the right gutter.
+    expect(t.getTopRight(find.byIcon(Ionicons.chevronForward)).dx, 370);
     expect(
       t.getTopLeft(find.byIcon(Ionicons.chevronForward)).dx,
       greaterThan(t.getTopLeft(find.text('Xem tất cả')).dx),
@@ -264,7 +265,7 @@ void main() {
       }
     });
   }
-  testWidgets('compare control sits beside the heart on the cover', (t) async {
+  testWidgets('heart sits on the cover, compare chip in the footer', (t) async {
     await mount(
       t,
       ProjectCard(
@@ -281,13 +282,11 @@ void main() {
     final chip = t.getRect(find.bySemanticsLabel('So sánh Dự án'));
     final heart = t.getRect(find.bySemanticsLabel('Yêu thích Dự án'));
     expect(card.right - heart.right, closeTo(12, 1));
-    expect(chip.top - card.top, closeTo(12, 1));
-    expect(chip.top, heart.top);
-    expect(heart.left - chip.right, 8);
+    expect(heart.top - card.top, closeTo(12, 1));
+    expect(chip.top, greaterThan(heart.bottom));
   });
-  testWidgets('light headers and dark splash use opposite icon brightness', (
-    t,
-  ) async {
+  // RN main splash is white with the user's photo, so both use dark icons.
+  testWidgets('light headers and white splash both use dark icons', (t) async {
     expect(
       c.headerTheme.systemOverlayStyle!.statusBarIconBrightness,
       m.Brightness.dark,
@@ -296,30 +295,12 @@ void main() {
     final overlay = t.widget<m.AnnotatedRegion<SystemUiOverlayStyle>>(
       find.byType(m.AnnotatedRegion<SystemUiOverlayStyle>).first,
     );
-    expect(overlay.value.statusBarIconBrightness, m.Brightness.light);
-    final fade = t.widget<m.FadeTransition>(
-      find.byType(m.FadeTransition).first,
-    );
-    expect(fade.opacity.value, 1);
+    expect(overlay.value.statusBarIconBrightness, m.Brightness.dark);
+    expect(find.byType(m.CircularProgressIndicator), findsNothing);
     expect(
-      t
-          .widget<m.CircularProgressIndicator>(
-            find.byType(m.CircularProgressIndicator),
-          )
-          .value,
-      1,
+      find.image(const m.AssetImage('assets/splash-bg.jpg')),
+      findsOneWidget,
     );
-    final photo = t.widget<m.Image>(
-      find.image(const m.AssetImage('assets/splash.webp')),
-    );
-    final photoFade = photo.frameBuilder!(
-      t.element(find.byType(BrandSplash)),
-      const m.SizedBox(),
-      0,
-      false,
-    ) as m.TweenAnimationBuilder<double>;
-    expect(photoFade.duration, Duration.zero);
-    expect(photoFade.tween.end, 1);
   });
   testWidgets('Screen and ListScreen have the same first-content offset', (
     t,

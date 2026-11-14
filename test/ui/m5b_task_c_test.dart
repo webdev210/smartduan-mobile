@@ -370,18 +370,18 @@ void main() {
       await tester.ensureVisible(find.text('Dự án 5'));
       await tester.pumpAndSettle();
       expect(find.text('Dự án 5'), findsOneWidget);
+      // RN: once everything is loaded only the total eyebrow remains.
       await tester.scrollUntilVisible(
-        find.text('Hiển thị 6/6 dự án'),
+        find.text('6 dự án'),
         -500,
         scrollable: find.byType(Scrollable).first,
       );
-      expect(find.text('Hiển thị 6/6 dự án'), findsOneWidget);
+      expect(find.text('6 dự án'), findsOneWidget);
+      expect(find.textContaining('Hiển thị'), findsNothing);
     },
   );
 
-  testWidgets('27 developer badge is readable informational text', (
-    tester,
-  ) async {
+  testWidgets('27 developer badge is an RN chip', (tester) async {
     await mount(
       tester,
       const DeveloperScreen(slug: 'dev'),
@@ -406,11 +406,19 @@ void main() {
     expect(find.text('Uy tín'), findsOneWidget);
     expect(
       find.ancestor(of: find.text('Uy tín'), matching: find.byType(kit.Chip)),
-      findsNothing,
+      findsOneWidget,
     );
+    // Informational chip: full opacity, not a dimmed disabled button.
     expect(
-      find.ancestor(of: find.text('Uy tín'), matching: find.byType(Opacity)),
-      findsNothing,
+      tester
+          .widget<Opacity>(
+            find.ancestor(
+              of: find.text('Uy tín'),
+              matching: find.byType(Opacity),
+            ),
+          )
+          .opacity,
+      1,
     );
   });
 
@@ -432,7 +440,7 @@ void main() {
     scale: scale,
   );
 
-  testWidgets('15 developer action moves below identity at large text', (
+  testWidgets('15 developer action stays beside the name at large text', (
     tester,
   ) async {
     await mountDetail(
@@ -450,9 +458,9 @@ void main() {
       scale: 1.8,
     );
     expect(
-      tester.getRect(find.text('Dự án khác')).top,
+      tester.getRect(find.text('Dự án khác')).left,
       greaterThanOrEqualTo(
-        tester.getRect(find.text('Chủ đầu tư có tên dài')).bottom,
+        tester.getRect(find.text('Chủ đầu tư có tên dài')).right,
       ),
     );
     expect(tester.takeException(), isNull);
@@ -538,7 +546,9 @@ void main() {
     },
   );
 
-  testWidgets('44 narrow specifications use full-width cards', (tester) async {
+  testWidgets('44 narrow specifications keep the RN two-column grid', (
+    tester,
+  ) async {
     await mountDetail(
       tester,
       PublicProject(
@@ -552,8 +562,8 @@ void main() {
     );
     final scale = tester.getRect(find.text('100 ha'));
     final legal = tester.getRect(find.text('Giấy chứng nhận'));
-    expect(legal.top, greaterThan(scale.bottom));
-    expect(scale.left, legal.left);
+    expect(legal.left, greaterThan(scale.right));
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets(

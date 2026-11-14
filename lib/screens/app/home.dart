@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
-import 'package:material_ui/material_ui.dart' hide Card, Chip, SearchBar;
+import 'package:material_ui/material_ui.dart'
+    hide Card, Chip, Divider, SearchBar;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -11,13 +12,13 @@ import '../../api/sales.dart';
 import '../../auth/roles.dart';
 import '../../auth/session.dart';
 import '../../ui/format.dart';
-import '../../ui/kit.dart' hide Row, Divider;
+import '../../ui/kit.dart' hide Row;
 import '../../ui/menu.dart';
 import '../../ui/project_browser.dart';
 import '../../ui/project_card.dart';
+import '../../ui/project_region_section.dart';
 import '../../ui/project_compare.dart';
 import '../../ui/project_compare_kit.dart';
-import '../../ui/project_region_section.dart';
 import 'menu_tab.dart' show menuIcon;
 import 'projects_tab.dart' show TabProject;
 
@@ -56,7 +57,6 @@ class _HomeState extends ConsumerState<HomeScreen> {
         ? ref.watch(fetchAnnouncementsProvider(1))
         : null;
     final survey = ref.watch(tabSurveyProvider);
-    final unread = ref.watch(fetchNotificationsProvider).value?.unread;
     final comparing = ref.watch(projectCompareProvider).isNotEmpty;
     final rows = showPublic
         ? hot?.value?.data ?? <PublicProject>[]
@@ -82,206 +82,165 @@ class _HomeState extends ConsumerState<HomeScreen> {
     final cardWidth = math.min(380.0, MediaQuery.sizeOf(context).width - 64);
     return SafeArea(
       bottom: false,
-      child: Column(
+      child: Stack(
         children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-            child: Row(
-              spacing: 10,
-              children: [
-                Image.asset(
-                  'assets/smartland-mark.png',
-                  width: 32,
-                  height: 32,
-                  semanticLabel: 'Smartland',
+          Screen(
+            onRefresh: () async {
+              ref.invalidate(tabSurveyProvider);
+              if (hasProjects) ref.invalidate(fetchAllProjectsProvider);
+              if (showPublic) {
+                ref.invalidate(listPublicProjectsProvider(_hotFilters));
+              }
+              if (announcements != null) {
+                ref.invalidate(fetchAnnouncementsProvider(1));
+              }
+              if (hasProjects) await ref.read(fetchAllProjectsProvider.future);
+            },
+            children: [
+              Row(
+                spacing: 10,
+                children: [
+                  Image.asset(
+                    'assets/smartland-mark.png',
+                    width: 32,
+                    height: 32,
+                    semanticLabel: 'Smartland',
+                  ),
+                  const Flexible(child: H2('Smart Dự Án')),
+                ],
+              ),
+              SearchBar(
+                value: q,
+                onChangeText: (v) => setState(() => q = v),
+                onSubmit: all,
+                placeholder: 'Tìm dự án, khu vực, chủ đầu tư…',
+                maxLength: 60,
+              ),
+              ProjectQuickFind(q: q, projects: rows, onOpen: open, onAll: all),
+              Appear(
+                child: Section(
+                  title: showPublic
+                      ? 'Dự án nổi bật trên sàn'
+                      : 'Dự án của bạn',
+                  eyebrow: showPublic
+                      ? null
+                      : '${rows.length} dự án được phân bổ',
+                  action: (
+                    label: 'Xem tất cả',
+                    onPress: () =>
+                        context.push(showPublic ? '/kham-pha' : '/du-an'),
+                  ),
+                  child: showPublic
+                      ? AsyncView(
+                          value: hot!,
+                          loading: _railSkeleton(cardWidth),
+                          onRetry: () => ref.invalidate(
+                            listPublicProjectsProvider(_hotFilters),
+                          ),
+                          builder: (_) => _rail(
+                            rows,
+                            cardWidth,
+                            open,
+                            'Chưa có dự án nổi bật.',
+                          ),
+                        )
+                      : AsyncView(
+                          value: projects!,
+                          loading: _railSkeleton(cardWidth),
+                          onRetry: () =>
+                              ref.invalidate(fetchAllProjectsProvider),
+                          builder: (_) => _rail(
+                            rows.take(8).toList(),
+                            cardWidth,
+                            open,
+                            'Chưa có dự án nào.',
+                          ),
+                        ),
                 ),
-                const Expanded(child: H2('Smart Dự Án')),
-              ],
-            ),
-          ),
-          Expanded(
-            child: Stack(
-              children: [
-                Screen(
-                  onRefresh: () async {
-                    ref.invalidate(tabSurveyProvider);
-                    if (hasProjects) ref.invalidate(fetchAllProjectsProvider);
-                    if (showPublic) {
-                      ref.invalidate(listPublicProjectsProvider(_hotFilters));
-                    }
-                    if (announcements != null) {
-                      ref.invalidate(fetchAnnouncementsProvider(1));
-                    }
-                    if (hasProjects) {
-                      await ref.read(fetchAllProjectsProvider.future);
-                    }
-                  },
-                  children: [
-                    SearchBar(
-                      value: q,
-                      onChangeText: (v) => setState(() => q = v),
-                      onSubmit: all,
-                      placeholder: 'Tìm dự án, khu vực, chủ đầu tư…',
-                      maxLength: 60,
+              ),
+              ProjectRegionSection(
+                projects: allocated,
+                region: region,
+                onRegionChanged: ref.read(_regionProvider.notifier).select,
+                onOpen: open,
+                cardWidth: cardWidth,
+                loading: projects?.isLoading == true && !projects!.hasValue,
+                inset: 0,
+              ),
+              if (survey.value == true) const _SurveyCard(),
+              Appear(
+                delay: 80,
+                child: Section(
+                  title: 'Truy cập nhanh',
+                  action: (
+                    label: 'Tất cả tính năng',
+                    onPress: () => context.push('/menu'),
+                  ),
+                  child: TileGrid(
+                    children: [
+                      for (final item in quickActions(roles))
+                        Tile(
+                          icon: menuIcon(item.icon),
+                          label: item.label,
+                          onPress: () => context.push(item.href),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+              if (announcements != null)
+                Appear(
+                  delay: 240,
+                  child: Section(
+                    title: 'Bảng tin mới',
+                    action: (
+                      label: 'Xem tất cả',
+                      onPress: () => context.push('/bang-tin'),
                     ),
-                    if (unread != null && unread > 0)
-                      Pressable(
-                        label: 'Thông báo · $unread chưa đọc',
-                        onPress: () => context.push('/thong-bao'),
-                        child: Muted('Thông báo · $unread chưa đọc'),
-                      ),
-                    ProjectQuickFind(
-                      q: q,
-                      projects: rows,
-                      onOpen: open,
-                      onAll: all,
-                    ),
-                    Section(
-                      title: showPublic
-                          ? 'Dự án nổi bật trên sàn'
-                          : 'Dự án của bạn',
-                      eyebrow: showPublic
-                          ? null
-                          : '${rows.length} dự án được phân bổ',
-                      action: (
-                        label: 'Xem tất cả',
-                        onPress: () =>
-                            context.push(showPublic ? '/kham-pha' : '/du-an'),
-                      ),
-                      child: showPublic
-                          ? AsyncView(
-                              value: hot!,
-                              loading: SingleChildScrollView(
-                                scrollDirection: Axis.horizontal,
-                                child: ProjectRailRow(
-                                  cardWidth: cardWidth,
-                                  children: [
-                                    for (var i = 0; i < 2; i++)
-                                      ProjectCardSkeleton(width: cardWidth),
-                                  ],
-                                ),
-                              ),
-                              onRetry: () => ref.invalidate(
-                                listPublicProjectsProvider(_hotFilters),
-                              ),
-                              builder: (_) => _rail(
-                                rows,
-                                cardWidth,
-                                open,
-                                'Chưa có dự án nổi bật.',
-                              ),
-                            )
-                          : AsyncView(
-                              value: projects!,
-                              loading: SingleChildScrollView(
-                                scrollDirection: Axis.horizontal,
-                                child: ProjectRailRow(
-                                  cardWidth: cardWidth,
-                                  children: [
-                                    for (var i = 0; i < 2; i++)
-                                      ProjectCardSkeleton(width: cardWidth),
-                                  ],
-                                ),
-                              ),
-                              onRetry: () =>
-                                  ref.invalidate(fetchAllProjectsProvider),
-                              builder: (_) => _rail(
-                                rows.take(8).toList(),
-                                cardWidth,
-                                open,
-                                'Chưa có dự án nào.',
-                              ),
-                            ),
-                    ),
-                    ProjectRegionSection(
-                      projects: allocated,
-                      region: region,
-                      onRegionChanged: (value) =>
-                          ref.read(_regionProvider.notifier).select(value),
-                      onOpen: open,
-                      cardWidth: cardWidth,
-                      loading:
-                          projects != null &&
-                          projects.isLoading &&
-                          !projects.hasValue,
-                      inset: 0,
-                    ),
-                    if (survey.value == true) const _SurveyCard(),
-                    Section(
-                      title: 'Truy cập nhanh',
-                      action: (
-                        label: 'Tất cả tính năng',
-                        onPress: () => context.push('/menu'),
-                      ),
-                      child: TileGrid(
+                    child: AsyncView(
+                      value: announcements,
+                      loading: const Skeleton(height: 132),
+                      onRetry: () =>
+                          ref.invalidate(fetchAnnouncementsProvider(1)),
+                      builder: (data) => Card(
+                        padding: EdgeInsets.zero,
                         children: [
-                          for (final item in quickActions(roles))
-                            Tile(
-                              icon: menuIcon(item.icon),
-                              label: item.label,
-                              onPress: () => context.push(item.href),
+                          if (data.data.isEmpty)
+                            const Padding(
+                              padding: EdgeInsets.all(16),
+                              child: Muted('Chưa có tin.'),
                             ),
+                          for (final (i, a) in data.data.take(3).indexed) ...[
+                            if (i > 0) const Divider(),
+                            ListItem(
+                              title: a.title,
+                              subtitle: fmtDate(a.publishedAt),
+                              onPress: () => context.push(
+                                '/bang-tin/${Uri.encodeComponent(a.id)}',
+                              ),
+                            ),
+                          ],
                         ],
                       ),
                     ),
-                    if (announcements != null)
-                      Section(
-                        title: 'Bảng tin mới',
-                        action: (
-                          label: 'Xem tất cả',
-                          onPress: () => context.push('/bang-tin'),
-                        ),
-                        child: AsyncView(
-                          value: announcements,
-                          loading: Column(
-                            spacing: 1,
-                            children: [
-                              for (var i = 0; i < 3; i++)
-                                const Skeleton(height: 72),
-                            ],
-                          ),
-                          onRetry: () =>
-                              ref.invalidate(fetchAnnouncementsProvider(1)),
-                          builder: (data) => Card(
-                            padding: EdgeInsets.zero,
-                            child: Column(
-                              children: [
-                                if (data.data.isEmpty)
-                                  const Padding(
-                                    padding: EdgeInsets.all(16),
-                                    child: Muted('Chưa có tin.'),
-                                  ),
-                                for (final (i, a)
-                                    in data.data.take(3).indexed) ...[
-                                  if (i > 0)
-                                    const Divider(
-                                      height: 1,
-                                      color: Color(0xffe5e7eb),
-                                    ),
-                                  ListItem(
-                                    title: a.title,
-                                    subtitle: fmtDate(a.publishedAt),
-                                    onPress: () => context.push(
-                                      '/bang-tin/${Uri.encodeComponent(a.id)}',
-                                    ),
-                                  ),
-                                ],
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    if (comparing) const SizedBox(height: 70),
-                  ],
+                  ),
                 ),
-                const CompareDock(bottom: 12),
-              ],
-            ),
+              if (comparing) const SizedBox(height: 70),
+            ],
           ),
+          const CompareDock(bottom: 12),
         ],
       ),
     );
   }
+
+  Widget _railSkeleton(double width) => SingleChildScrollView(
+    scrollDirection: Axis.horizontal,
+    child: ProjectRailRow(
+      cardWidth: width,
+      children: [for (var i = 0; i < 2; i++) ProjectCardSkeleton(width: width)],
+    ),
+  );
 
   Widget _rail(
     List<PublicProject> rows,

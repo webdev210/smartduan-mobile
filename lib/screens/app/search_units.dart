@@ -382,20 +382,21 @@ class _SearchUnitsState extends ConsumerState<SearchUnitsScreen> {
               accessibilityLabel:
                   'Căn ${u.publicCode ?? u.code}, ${statusLabel[u.status] ?? u.status}, ${u.project?.name ?? ''}, ${u.block?.name ?? ''}, ${u.floor == null ? '' : 'Tầng ${u.floor}'}, ${u.unitType ?? ''}, ${u.bedrooms == null ? '' : '${u.bedrooms} phòng ngủ'}, ${fmtArea(u.areaNet ?? u.areaGross)}, ${enums.value?.directionLabels[u.direction] ?? u.direction ?? ''}, ${fmtPrice(u.priceMin ?? u.priceList)}, ${u.priceMinLabel ?? ''}${u.heldBy?.isNotEmpty == true ? ', Đại lý giữ: ${u.heldBy}' : ''}',
               children: [
-                Wrap(
+                Row(
                   spacing: 8,
-                  runSpacing: 8,
                   children: [
-                    Text(
-                      u.publicCode ?? u.code,
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
+                    Expanded(
+                      child: Text(
+                        u.publicCode ?? u.code,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                        ),
                       ),
                     ),
-                    Text(
-                      statusLabel[u.status] ?? u.status,
-                      style: TextStyle(color: _statusColor(u.status)),
+                    Pill(
+                      label: statusLabel[u.status] ?? u.status,
+                      color: _statusColor(u.status),
                     ),
                   ],
                 ),

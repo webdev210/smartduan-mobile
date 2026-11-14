@@ -328,7 +328,7 @@ void main() {
     final search = t.widget<kit.SearchBar>(find.byType(kit.SearchBar));
     search.onFilter!();
     await t.pumpAndSettle();
-    expect(find.text('Phòng ngủ'), findsOneWidget);
+    expect(find.text('PHÒNG NGỦ'), findsOneWidget);
     await t.ensureVisible(find.text('Giá tối đa (tỷ đồng)'));
     expect(find.text('Giá tối đa (tỷ đồng)'), findsOneWidget);
   });

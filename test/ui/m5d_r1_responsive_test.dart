@@ -20,7 +20,6 @@ import 'package:smartduan/ui/post_body.dart';
 import 'package:smartduan/ui/project_browser.dart';
 import 'package:smartduan/ui/project_card.dart';
 import 'package:smartduan/ui/project_compare_kit.dart';
-import 'package:smartduan/ui/project_facts.dart';
 import 'package:smartduan/ui/stack_grid.dart';
 import 'package:smartduan/ui/unit_compare_picker.dart';
 
@@ -116,13 +115,6 @@ void main() {
         kit.ErrorBox(error: StateError('offline'), onRetry: () {}),
         const kit.Loading(),
         const ProjectCardSkeleton(),
-      ],
-    ),
-    'project facts': () => const ProjectFacts(
-      entries: [
-        ('Chủ đầu tư', longName),
-        ('Quy mô', longName),
-        ('Pháp lý', longName),
       ],
     ),
     'project card': () => ProjectCard(p: project, onPress: () {}),

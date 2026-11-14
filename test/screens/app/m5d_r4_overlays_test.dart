@@ -65,7 +65,7 @@ void main() {
       (t) async {
         t.widget<kit.SearchBar>(find.byType(kit.SearchBar)).onFilter!();
         await t.pumpAndSettle();
-        await t.ensureVisible(find.text('Hướng'));
+        await t.ensureVisible(find.text('HƯỚNG'));
       },
     ),
     (

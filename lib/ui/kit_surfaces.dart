@@ -51,11 +51,12 @@ class Card extends StatelessWidget {
       decoration:
           BoxDecoration(
             color: card,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(20),
             border: Border.all(
               color: line,
               width: 1 / MediaQuery.devicePixelRatioOf(context),
             ),
+            boxShadow: cardShadow,
           ).copyWith(
             color: style?.color,
             borderRadius: style?.borderRadius,
@@ -120,70 +121,51 @@ class Section extends StatelessWidget {
             return width;
           }
 
-          final button = Pressable(
-            label: action!.label,
-            onPress: action!.onPress,
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(minHeight: 48),
-              child: Center(
-                heightFactor: 1,
+          // wrap: stacked under the heading, the label may wrap at large text.
+          Widget button({bool wrap = false}) {
+            final label = Text(
+              action!.label,
+              style: const TextStyle(
+                color: link,
+                fontWeight: FontWeight.w600,
+                fontSize: 14,
+              ),
+            );
+            return Pressable(
+              onPress: action!.onPress,
+              label: action!.label,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(minHeight: 48),
                 child: m.Row(
                   mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  spacing: 4,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  spacing: 2,
                   children: [
-                    Flexible(
-                      child: Text(
-                        action!.label,
-                        softWrap:
-                            MediaQuery.textScalerOf(context).scale(1) >= 1.5,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: c.link,
-                        ),
-                      ),
-                    ),
-                    const Icon(
-                      Ionicons.chevronForward,
-                      size: 16,
-                      color: c.link,
-                    ),
+                    wrap ? Flexible(child: label) : label,
+                    const Icon(Ionicons.chevronForward, size: 15, color: link),
                   ],
                 ),
               ),
-            ),
-          );
+            );
+          }
+
           final needed =
               measure(title, 19, FontWeight.w700) +
-              measure(action!.label, 12, FontWeight.w600) +
-              28;
-          final stacked =
-              MediaQuery.textScalerOf(context).scale(1) >= 1.5 &&
-              needed > constraints.maxWidth;
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              if (eyebrow != null) Eyebrow(eyebrow!),
-              stacked
-                  ? Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        H2(title),
-                        Align(alignment: Alignment.centerRight, child: button),
-                      ],
-                    )
-                  : m.Row(
-                      crossAxisAlignment: CrossAxisAlignment.baseline,
-                      textBaseline: TextBaseline.alphabetic,
-                      spacing: 4,
-                      children: [
-                        Expanded(child: H2(title)),
-                        button,
-                      ],
-                    ),
-            ],
-          );
+              measure(action!.label, 14, FontWeight.w600) +
+              32;
+          return needed > constraints.maxWidth
+              ? Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [heading, button(wrap: true)],
+                )
+              : m.Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  spacing: 12,
+                  children: [
+                    Expanded(child: heading),
+                    button(),
+                  ],
+                );
         },
       ),
       if (child != null) child! else ...children!,
@@ -199,16 +181,47 @@ class Hero extends StatelessWidget {
   final BoxDecoration? style;
   @override
   Widget build(BuildContext context) => DecoratedBox(
-    decoration: BoxDecoration(borderRadius: BorderRadius.circular(16)),
+    decoration: BoxDecoration(
+      borderRadius: BorderRadius.circular(28),
+      boxShadow: floatShadow,
+    ),
     child: ClipRRect(
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(28),
       child: Container(
         decoration: BoxDecoration(
           color: brandDeep,
-          border: Border.all(color: gold),
+          gradient: wineGradient,
         ).copyWith(color: style?.color, gradient: style?.gradient),
         child: Stack(
           children: [
+            Positioned(
+              top: -70,
+              right: -50,
+              child: IgnorePointer(
+                child: Container(
+                  width: 200,
+                  height: 200,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: gold.withValues(alpha: 0.16),
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              bottom: -90,
+              left: -60,
+              child: IgnorePointer(
+                child: Container(
+                  width: 190,
+                  height: 190,
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Color.fromRGBO(255, 255, 255, 0.05),
+                  ),
+                ),
+              ),
+            ),
             Padding(
               padding: const EdgeInsets.all(20),
               child:
@@ -251,7 +264,15 @@ class Stat extends StatelessWidget {
         m.Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Icon(icon, size: 24, color: accent),
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: accent.withValues(alpha: 20 / 255),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, size: 19, color: accent),
+            ),
             if (onPress != null)
               const Icon(Ionicons.arrowForward, size: 16, color: subtle),
           ],
@@ -312,7 +333,19 @@ class ListItem extends StatelessWidget {
             spacing: 12,
             children: [
               if (icon != null)
-                Icon(icon, size: 24, color: tone == 'danger' ? danger : brand),
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: tone == 'danger' ? dangerSoft : brandSoft,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    icon,
+                    size: 19,
+                    color: tone == 'danger' ? danger : brand,
+                  ),
+                ),
               Expanded(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -367,15 +400,32 @@ class Tile extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         spacing: 10,
         children: [
-          Icon(icon, size: 24, color: tone == 'gold' ? goldDeep : brand),
-          Text(
-            label,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 13,
-              height: 17 / 13,
-              fontWeight: FontWeight.w600,
-              color: text,
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: tone == 'gold' ? goldSoft : brandSoft,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Icon(
+              icon,
+              size: 23,
+              color: tone == 'gold' ? goldDeep : brand,
+            ),
+          ),
+          ConstrainedBox(
+            constraints: BoxConstraints(
+              minHeight: MediaQuery.textScalerOf(context).scale(13) * 34 / 13,
+            ),
+            child: Text(
+              label,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 13,
+                height: 17 / 13,
+                fontWeight: FontWeight.w600,
+                color: text,
+              ),
             ),
           ),
         ],
@@ -390,8 +440,9 @@ class TileGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) => LayoutBuilder(
     builder: (context, constraints) {
+      // RN luôn 3 cột; chỉ xuống 2 cột ở máy rất hẹp (320dp) hoặc chữ phóng to.
       final columns =
-          (constraints.maxWidth - 20) / 3 < 104 ||
+          (constraints.maxWidth - 20) / 3 < 88 ||
               MediaQuery.textScalerOf(context).scale(14) / 14 > 1.3
           ? 2
           : 3;
@@ -434,6 +485,7 @@ class Avatar extends StatelessWidget {
     decoration: BoxDecoration(
       color: tone == 'gold' ? gold : brand,
       shape: BoxShape.circle,
+      gradient: tone == 'gold' ? goldGradient : brandGradient,
     ),
     child: Text(
       initials(name),
@@ -506,9 +558,7 @@ class _SheetState extends State<Sheet> {
             borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
           ),
           constraints: BoxConstraints(
-            maxHeight:
-                MediaQuery.sizeOf(context).height -
-                MediaQuery.paddingOf(context).top,
+            maxHeight: MediaQuery.sizeOf(context).height * 0.88,
             maxWidth: 640,
           ),
         );
@@ -576,6 +626,18 @@ class _SheetContent extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              if (!keyboard)
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    margin: const EdgeInsets.only(top: 10),
+                    decoration: BoxDecoration(
+                      color: border,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
               Padding(
                 padding: EdgeInsets.fromLTRB(
                   20,
@@ -587,10 +649,25 @@ class _SheetContent extends StatelessWidget {
                   spacing: 12,
                   children: [
                     Expanded(child: H2(sheet.title)),
-                    IconButton(
-                      icon: Ionicons.close,
-                      label: 'Đóng',
+                    Pressable(
                       onPress: () => Navigator.of(context).pop(),
+                      label: 'Đóng',
+                      child: Padding(
+                        padding: const EdgeInsets.all(6),
+                        child: Container(
+                          width: 36,
+                          height: 36,
+                          decoration: const BoxDecoration(
+                            color: quiet,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Ionicons.close,
+                            size: 20,
+                            color: text,
+                          ),
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -624,13 +701,19 @@ class _SheetContent extends StatelessWidget {
                   constraints: BoxConstraints(
                     maxHeight: constraints.maxHeight * .4,
                   ),
-                  child: SingleChildScrollView(
-                    child: Padding(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: keyboard ? 4 : 12,
+                  child: DecoratedBox(
+                    decoration: const BoxDecoration(
+                      color: card,
+                      border: Border(top: BorderSide(color: border, width: 0)),
+                    ),
+                    child: SingleChildScrollView(
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: keyboard ? 4 : 12,
+                        ),
+                        child: sheet.footer,
                       ),
-                      child: sheet.footer,
                     ),
                   ),
                 ),
@@ -654,7 +737,7 @@ class Appear extends StatefulWidget {
 class _AppearState extends State<Appear> with SingleTickerProviderStateMixin {
   late final AnimationController _controller = AnimationController(
     vsync: this,
-    duration: const Duration(milliseconds: 200),
+    duration: const Duration(milliseconds: 420),
   );
   late final CurvedAnimation _curve = CurvedAnimation(
     parent: _controller,
@@ -707,7 +790,7 @@ class Skeleton extends StatelessWidget {
     height: height,
     decoration: BoxDecoration(
       color: quiet,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(20),
     ).copyWith(color: style?.color, borderRadius: style?.borderRadius),
   );
 }

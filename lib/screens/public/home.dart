@@ -142,10 +142,8 @@ class PublicHome extends ConsumerWidget {
           children: [
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              child: Wrap(
+              child: Row(
                 spacing: 10,
-                runSpacing: 8,
-                crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
                   Image.asset(
                     'assets/icon.png',
@@ -153,19 +151,29 @@ class PublicHome extends ConsumerWidget {
                     height: 32,
                     semanticLabel: 'Smartland',
                   ),
-                  const Text(
-                    'Smart Dự Án',
-                    style: TextStyle(
-                      fontSize: 19,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: -.5,
+                  // Both flexible so large text shares the row instead of overflowing.
+                  const Expanded(
+                    child: Text(
+                      'Smart Dự Án',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 19,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -.5,
+                      ),
                     ),
                   ),
-                  Button(
-                    title: 'Đăng nhập',
-                    icon: Ionicons.personCircleOutline,
-                    size: 'sm',
-                    onPress: () => context.push('/dang-nhap'),
+                  Flexible(
+                    child: Align(
+                      alignment: Alignment.centerRight,
+                      child: Button(
+                        title: 'Đăng nhập',
+                        icon: Ionicons.personCircleOutline,
+                        size: 'sm',
+                        onPress: () => context.push('/dang-nhap'),
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -206,86 +214,93 @@ class PublicHome extends ConsumerWidget {
                                       ],
                                     ),
                                   ),
-                                projects.isLoading && !projects.hasValue
-                                    ? _pad(
-                                        Skeleton(
-                                          height: math.min(
-                                            (math.min(width, 640) - 40) * 1.1,
-                                            MediaQuery.sizeOf(context).height *
-                                                .6,
-                                          ),
-                                          style: BoxDecoration(
-                                            borderRadius: BorderRadius.circular(
-                                              16,
+                                Appear(
+                                  child:
+                                      projects.isLoading && !projects.hasValue
+                                      ? _pad(
+                                          Skeleton(
+                                            height: math.min(
+                                              (math.min(width, 640) - 40) * 1.1,
+                                              MediaQuery.sizeOf(context)
+                                                      .height *
+                                                  .6,
+                                            ),
+                                            style: BoxDecoration(
+                                              borderRadius:
+                                                  BorderRadius.circular(28),
                                             ),
                                           ),
+                                        )
+                                      : AsyncView(
+                                          value: projects,
+                                          onRetry: () => ref.invalidate(
+                                            listAllPublicProjectsProvider,
+                                          ),
+                                          builder: (_) => _HeroSlides(
+                                            slides: slides,
+                                            index: state.slide,
+                                            onChanged: control.slide,
+                                          ),
                                         ),
-                                      )
-                                    : AsyncView(
-                                        value: projects,
-                                        onRetry: () => ref.invalidate(
-                                          listAllPublicProjectsProvider,
+                                ),
+                                Appear(
+                                  delay: 80,
+                                  child: _pad(
+                                    Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.stretch,
+                                      spacing: 14,
+                                      children: [
+                                        SearchBar(
+                                          value: state.q,
+                                          onChangeText: control.search,
+                                          onSubmit: search,
+                                          placeholder:
+                                              'Tìm dự án, khu vực, chủ đầu tư…',
+                                          maxLength: 60,
+                                          onFilter: search,
                                         ),
-                                        builder: (_) => _HeroSlides(
-                                          slides: slides,
-                                          index: state.slide,
-                                          onChanged: control.slide,
+                                        ProjectQuickFind(
+                                          q: state.q,
+                                          projects: all,
+                                          onOpen: (p) =>
+                                              _openProject(context, p),
+                                          onAll: search,
                                         ),
-                                      ),
-                                _pad(
-                                  Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.stretch,
-                                    spacing: 14,
-                                    children: [
-                                      SearchBar(
-                                        value: state.q,
-                                        onChangeText: control.search,
-                                        onSubmit: search,
-                                        placeholder:
-                                            'Tìm dự án, khu vực, chủ đầu tư…',
-                                        maxLength: 60,
-                                        onFilter: search,
-                                      ),
-                                      ProjectQuickFind(
-                                        q: state.q,
-                                        projects: all,
-                                        onOpen: (p) => _openProject(context, p),
-                                        onAll: search,
-                                      ),
-                                      if (stats.value case final value?)
-                                        Card(
-                                          child: IntrinsicHeight(
-                                            child: Row(
-                                              children: [
-                                                _trust(
-                                                  value.projectsSelling,
-                                                  'dự án đang bán',
-                                                ),
-                                                const VerticalDivider(
-                                                  width: 1,
-                                                  color: c.border,
-                                                ),
-                                                _trust(
-                                                  value.developers,
-                                                  'chủ đầu tư',
-                                                ),
-                                                if (value.activity7dTotal >
-                                                    0) ...[
+                                        if (stats.value case final value?)
+                                          Card(
+                                            child: IntrinsicHeight(
+                                              child: Row(
+                                                children: [
+                                                  _trust(
+                                                    value.projectsSelling,
+                                                    'dự án đang bán',
+                                                  ),
                                                   const VerticalDivider(
                                                     width: 1,
                                                     color: c.border,
                                                   ),
                                                   _trust(
-                                                    value.activity7dTotal,
-                                                    'giao dịch 7 ngày',
+                                                    value.developers,
+                                                    'chủ đầu tư',
                                                   ),
+                                                  if (value.activity7dTotal >
+                                                      0) ...[
+                                                    const VerticalDivider(
+                                                      width: 1,
+                                                      color: c.border,
+                                                    ),
+                                                    _trust(
+                                                      value.activity7dTotal,
+                                                      'giao dịch 7 ngày',
+                                                    ),
+                                                  ],
                                                 ],
-                                              ],
+                                              ),
                                             ),
                                           ),
-                                        ),
-                                    ],
+                                      ],
+                                    ),
                                   ),
                                 ),
                                 Column(
@@ -293,6 +308,7 @@ class PublicHome extends ConsumerWidget {
                                   children: [
                                     _pad(
                                       Section(
+                                        eyebrow: 'Khám phá dự án',
                                         title: 'Dự án nổi bật',
                                         action: (
                                           label: 'Xem tất cả',
@@ -367,6 +383,7 @@ class PublicHome extends ConsumerWidget {
                                     children: [
                                       _pad(
                                         Section(
+                                          eyebrow: 'Tìm thêm dự án',
                                           title: 'Theo khu vực',
                                           child: ChipRail(
                                             children: [
@@ -450,17 +467,7 @@ class PublicHome extends ConsumerWidget {
                                         CrossAxisAlignment.stretch,
                                     spacing: 14,
                                     children: [
-                                      Card(
-                                        padding: const EdgeInsets.all(20),
-                                        style: const BoxDecoration(
-                                          color: c.brandDeep,
-                                          border: Border(
-                                            left: BorderSide(
-                                              color: c.gold,
-                                              width: 3,
-                                            ),
-                                          ),
-                                        ),
+                                      Hero(
                                         children: [
                                           const Text(
                                             'Dành cho chuyên viên kinh doanh',
@@ -487,13 +494,12 @@ class PublicHome extends ConsumerWidget {
                                               height: 20 / 14,
                                             ),
                                           ),
-                                          Button(
+                                          _GoldButton(
                                             title: 'Đăng nhập',
                                             onPress: () =>
                                                 context.push('/dang-nhap'),
                                           ),
-                                          Button(
-                                            kind: 'secondary',
+                                          _AltButton(
                                             title: 'Đăng ký tài khoản sale',
                                             onPress: () =>
                                                 context.push('/dang-ky'),
@@ -561,12 +567,7 @@ class PublicHome extends ConsumerWidget {
               onClose: () => control.menu(false),
               title: 'Menu',
               children: [
-                Card(
-                  padding: const EdgeInsets.all(20),
-                  style: const BoxDecoration(
-                    color: c.brandDeep,
-                    border: Border(left: BorderSide(color: c.gold, width: 3)),
-                  ),
+                Hero(
                   children: [
                     const Text(
                       'Đăng nhập để xem bảng hàng, giá từng căn và thông báo',
@@ -577,17 +578,20 @@ class PublicHome extends ConsumerWidget {
                         fontWeight: FontWeight.w800,
                       ),
                     ),
-                    ButtonGroup(
+                    Row(
                       spacing: 10,
                       children: [
-                        Button(
-                          title: 'Đăng nhập',
-                          onPress: () => menuGo('/dang-nhap'),
+                        Expanded(
+                          child: _GoldButton(
+                            title: 'Đăng nhập',
+                            onPress: () => menuGo('/dang-nhap'),
+                          ),
                         ),
-                        Button(
-                          kind: 'secondary',
-                          title: 'Đăng ký',
-                          onPress: () => menuGo('/dang-ky'),
+                        Expanded(
+                          child: _AltButton(
+                            title: 'Đăng ký',
+                            onPress: () => menuGo('/dang-ky'),
+                          ),
                         ),
                       ],
                     ),
@@ -714,7 +718,7 @@ class _HeroSlidesState extends State<_HeroSlides> {
                     child: Pressable(
                       onPress: () => _openProject(context, p),
                       child: ClipRRect(
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(28),
                         child: Stack(
                           fit: StackFit.expand,
                           children: [
@@ -757,6 +761,37 @@ class _HeroSlidesState extends State<_HeroSlides> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   spacing: 6,
                                   children: [
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 10,
+                                        vertical: 4,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        gradient: c.goldGradient,
+                                        borderRadius: BorderRadius.circular(
+                                          999,
+                                        ),
+                                      ),
+                                      child: const Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        spacing: 4,
+                                        children: [
+                                          Icon(
+                                            Ionicons.flame,
+                                            size: 13,
+                                            color: c.brandDeep,
+                                          ),
+                                          Text(
+                                            'Nổi bật',
+                                            style: TextStyle(
+                                              color: c.brandDeep,
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w800,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
                                     Text(
                                       p.name,
                                       maxLines: 2,
@@ -885,8 +920,8 @@ class _PostBand extends StatelessWidget {
     return _pad(
       Section(
         title: title,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+        child: Card(
+          padding: EdgeInsets.zero,
           children: [
             for (var i = 0; i < posts.length; i++) ...[
               if (i > 0) const Divider(),
@@ -996,5 +1031,65 @@ class _Contact extends StatelessWidget {
           onPress: () => _launch(contact!.zaloUrl!),
         ),
     ],
+  );
+}
+
+class _GoldButton extends StatelessWidget {
+  const _GoldButton({required this.title, required this.onPress});
+  final String title;
+  final VoidCallback onPress;
+  @override
+  Widget build(BuildContext context) => Card(
+    padding: EdgeInsets.zero,
+    onPress: onPress,
+    accessibilityLabel: title,
+    style: BoxDecoration(
+      gradient: c.goldGradient,
+      borderRadius: BorderRadius.circular(16),
+    ),
+    child: ConstrainedBox(
+      constraints: const BoxConstraints(minHeight: 52),
+      child: Center(
+        child: Text(
+          title,
+          style: const TextStyle(
+            color: c.brandDeep,
+            fontWeight: FontWeight.w800,
+            fontSize: 16,
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
+class _AltButton extends StatelessWidget {
+  const _AltButton({required this.title, required this.onPress});
+  final String title;
+  final VoidCallback onPress;
+  @override
+  Widget build(BuildContext context) => Card(
+    padding: EdgeInsets.zero,
+    onPress: onPress,
+    accessibilityLabel: title,
+    style: BoxDecoration(
+      color: Colors.transparent,
+      border: Border.all(color: c.gold.withValues(alpha: 0.6)),
+      borderRadius: BorderRadius.circular(16),
+      boxShadow: const [],
+    ),
+    child: ConstrainedBox(
+      constraints: const BoxConstraints(minHeight: 52),
+      child: Center(
+        child: Text(
+          title,
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
+            fontSize: 15,
+          ),
+        ),
+      ),
+    ),
   );
 }

@@ -255,18 +255,17 @@ class _AccountCardState extends ConsumerState<_AccountCard>
               ),
             ),
             Flexible(
-              child: Body(
-                statusLabel(u),
-                style: TextStyle(
-                  color: unverified(u)
-                      ? c.muted
-                      : switch (u.status) {
-                          'pending' => c.warn,
-                          'active' => c.success,
-                          'rejected' => c.danger,
-                          _ => c.muted,
-                        },
-                ),
+              child: Pill(
+                label: statusLabel(u),
+                soft: true,
+                color: unverified(u)
+                    ? c.muted
+                    : switch (u.status) {
+                        'pending' => c.warn,
+                        'active' => c.success,
+                        'rejected' => c.danger,
+                        _ => c.muted,
+                      },
               ),
             ),
           ],
